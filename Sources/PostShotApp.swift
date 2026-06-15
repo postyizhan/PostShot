@@ -20,7 +20,12 @@ import SwiftUI
 struct PostShotApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            TabView {
+                ContentView()
+                    .tabItem { Label("拼图", systemImage: "photo.on.rectangle.angled") }
+                CaptureView()
+                    .tabItem { Label("录制", systemImage: "record.circle") }
+            }
         }
     }
 }

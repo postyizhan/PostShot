@@ -25,13 +25,29 @@ targets:
     platform: iOS
     sources:
       - path: Sources
+      - path: Shared
+    dependencies:
+      - target: PostShotBroadcast
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.postshot.app
         INFOPLIST_FILE: Sources/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Sources/PostShot.entitlements
         # Portrait only (SPEC §4).
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
         ENABLE_USER_SCRIPT_SANDBOXING: "YES"
+
+  PostShotBroadcast:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: BroadcastExtension
+      - path: Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.postshot.app.broadcast
+        INFOPLIST_FILE: BroadcastExtension/Info.plist
+        CODE_SIGN_ENTITLEMENTS: BroadcastExtension/PostShotBroadcast.entitlements
 
   PostShotTests:
     type: bundle.unit-test
