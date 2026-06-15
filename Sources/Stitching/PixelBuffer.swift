@@ -71,14 +71,13 @@ extension PixelBuffer {
         }
         guard success else { return nil }
 
-        // Core Graphics origin is bottom-left; flip to top-down row order.
+        // A bitmap context stores its first memory row as the TOP of the image, so reading
+        // rows in memory order already yields top-down display order — no flip needed.
+        // (The detector compares A's last rows against B's first rows, which only aligns
+        // when rows are top-down.)
         var rows = [Float](repeating: 0, count: sampleWidth * height)
-        for y in 0..<height {
-            let srcBase = (height - 1 - y) * bytesPerRow
-            let dstBase = y * sampleWidth
-            for x in 0..<sampleWidth {
-                rows[dstBase + x] = Float(pixels[srcBase + x]) / 255.0
-            }
+        for i in 0..<(sampleWidth * height) {
+            rows[i] = Float(pixels[i]) / 255.0
         }
         return PixelBuffer(rows: rows, height: height, width: sampleWidth)
     }
