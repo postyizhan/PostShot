@@ -1,0 +1,35 @@
+﻿2026-06-15T06:13:49.9295400Z ##[group]Run brew install xcodegen
+2026-06-15T06:13:49.9296390Z [36;1mbrew install xcodegen[0m
+2026-06-15T06:13:49.9342760Z shell: /bin/bash -e {0}
+2026-06-15T06:13:49.9343540Z ##[endgroup]
+2026-06-15T06:13:52.7971190Z ##[warning]The following taps are not trusted:
+  aws/tap
+  azure/bicep
+
+Homebrew will ignore formulae, casks and commands from these taps when `HOMEBREW_REQUIRE_TAP_TRUST` is set.
+This will become the default in Homebrew 6.0.0 or 5.2.0, whichever comes first.
+Enable trust checks now with:
+  export HOMEBREW_REQUIRE_TAP_TRUST=1
+Trust specific formulae, casks or commands with:
+  brew trust --formula <user>/<tap>/<formula>
+  brew trust --cask <user>/<tap>/<cask>
+  brew trust --command <user>/<tap>/<command>
+or trust installed formulae from these taps with:
+  brew trust --formula azure/bicep/bicep
+You can trust all formulae, casks and commands from these taps with:
+  brew trust aws/tap azure/bicep
+Prefer trusting only the specific formulae, casks or commands you need.
+Untap them with:
+  brew untap aws/tap azure/bicep
+To keep allowing them by default during the transition:
+  export HOMEBREW_NO_REQUIRE_TAP_TRUST=1
+This is not recommended and will be removed in a later release.
+
+2026-06-15T06:13:53.3210680Z Inspect the formula dependency plan before installing with `brew install --ask`.
+2026-06-15T06:13:53.3211370Z Enable ask mode by setting `HOMEBREW_ASK=1`.
+2026-06-15T06:13:53.3211760Z Hide these hints with `HOMEBREW_NO_ENV_HINTS=1` (see `man brew`).
+2026-06-15T06:13:53.3212730Z [32m==>[0m [1mFetching downloads for: [32mxcodegen[39m[0m
+2026-06-15T06:13:53.6467540Z ✔︎ Bottle Manifest xcodegen (2.45.4)
+2026-06-15T06:13:54.2261700Z ✔︎ Bottle xcodegen (2.45.4)
+2026-06-15T06:13:54.4277040Z [34m==>[0m [1mPouring xcodegen--2.45.4.arm64_tahoe.bottle.tar.gz[0m
+2026-06-15T06:13:54.5290360Z 🍺  /opt/homebrew/Cellar/xcodegen/2.45.4: 38 files, 7.4MB

@@ -1,0 +1,11 @@
+﻿2026-06-15T06:14:10.2972760Z ##[group]Run mkdir -p Payload
+2026-06-15T06:14:10.2973010Z [36;1mmkdir -p Payload[0m
+2026-06-15T06:14:10.2973310Z [36;1mcp -R "build/Build/Products/Release-iphoneos/PostShot.app" "Payload/"[0m
+2026-06-15T06:14:10.2973630Z [36;1mzip -r PostShot.ipa Payload[0m
+2026-06-15T06:14:10.3142350Z shell: /bin/bash -e {0}
+2026-06-15T06:14:10.3142580Z ##[endgroup]
+2026-06-15T06:14:10.3623960Z   adding: Payload/ (stored 0%)
+2026-06-15T06:14:10.3691550Z   adding: Payload/PostShot.app/ (stored 0%)
+2026-06-15T06:14:10.3824020Z   adding: Payload/PostShot.app/PostShot (deflated 78%)
+2026-06-15T06:14:10.3824730Z   adding: Payload/PostShot.app/Info.plist (deflated 28%)
+2026-06-15T06:14:10.3825840Z   adding: Payload/PostShot.app/PkgInfo (stored 0%)

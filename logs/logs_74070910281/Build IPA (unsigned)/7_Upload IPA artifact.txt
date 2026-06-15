@@ -1,0 +1,20 @@
+﻿2026-06-15T06:14:10.3914290Z ##[group]Run actions/upload-artifact@v4
+2026-06-15T06:14:10.3914610Z with:
+2026-06-15T06:14:10.3914770Z   name: PostShot-ipa
+2026-06-15T06:14:10.3914940Z   path: PostShot.ipa
+2026-06-15T06:14:10.3915120Z   if-no-files-found: warn
+2026-06-15T06:14:10.3915350Z   compression-level: 6
+2026-06-15T06:14:10.3915540Z   overwrite: false
+2026-06-15T06:14:10.3915710Z   include-hidden-files: false
+2026-06-15T06:14:10.3915910Z ##[endgroup]
+2026-06-15T06:14:10.7517650Z With the provided path, there will be 1 file uploaded
+2026-06-15T06:14:10.7519680Z Artifact name is valid!
+2026-06-15T06:14:10.7520480Z Root directory input is valid!
+2026-06-15T06:14:11.1546150Z Beginning upload of artifact content to blob storage
+2026-06-15T06:14:11.6782770Z Uploaded bytes 171715
+2026-06-15T06:14:11.7635730Z Finished uploading artifact content to blob storage!
+2026-06-15T06:14:11.7637540Z SHA256 digest of uploaded artifact zip is 85c61be51900d3203e260a30f9ca3a427ad906071f7695eae086ebcb7fc3b206
+2026-06-15T06:14:11.7638620Z Finalizing artifact upload
+2026-06-15T06:14:12.0075290Z Artifact PostShot-ipa.zip successfully finalized. Artifact ID 7630343855
+2026-06-15T06:14:12.0076720Z Artifact PostShot-ipa has been successfully uploaded! Final size is 171715 bytes. Artifact ID is 7630343855
+2026-06-15T06:14:12.0094070Z Artifact download URL: https://github.com/postyizhan/PostShot/actions/runs/27527635777/artifacts/7630343855

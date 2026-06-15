@@ -73,8 +73,12 @@ enum OverlapDetector {
             return Result(overlap: 0, score: max(0, bestScore), isDuplicate: false)
         }
 
+        // Near-duplicate: an extremely high score whose overlap spans essentially the
+        // entire searchable range. We compare against `maxOverlap` (the search cap), not
+        // raw image height — the detector can never report more than `maxOverlap`, so a
+        // `height - 2` test would be unsatisfiable whenever maxOverlapFraction < 1.
         let isDuplicate = bestScore >= config.duplicateThreshold
-            && bestOverlap >= min(a.height, b.height) - 2
+            && bestOverlap >= maxOverlap - 2
         return Result(overlap: bestOverlap, score: bestScore, isDuplicate: isDuplicate)
     }
 
