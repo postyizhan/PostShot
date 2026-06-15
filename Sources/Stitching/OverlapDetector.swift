@@ -42,6 +42,17 @@ enum OverlapDetector {
 
     /// Detects overlap between two prepared `PixelBuffer`s.
     static func detect(top a: PixelBuffer, bottom b: PixelBuffer, config: Config = Config()) -> Result {
+        // Duplicate pre-check (SPEC §2.1 step 5). Two images are near-duplicates iff
+        // comparing them *in full* yields a near-perfect correlation. That signal lives at
+        // overlap == full height, which the capped search below deliberately excludes — so
+        // it must be tested separately, not inferred from a truncated search.
+        if a.height == b.height {
+            let fullScore = nccScore(aTail: a, bHead: b, overlap: a.height)
+            if fullScore >= config.duplicateThreshold {
+                return Result(overlap: a.height, score: fullScore, isDuplicate: true)
+            }
+        }
+
         let maxByA = Int(Float(a.height) * config.maxOverlapFraction)
         let maxByB = Int(Float(b.height) * config.maxOverlapFraction)
         let maxOverlap = min(maxByA, maxByB)
@@ -73,13 +84,8 @@ enum OverlapDetector {
             return Result(overlap: 0, score: max(0, bestScore), isDuplicate: false)
         }
 
-        // Near-duplicate: an extremely high score whose overlap spans essentially the
-        // entire searchable range. We compare against `maxOverlap` (the search cap), not
-        // raw image height — the detector can never report more than `maxOverlap`, so a
-        // `height - 2` test would be unsatisfiable whenever maxOverlapFraction < 1.
-        let isDuplicate = bestScore >= config.duplicateThreshold
-            && bestOverlap >= maxOverlap - 2
-        return Result(overlap: bestOverlap, score: bestScore, isDuplicate: isDuplicate)
+        // Duplicates are handled by the pre-check above; a capped-search hit is a normal overlap.
+        return Result(overlap: bestOverlap, score: bestScore, isDuplicate: false)
     }
 
     // MARK: - Stage 1: coarse 1D cross-correlation over row means

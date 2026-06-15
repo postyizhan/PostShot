@@ -1,0 +1,840 @@
+﻿2026-06-15T06:22:54.9150420Z Current runner version: '2.335.1'
+2026-06-15T06:22:54.9166960Z ##[group]Runner Image Provisioner
+2026-06-15T06:22:54.9167520Z Hosted Compute Agent
+2026-06-15T06:22:54.9167900Z Version: 20260527.539
+2026-06-15T06:22:54.9168320Z Commit: a891dd388383b896fa6ac04a82c0b75cec981078
+2026-06-15T06:22:54.9168800Z Build Date: 2026-05-27T21:39:57Z
+2026-06-15T06:22:54.9169260Z Worker ID: {5a3aa4f6-4cba-4230-9a0d-a688743ba923}
+2026-06-15T06:22:54.9169720Z Azure Region: westus
+2026-06-15T06:22:54.9170100Z ##[endgroup]
+2026-06-15T06:22:54.9170980Z ##[group]Operating System
+2026-06-15T06:22:54.9171390Z macOS
+2026-06-15T06:22:54.9171720Z 26.4
+2026-06-15T06:22:54.9172050Z 25E246
+2026-06-15T06:22:54.9172390Z ##[endgroup]
+2026-06-15T06:22:54.9172760Z ##[group]Runner Image
+2026-06-15T06:22:54.9173150Z Image: macos-26-arm64
+2026-06-15T06:22:54.9173540Z Version: 20260610.0145.2
+2026-06-15T06:22:54.9174440Z Included Software: https://github.com/actions/runner-images/blob/macos-26-arm64/20260610.0145/images/macos/macos-26-arm64-Readme.md
+2026-06-15T06:22:54.9175470Z Image Release: https://github.com/actions/runner-images/releases/tag/macos-26-arm64%2F20260610.0145
+2026-06-15T06:22:54.9176140Z ##[endgroup]
+2026-06-15T06:22:54.9176930Z ##[group]GITHUB_TOKEN Permissions
+2026-06-15T06:22:54.9178080Z Contents: read
+2026-06-15T06:22:54.9178450Z Metadata: read
+2026-06-15T06:22:54.9178840Z Packages: read
+2026-06-15T06:22:54.9179220Z ##[endgroup]
+2026-06-15T06:22:54.9180630Z Secret source: Actions
+2026-06-15T06:22:54.9181080Z Prepare workflow directory
+2026-06-15T06:22:54.9425900Z Prepare all required actions
+2026-06-15T06:22:54.9456810Z Getting action download info
+2026-06-15T06:22:55.0697310Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+2026-06-15T06:22:55.4602530Z Complete job name: Unit Tests
+2026-06-15T06:22:55.5131910Z ##[group]Run actions/checkout@v4
+2026-06-15T06:22:55.5132570Z with:
+2026-06-15T06:22:55.5132920Z   repository: postyizhan/PostShot
+2026-06-15T06:22:55.5136300Z   token: ***
+2026-06-15T06:22:55.5136630Z   ssh-strict: true
+2026-06-15T06:22:55.5136950Z   ssh-user: git
+2026-06-15T06:22:55.5137280Z   persist-credentials: true
+2026-06-15T06:22:55.5137640Z   clean: true
+2026-06-15T06:22:55.5137970Z   sparse-checkout-cone-mode: true
+2026-06-15T06:22:55.5138340Z   fetch-depth: 1
+2026-06-15T06:22:55.5138670Z   fetch-tags: false
+2026-06-15T06:22:55.5139000Z   show-progress: true
+2026-06-15T06:22:55.5139330Z   lfs: false
+2026-06-15T06:22:55.5139640Z   submodules: false
+2026-06-15T06:22:55.5139970Z   set-safe-directory: true
+2026-06-15T06:22:55.5140510Z ##[endgroup]
+2026-06-15T06:22:56.0479730Z Syncing repository: postyizhan/PostShot
+2026-06-15T06:22:56.0483170Z ##[group]Getting Git version info
+2026-06-15T06:22:56.0486000Z Working directory is '/Users/runner/work/PostShot/PostShot'
+2026-06-15T06:22:56.0487620Z [command]/opt/homebrew/bin/git version
+2026-06-15T06:22:56.1163270Z git version 2.54.0
+2026-06-15T06:22:56.1188760Z ##[endgroup]
+2026-06-15T06:22:56.1202060Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/c2024700-41a9-4c7f-b92f-d799ebdcd288/.gitconfig'
+2026-06-15T06:22:56.1210980Z Temporarily overriding HOME='/Users/runner/work/_temp/c2024700-41a9-4c7f-b92f-d799ebdcd288' before making global git config changes
+2026-06-15T06:22:56.1215170Z Adding repository directory to the temporary git global config as a safe directory
+2026-06-15T06:22:56.1216860Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/PostShot/PostShot
+2026-06-15T06:22:56.1334170Z Deleting the contents of '/Users/runner/work/PostShot/PostShot'
+2026-06-15T06:22:56.1336070Z ##[group]Initializing the repository
+2026-06-15T06:22:56.1340080Z [command]/opt/homebrew/bin/git init /Users/runner/work/PostShot/PostShot
+2026-06-15T06:22:56.1648090Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-06-15T06:22:56.1649610Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-06-15T06:22:56.1650840Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-06-15T06:22:56.1652140Z hint: call:
+2026-06-15T06:22:56.1652660Z hint:
+2026-06-15T06:22:56.1653130Z hint: 	git config --global init.defaultBranch <name>
+2026-06-15T06:22:56.1653760Z hint:
+2026-06-15T06:22:56.1654440Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-06-15T06:22:56.1655460Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-06-15T06:22:56.1656130Z hint:
+2026-06-15T06:22:56.1656520Z hint: 	git branch -m <name>
+2026-06-15T06:22:56.1656980Z hint:
+2026-06-15T06:22:56.1657540Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-06-15T06:22:56.1658400Z Initialized empty Git repository in /Users/runner/work/PostShot/PostShot/.git/
+2026-06-15T06:22:56.1668390Z [command]/opt/homebrew/bin/git remote add origin https://github.com/postyizhan/PostShot
+2026-06-15T06:22:56.1840340Z ##[endgroup]
+2026-06-15T06:22:56.1841280Z ##[group]Disabling automatic garbage collection
+2026-06-15T06:22:56.1842300Z [command]/opt/homebrew/bin/git config --local gc.auto 0
+2026-06-15T06:22:56.1890540Z ##[endgroup]
+2026-06-15T06:22:56.1891380Z ##[group]Setting up auth
+2026-06-15T06:22:56.1894910Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-06-15T06:22:56.1994170Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-06-15T06:22:56.3458140Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-06-15T06:22:56.3570750Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-06-15T06:22:56.4791070Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-06-15T06:22:56.4818620Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-06-15T06:22:56.5625490Z [command]/opt/homebrew/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-06-15T06:22:56.5704360Z ##[endgroup]
+2026-06-15T06:22:56.5705560Z ##[group]Fetching the repository
+2026-06-15T06:22:56.5710550Z [command]/opt/homebrew/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +d08b559ed2656c82dc4c1f7da673357f07535bdb:refs/remotes/origin/main
+2026-06-15T06:22:57.4349880Z From https://github.com/postyizhan/PostShot
+2026-06-15T06:22:57.4350930Z  * [new ref]         d08b559ed2656c82dc4c1f7da673357f07535bdb -> origin/main
+2026-06-15T06:22:57.4446680Z ##[endgroup]
+2026-06-15T06:22:57.4447400Z ##[group]Determining the checkout info
+2026-06-15T06:22:57.4448140Z ##[endgroup]
+2026-06-15T06:22:57.4451830Z [command]/opt/homebrew/bin/git sparse-checkout disable
+2026-06-15T06:22:57.4537320Z [command]/opt/homebrew/bin/git config --local --unset-all extensions.worktreeConfig
+2026-06-15T06:22:57.4610930Z ##[group]Checking out the ref
+2026-06-15T06:22:57.4613670Z [command]/opt/homebrew/bin/git checkout --progress --force -B main refs/remotes/origin/main
+2026-06-15T06:22:57.4885210Z Switched to a new branch 'main'
+2026-06-15T06:22:57.4988330Z branch 'main' set up to track 'origin/main'.
+2026-06-15T06:22:57.5106180Z ##[endgroup]
+2026-06-15T06:22:57.5109230Z [command]/opt/homebrew/bin/git log -1 --format=%H
+2026-06-15T06:22:57.5110810Z d08b559ed2656c82dc4c1f7da673357f07535bdb
+2026-06-15T06:22:57.5334350Z ##[group]Run brew install xcodegen
+2026-06-15T06:22:57.5335340Z [36;1mbrew install xcodegen[0m
+2026-06-15T06:22:57.5381660Z shell: /bin/bash -e {0}
+2026-06-15T06:22:57.5382400Z ##[endgroup]
+2026-06-15T06:23:00.8755750Z ##[warning]The following taps are not trusted:
+  aws/tap
+  azure/bicep
+
+Homebrew will ignore formulae, casks and commands from these taps when `HOMEBREW_REQUIRE_TAP_TRUST` is set.
+This will become the default in Homebrew 6.0.0 or 5.2.0, whichever comes first.
+Enable trust checks now with:
+  export HOMEBREW_REQUIRE_TAP_TRUST=1
+Trust specific formulae, casks or commands with:
+  brew trust --formula <user>/<tap>/<formula>
+  brew trust --cask <user>/<tap>/<cask>
+  brew trust --command <user>/<tap>/<command>
+or trust installed formulae from these taps with:
+  brew trust --formula azure/bicep/bicep
+You can trust all formulae, casks and commands from these taps with:
+  brew trust aws/tap azure/bicep
+Prefer trusting only the specific formulae, casks or commands you need.
+Untap them with:
+  brew untap aws/tap azure/bicep
+To keep allowing them by default during the transition:
+  export HOMEBREW_NO_REQUIRE_TAP_TRUST=1
+This is not recommended and will be removed in a later release.
+
+2026-06-15T06:23:01.3791490Z Inspect the formula dependency plan before installing with `brew install --ask`.
+2026-06-15T06:23:01.3792160Z Enable ask mode by setting `HOMEBREW_ASK=1`.
+2026-06-15T06:23:01.3792740Z Hide these hints with `HOMEBREW_NO_ENV_HINTS=1` (see `man brew`).
+2026-06-15T06:23:01.3794370Z [32m==>[0m [1mFetching downloads for: [32mxcodegen[39m[0m
+2026-06-15T06:23:01.9212740Z ✔︎ Bottle Manifest xcodegen (2.45.4)
+2026-06-15T06:23:03.3038640Z ✔︎ Bottle xcodegen (2.45.4)
+2026-06-15T06:23:03.4300340Z [34m==>[0m [1mPouring xcodegen--2.45.4.arm64_tahoe.bottle.tar.gz[0m
+2026-06-15T06:23:03.5434570Z 🍺  /opt/homebrew/Cellar/xcodegen/2.45.4: 38 files, 7.4MB
+2026-06-15T06:23:03.5773230Z ##[group]Run xcodegen generate
+2026-06-15T06:23:03.5773530Z [36;1mxcodegen generate[0m
+2026-06-15T06:23:03.5806010Z shell: /bin/bash -e {0}
+2026-06-15T06:23:03.5806250Z ##[endgroup]
+2026-06-15T06:23:03.6198480Z ⚙️  Generating plists...
+2026-06-15T06:23:03.6198860Z ⚙️  Generating project...
+2026-06-15T06:23:03.6280820Z ⚙️  Writing project...
+2026-06-15T06:23:03.6386710Z Created project at /Users/runner/work/PostShot/PostShot/PostShot.xcodeproj
+2026-06-15T06:23:03.6428120Z ##[group]Run DEVICE=$(xcrun simctl list devices available | grep -oE 'iPhone 1[0-9][^(]*' | head -1 | xargs)
+2026-06-15T06:23:03.6428770Z [36;1mDEVICE=$(xcrun simctl list devices available | grep -oE 'iPhone 1[0-9][^(]*' | head -1 | xargs)[0m
+2026-06-15T06:23:03.6429180Z [36;1mecho "使用模拟器: ${DEVICE:-iPhone 17}"[0m
+2026-06-15T06:23:03.6429420Z [36;1mxcodebuild test \[0m
+2026-06-15T06:23:03.6429630Z [36;1m  -project PostShot.xcodeproj \[0m
+2026-06-15T06:23:03.6429880Z [36;1m  -scheme PostShot \[0m
+2026-06-15T06:23:03.6430180Z [36;1m  -destination "platform=iOS Simulator,name=${DEVICE:-iPhone 17}"[0m
+2026-06-15T06:23:03.6466180Z shell: /bin/bash -e {0}
+2026-06-15T06:23:03.6466440Z ##[endgroup]
+2026-06-15T06:23:15.6079920Z 使用模拟器: iPhone 17 Pro
+2026-06-15T06:23:16.4815700Z Command line invocation:
+2026-06-15T06:23:16.4854680Z     /Applications/Xcode_26.5.app/Contents/Developer/usr/bin/xcodebuild test -project PostShot.xcodeproj -scheme PostShot -destination "platform=iOS Simulator,name=iPhone 17 Pro"
+2026-06-15T06:23:16.4867140Z 
+2026-06-15T06:23:18.5317780Z 2026-06-15 06:23:18.531 xcodebuild[84861:195168] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-06-15T06:23:18.5598770Z --- xcodebuild: WARNING: Using the first of multiple matching destinations:
+2026-06-15T06:23:18.5600360Z { platform:iOS Simulator, arch:arm64, id:82F67470-3213-4374-9594-606A36135AE1, OS:26.5, name:iPhone 17 Pro }
+2026-06-15T06:23:18.5602610Z { platform:iOS Simulator, arch:x86_64, id:82F67470-3213-4374-9594-606A36135AE1, OS:26.5, name:iPhone 17 Pro }
+2026-06-15T06:23:21.3124510Z ComputePackagePrebuildTargetDependencyGraph
+2026-06-15T06:23:21.3859320Z 
+2026-06-15T06:23:21.3880810Z Prepare packages
+2026-06-15T06:23:21.3886870Z 
+2026-06-15T06:23:21.3919780Z CreateBuildRequest
+2026-06-15T06:23:21.3924020Z 
+2026-06-15T06:23:21.3949880Z SendProjectDescription
+2026-06-15T06:23:21.4059950Z 
+2026-06-15T06:23:21.4110370Z CreateBuildOperation
+2026-06-15T06:23:21.4115500Z 
+2026-06-15T06:23:21.4186940Z ComputeTargetDependencyGraph
+2026-06-15T06:23:21.4290400Z note: Building targets in dependency order
+2026-06-15T06:23:21.4303260Z note: Target dependency graph (2 targets)
+2026-06-15T06:23:21.4336270Z     Target 'PostShotTests' in project 'PostShot'
+2026-06-15T06:23:21.4340500Z         ➜ Explicit dependency on target 'PostShot' in project 'PostShot'
+2026-06-15T06:23:21.4342190Z     Target 'PostShot' in project 'PostShot' (no dependencies)
+2026-06-15T06:23:21.4394590Z 
+2026-06-15T06:23:21.4404540Z GatherProvisioningInputs
+2026-06-15T06:23:21.4437290Z 
+2026-06-15T06:23:21.4441970Z CreateBuildDescription
+2026-06-15T06:23:21.4654950Z 
+2026-06-15T06:23:21.4661280Z ExecuteExternalTool /Applications/Xcode_26.5.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+2026-06-15T06:23:22.2759030Z 
+2026-06-15T06:23:22.2760970Z ExecuteExternalTool /Applications/Xcode_26.5.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -x c -c /dev/null
+2026-06-15T06:23:22.2762280Z 
+2026-06-15T06:23:22.2829900Z ExecuteExternalTool /Applications/Xcode_26.5.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+2026-06-15T06:23:22.3281430Z 
+2026-06-15T06:23:22.3518450Z Build description signature: 4588acf7739b1328f2357861fba0dd03
+2026-06-15T06:23:22.3522270Z Build description path: /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/XCBuildData/4588acf7739b1328f2357861fba0dd03.xcbuilddata
+2026-06-15T06:23:22.3964550Z CreateBuildDirectory /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products
+2026-06-15T06:23:22.3977690Z     cd /Users/runner/work/PostShot/PostShot/PostShot.xcodeproj
+2026-06-15T06:23:22.3989870Z     builtin-create-build-directory /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products
+2026-06-15T06:23:22.3990450Z 
+2026-06-15T06:23:22.3991780Z ClangStatCache /Applications/Xcode_26.5.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk /Users/runner/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448ffb7d586738ff35573a713a18216ade27.sdkstatcache
+2026-06-15T06:23:22.3993290Z     cd /Users/runner/work/PostShot/PostShot/PostShot.xcodeproj
+2026-06-15T06:23:22.3994700Z     /Applications/Xcode_26.5.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -o /Users/runner/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448ffb7d586738ff35573a713a18216ade27.sdkstatcache
+2026-06-15T06:23:23.9605410Z 
+2026-06-15T06:23:23.9606430Z CreateBuildDirectory /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex
+2026-06-15T06:23:23.9607360Z     cd /Users/runner/work/PostShot/PostShot/PostShot.xcodeproj
+2026-06-15T06:23:23.9608350Z     builtin-create-build-directory /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex
+2026-06-15T06:23:23.9609120Z 
+2026-06-15T06:23:23.9609670Z CreateBuildDirectory /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator
+2026-06-15T06:23:23.9610550Z     cd /Users/runner/work/PostShot/PostShot/PostShot.xcodeproj
+2026-06-15T06:23:23.9611210Z     builtin-create-build-directory /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator
+2026-06-15T06:23:23.9612200Z 
+2026-06-15T06:23:23.9612990Z WriteAuxiliaryFile /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot-bda627e6392d847f23b9fc05da78a97e-VFS-iphonesimulator/all-product-headers.yaml
+2026-06-15T06:23:23.9614070Z     cd /Users/runner/work/PostShot/PostShot/PostShot.xcodeproj
+2026-06-15T06:23:23.9615210Z     write-file /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot-bda627e6392d847f23b9fc05da78a97e-VFS-iphonesimulator/all-product-headers.yaml
+2026-06-15T06:23:23.9616100Z 
+2026-06-15T06:23:23.9616570Z CreateBuildDirectory /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules
+2026-06-15T06:23:23.9617320Z     cd /Users/runner/work/PostShot/PostShot/PostShot.xcodeproj
+2026-06-15T06:23:23.9618150Z     builtin-create-build-directory /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules
+2026-06-15T06:23:23.9618730Z 
+2026-06-15T06:23:23.9619260Z CreateBuildDirectory /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/ExplicitPrecompiledModules
+2026-06-15T06:23:23.9620020Z     cd /Users/runner/work/PostShot/PostShot/PostShot.xcodeproj
+2026-06-15T06:23:23.9620720Z     builtin-create-build-directory /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/ExplicitPrecompiledModules
+2026-06-15T06:23:23.9621270Z 
+2026-06-15T06:23:23.9621870Z CreateBuildDirectory /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator
+2026-06-15T06:23:23.9622770Z     cd /Users/runner/work/PostShot/PostShot/PostShot.xcodeproj
+2026-06-15T06:23:23.9624060Z     builtin-create-build-directory /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator
+2026-06-15T06:23:23.9624700Z 
+2026-06-15T06:23:23.9630000Z WriteAuxiliaryFile /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/PostShotTests.hmap (in target 'PostShotTests' from project 'PostShot')
+2026-06-15T06:23:23.9631320Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9632140Z     write-file /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/PostShotTests.hmap
+2026-06-15T06:23:23.9632800Z 
+2026-06-15T06:23:23.9633620Z WriteAuxiliaryFile /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/empty-PostShotTests.plist (in target 'PostShotTests' from project 'PostShot')
+2026-06-15T06:23:23.9634800Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9635660Z     write-file /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/empty-PostShotTests.plist
+2026-06-15T06:23:23.9636430Z 
+2026-06-15T06:23:23.9637320Z WriteAuxiliaryFile /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/PostShotTests.DependencyStaticMetadataFileList (in target 'PostShotTests' from project 'PostShot')
+2026-06-15T06:23:23.9638470Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9639320Z     write-file /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/PostShotTests.DependencyStaticMetadataFileList
+2026-06-15T06:23:23.9640490Z 
+2026-06-15T06:23:23.9641360Z WriteAuxiliaryFile /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/PostShotTests.DependencyMetadataFileList (in target 'PostShotTests' from project 'PostShot')
+2026-06-15T06:23:23.9642460Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9643310Z     write-file /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/PostShotTests.DependencyMetadataFileList
+2026-06-15T06:23:23.9644090Z 
+2026-06-15T06:23:23.9644990Z WriteAuxiliaryFile /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/PostShotTests-project-headers.hmap (in target 'PostShotTests' from project 'PostShot')
+2026-06-15T06:23:23.9645970Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9646800Z     write-file /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/PostShotTests-project-headers.hmap
+2026-06-15T06:23:23.9647490Z 
+2026-06-15T06:23:23.9648290Z WriteAuxiliaryFile /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/PostShotTests-own-target-headers.hmap (in target 'PostShotTests' from project 'PostShot')
+2026-06-15T06:23:23.9649260Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9650290Z     write-file /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/PostShotTests-own-target-headers.hmap
+2026-06-15T06:23:23.9651130Z 
+2026-06-15T06:23:23.9651910Z WriteAuxiliaryFile /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/PostShotTests-generated-files.hmap (in target 'PostShotTests' from project 'PostShot')
+2026-06-15T06:23:23.9652840Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9653660Z     write-file /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/PostShotTests-generated-files.hmap
+2026-06-15T06:23:23.9654340Z 
+2026-06-15T06:23:23.9655200Z WriteAuxiliaryFile /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/PostShotTests-all-target-headers.hmap (in target 'PostShotTests' from project 'PostShot')
+2026-06-15T06:23:23.9656290Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9657090Z     write-file /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/PostShotTests-all-target-headers.hmap
+2026-06-15T06:23:23.9657870Z 
+2026-06-15T06:23:23.9658760Z WriteAuxiliaryFile /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/PostShotTests-all-non-framework-target-headers.hmap (in target 'PostShotTests' from project 'PostShot')
+2026-06-15T06:23:23.9659870Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9660750Z     write-file /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/PostShotTests-all-non-framework-target-headers.hmap
+2026-06-15T06:23:23.9661790Z 
+2026-06-15T06:23:23.9662750Z WriteAuxiliaryFile /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests_const_extract_protocols.json (in target 'PostShotTests' from project 'PostShot')
+2026-06-15T06:23:23.9663850Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9664820Z     write-file /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests_const_extract_protocols.json
+2026-06-15T06:23:23.9665670Z 
+2026-06-15T06:23:23.9666560Z WriteAuxiliaryFile /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests.SwiftFileList (in target 'PostShotTests' from project 'PostShot')
+2026-06-15T06:23:23.9667590Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9668780Z     write-file /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests.SwiftFileList
+2026-06-15T06:23:23.9670450Z 
+2026-06-15T06:23:23.9671350Z WriteAuxiliaryFile /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests.SwiftConstValuesFileList (in target 'PostShotTests' from project 'PostShot')
+2026-06-15T06:23:23.9676040Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9678970Z     write-file /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests.SwiftConstValuesFileList
+2026-06-15T06:23:23.9693150Z 
+2026-06-15T06:23:23.9698470Z WriteAuxiliaryFile /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests.LinkFileList (in target 'PostShotTests' from project 'PostShot')
+2026-06-15T06:23:23.9700470Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9701560Z     write-file /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests.LinkFileList
+2026-06-15T06:23:23.9702480Z 
+2026-06-15T06:23:23.9703360Z WriteAuxiliaryFile /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests-OutputFileMap.json (in target 'PostShotTests' from project 'PostShot')
+2026-06-15T06:23:23.9704700Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9705690Z     write-file /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests-OutputFileMap.json
+2026-06-15T06:23:23.9706540Z 
+2026-06-15T06:23:23.9707610Z WriteAuxiliaryFile /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot.hmap (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:23.9714180Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9717480Z     write-file /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot.hmap
+2026-06-15T06:23:23.9718750Z 
+2026-06-15T06:23:23.9720250Z WriteAuxiliaryFile /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot.DependencyStaticMetadataFileList (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:23.9721410Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9723760Z     write-file /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot.DependencyStaticMetadataFileList
+2026-06-15T06:23:23.9725160Z 
+2026-06-15T06:23:23.9726540Z WriteAuxiliaryFile /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot.DependencyMetadataFileList (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:23.9727560Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9728780Z     write-file /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot.DependencyMetadataFileList
+2026-06-15T06:23:23.9729490Z 
+2026-06-15T06:23:23.9730220Z WriteAuxiliaryFile /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot-project-headers.hmap (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:23.9732010Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9740690Z     write-file /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot-project-headers.hmap
+2026-06-15T06:23:23.9741430Z 
+2026-06-15T06:23:23.9742210Z WriteAuxiliaryFile /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot-own-target-headers.hmap (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:23.9756000Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9757630Z     write-file /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot-own-target-headers.hmap
+2026-06-15T06:23:23.9759130Z 
+2026-06-15T06:23:23.9759910Z WriteAuxiliaryFile /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot-generated-files.hmap (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:23.9761170Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9763340Z     write-file /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot-generated-files.hmap
+2026-06-15T06:23:23.9764410Z 
+2026-06-15T06:23:23.9766820Z WriteAuxiliaryFile /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot-all-target-headers.hmap (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:23.9778490Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9779640Z     write-file /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot-all-target-headers.hmap
+2026-06-15T06:23:23.9781490Z 
+2026-06-15T06:23:23.9784070Z WriteAuxiliaryFile /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot-all-non-framework-target-headers.hmap (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:23.9785810Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9786830Z     write-file /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot-all-non-framework-target-headers.hmap
+2026-06-15T06:23:23.9787590Z 
+2026-06-15T06:23:23.9788600Z WriteAuxiliaryFile /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot-DebugDylibPath-normal-arm64.txt (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:23.9789670Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9790480Z     write-file /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot-DebugDylibPath-normal-arm64.txt
+2026-06-15T06:23:23.9791250Z 
+2026-06-15T06:23:23.9792200Z WriteAuxiliaryFile /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot-DebugDylibInstallName-normal-arm64.txt (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:23.9793300Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9794330Z     write-file /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot-DebugDylibInstallName-normal-arm64.txt
+2026-06-15T06:23:23.9795190Z 
+2026-06-15T06:23:23.9800200Z WriteAuxiliaryFile /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot_const_extract_protocols.json (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:23.9801390Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9802240Z     write-file /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot_const_extract_protocols.json
+2026-06-15T06:23:23.9803020Z 
+2026-06-15T06:23:23.9803850Z WriteAuxiliaryFile /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot.SwiftFileList (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:23.9804840Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9805750Z     write-file /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot.SwiftFileList
+2026-06-15T06:23:23.9806540Z 
+2026-06-15T06:23:23.9807400Z WriteAuxiliaryFile /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot.SwiftConstValuesFileList (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:23.9808480Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9809430Z     write-file /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot.SwiftConstValuesFileList
+2026-06-15T06:23:23.9810270Z 
+2026-06-15T06:23:23.9811080Z WriteAuxiliaryFile /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot.LinkFileList (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:23.9812430Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9813280Z     write-file /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot.LinkFileList
+2026-06-15T06:23:23.9814090Z 
+2026-06-15T06:23:23.9814920Z WriteAuxiliaryFile /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot-OutputFileMap.json (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:23.9816030Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9816940Z     write-file /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot-OutputFileMap.json
+2026-06-15T06:23:23.9817650Z 
+2026-06-15T06:23:23.9818310Z MkDir /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/PlugIns/PostShotTests.xctest (in target 'PostShotTests' from project 'PostShot')
+2026-06-15T06:23:23.9819430Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9820280Z     /bin/mkdir -p /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/PlugIns/PostShotTests.xctest
+2026-06-15T06:23:23.9820970Z 
+2026-06-15T06:23:23.9821590Z MkDir /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/PlugIns (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:23.9823070Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9823840Z     /bin/mkdir -p /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/PlugIns
+2026-06-15T06:23:23.9824410Z 
+2026-06-15T06:23:23.9825860Z MkDir /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/Frameworks (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:23.9826710Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9827500Z     /bin/mkdir -p /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/Frameworks
+2026-06-15T06:23:23.9828040Z 
+2026-06-15T06:23:23.9828570Z MkDir /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:23.9829360Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9829910Z     /bin/mkdir -p /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app
+2026-06-15T06:23:23.9830440Z 
+2026-06-15T06:23:23.9831080Z Ld /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/__preview.dylib normal (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:23.9831820Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9835300Z     /Applications/Xcode_26.5.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios16.0-simulator -dynamiclib -isysroot /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator -F/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator -install_name @rpath/PostShot.debug.dylib -Xlinker -dead_strip -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -debug_variant -Xlinker -dependency_info -Xlinker /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot_dependency_info.dat -o /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/__preview.dylib
+2026-06-15T06:23:23.9840710Z 
+2026-06-15T06:23:23.9842230Z ProcessInfoPlistFile /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/Info.plist /Users/runner/work/PostShot/PostShot/Sources/Info.plist (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:23.9843680Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9845770Z     builtin-infoPlistUtility /Users/runner/work/PostShot/PostShot/Sources/Info.plist -producttype com.apple.product-type.application -genpkginfo /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/PkgInfo -expandbuildsettings -format binary -platform iphonesimulator -o /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/Info.plist
+2026-06-15T06:23:23.9847390Z 
+2026-06-15T06:23:23.9848910Z Copy /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/Frameworks/libXCTestSwiftSupport.dylib /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libXCTestSwiftSupport.dylib (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:23.9850260Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9851810Z     builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libXCTestSwiftSupport.dylib /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/Frameworks
+2026-06-15T06:23:23.9853250Z 
+2026-06-15T06:23:23.9854360Z Copy /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/Frameworks/libXCTestBundleInject.dylib /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libXCTestBundleInject.dylib (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:23.9855560Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9857190Z     builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libXCTestBundleInject.dylib /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/Frameworks
+2026-06-15T06:23:23.9858760Z 
+2026-06-15T06:23:23.9859860Z Copy /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/Frameworks/XCUnit.framework /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCUnit.framework (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:23.9861090Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9862980Z     builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCUnit.framework /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/Frameworks
+2026-06-15T06:23:23.9864450Z 
+2026-06-15T06:23:23.9865540Z Copy /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/Frameworks/XCUIAutomation.framework /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks/XCUIAutomation.framework (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:23.9866850Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9868570Z     builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks/XCUIAutomation.framework /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/Frameworks
+2026-06-15T06:23:23.9870040Z 
+2026-06-15T06:23:23.9871140Z Copy /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/Frameworks/XCTestSupport.framework /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCTestSupport.framework (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:23.9872430Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9874560Z     builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCTestSupport.framework /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/Frameworks
+2026-06-15T06:23:23.9876090Z 
+2026-06-15T06:23:23.9877240Z Copy /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/Frameworks/XCTestCore.framework /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCTestCore.framework (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:23.9878460Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9879950Z     builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCTestCore.framework /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/Frameworks
+2026-06-15T06:23:23.9883520Z 
+2026-06-15T06:23:23.9884480Z Copy /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/Frameworks/XCTest.framework /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks/XCTest.framework (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:23.9885730Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9888910Z     builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks/XCTest.framework /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/Frameworks
+2026-06-15T06:23:23.9890790Z 
+2026-06-15T06:23:23.9892430Z Copy /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/Frameworks/XCTAutomationSupport.framework /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCTAutomationSupport.framework (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:23.9893810Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9895540Z     builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCTAutomationSupport.framework /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/Frameworks
+2026-06-15T06:23:23.9896970Z 
+2026-06-15T06:23:23.9898240Z Copy /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/Frameworks/Testing.framework /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks/Testing.framework (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:23.9899520Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9901290Z     builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks/Testing.framework /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/Frameworks
+2026-06-15T06:23:23.9902650Z 
+2026-06-15T06:23:23.9903210Z SwiftDriver PostShot normal arm64 com.apple.xcode.tools.swift.compiler (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:23.9903790Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:23.9920180Z     builtin-SwiftDriver -- /Applications/Xcode_26.5.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name PostShot -Onone @/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios16.0-simulator -g -module-cache-path /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -profile-coverage-mapping -profile-generate -enable-testing -index-store-path /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator -F /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448ffb7d586738ff35573a713a18216ade27.sdkstatcache -output-file-map /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot-generated-files.hmap -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot-own-target-headers.hmap -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot-project-headers.hmap -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/DerivedSources/arm64 -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot-Swift.h -working-directory /Users/runner/work/PostShot/PostShot -experimental-emit-module-separately -disable-cmo
+2026-06-15T06:23:26.0527160Z 
+2026-06-15T06:23:26.1230390Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/_Builtin_float-7NX3P6QMW4CX64V2BXNCQCV69.pcm
+2026-06-15T06:23:26.3290520Z 
+2026-06-15T06:23:26.3297850Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/ptrauth-7KU57L3EEGO1GKYKBMPTD3JOZ.pcm
+2026-06-15T06:23:26.3302980Z 
+2026-06-15T06:23:26.3303400Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/ptrcheck-4TZPC4LR1DB0EG95HCIRDRLJV.pcm
+2026-06-15T06:23:26.3303890Z 
+2026-06-15T06:23:26.3304370Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/_Builtin_stdarg-6TY6TH1XKFYEKGU7KAGZ70HNE.pcm
+2026-06-15T06:23:26.4360750Z 
+2026-06-15T06:23:26.4461620Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/_SwiftConcurrencyShims-D4SAS5N5HJCB6PL4TRE13CDG1.pcm
+2026-06-15T06:23:26.4564710Z 
+2026-06-15T06:23:26.4666020Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/_Builtin_stddef-7UYNSFMWO5HV8NF4HVQ5T5UCL.pcm
+2026-06-15T06:23:26.4767190Z 
+2026-06-15T06:23:26.4871300Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/_AvailabilityInternal-4FWZJI2C24NJS58S7V4C9SZCS.pcm
+2026-06-15T06:23:26.4972850Z 
+2026-06-15T06:23:26.5074710Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/_Builtin_stdbool-6LQ7IP3QJN177SESTDWWWLPRW.pcm
+2026-06-15T06:23:26.5382260Z 
+2026-06-15T06:23:26.5407890Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/DeveloperToolsSupport-EBHRVJMVCXTMVZB9TZQ8BLP4Y.pcm
+2026-06-15T06:23:26.5408830Z 
+2026-06-15T06:23:26.5421390Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/SwiftShims-1ARURVC47K6TPYLMLCX4423F.pcm
+2026-06-15T06:23:26.6306460Z 
+2026-06-15T06:23:26.6335040Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/_DarwinFoundation1-5NT0HVIVM11S4TI5TFREZNTK.pcm
+2026-06-15T06:23:26.6548070Z 
+2026-06-15T06:23:26.6555840Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/_Builtin_limits-84NWLK7V5C0FTZZA69SJN01R4.pcm
+2026-06-15T06:23:26.7368670Z 
+2026-06-15T06:23:26.7401420Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/_DarwinFoundation2-9D7NQNC5A1LORTR7458XHPSU0.pcm
+2026-06-15T06:23:26.7993930Z 
+2026-06-15T06:23:26.7998400Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/ExtensionFoundation-9WGMYKREEZVHZQNK39VS7XC3Y.pcm
+2026-06-15T06:23:26.7999160Z 
+2026-06-15T06:23:26.7999770Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/_Builtin_tgmath-EA01F1CJ0Z66GYTVJJPH6FB1J.pcm
+2026-06-15T06:23:26.8848980Z 
+2026-06-15T06:23:26.8961190Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/_Builtin_stdint-8D920RVMFTLWHAA0YY6HQW7IT.pcm
+2026-06-15T06:23:26.9148820Z 
+2026-06-15T06:23:26.9258370Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/sys_types-E1NL9MWMUGJDARORSSKYGYZHT.pcm
+2026-06-15T06:23:26.9359630Z 
+2026-06-15T06:23:26.9474740Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/_Builtin_stdatomic-4BWD3JS1UZ8ZJZSJ8C6YRK650.pcm
+2026-06-15T06:23:26.9573400Z 
+2026-06-15T06:23:26.9674700Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/_Builtin_intrinsics-7QEK8E1DWLO8R1YM495889Z0.pcm
+2026-06-15T06:23:27.1668740Z 
+2026-06-15T06:23:27.1772190Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/_DarwinFoundation3-6WU1WRX2V9KT9U5VZNZKL7BDN.pcm
+2026-06-15T06:23:27.1876660Z 
+2026-06-15T06:23:27.1983100Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/_Builtin_inttypes-BSWZIUTKOC5ZK5IWMPMNKVILI.pcm
+2026-06-15T06:23:27.2111870Z 
+2026-06-15T06:23:27.2217500Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Darwin-41M15PBH5LVNB3UJM5LGOFXD2.pcm
+2026-06-15T06:23:27.4167290Z 
+2026-06-15T06:23:27.4290110Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/simd-7QU5U8RDEK788BRXDNT8IGZOO.pcm
+2026-06-15T06:23:27.7055810Z 
+2026-06-15T06:23:27.7157330Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/MachO-B5EMX3M7PJ4K7VFRL10L4H04Y.pcm
+2026-06-15T06:23:27.7276110Z 
+2026-06-15T06:23:27.7402600Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/ObjectiveC-EMHFEJQLSNEM8G4IFSTT8PIZV.pcm
+2026-06-15T06:23:27.7523590Z 
+2026-06-15T06:23:27.7637080Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/os_object-EC6GQN138PVY1AJPB3CMI1LC1.pcm
+2026-06-15T06:23:27.7739430Z 
+2026-06-15T06:23:27.7878560Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/os_workgroup-3SO1AK9JI3JNOK1FJG2AHPDXU.pcm
+2026-06-15T06:23:27.8004130Z 
+2026-06-15T06:23:27.8114230Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Dispatch-6B5V3KMUI9JZA1Y28EHLS15A6.pcm
+2026-06-15T06:23:27.8215310Z 
+2026-06-15T06:23:27.8316610Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Spatial-DQYAOYKY7LEW3P680CEK4I1NT.pcm
+2026-06-15T06:23:28.0106240Z 
+2026-06-15T06:23:28.0231120Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/dnssd-ADKEQRN0NKU4QB4OM5WA73KT8.pcm
+2026-06-15T06:23:28.0377660Z 
+2026-06-15T06:23:28.0487640Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/CoreFoundation-1LK878XIVDKAC5BBLYNJ8HTQ7.pcm
+2026-06-15T06:23:28.0610170Z 
+2026-06-15T06:23:28.0720350Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/XPC-6MU149L16E3AQU5J1SWYHF2FZ.pcm
+2026-06-15T06:23:28.0852110Z 
+2026-06-15T06:23:28.0962870Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/os-5ANEPF3YL3VM3FB5N2UPJNXEH.pcm
+2026-06-15T06:23:28.1135990Z 
+2026-06-15T06:23:28.1274120Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/CoreAudioTypes-51RMI3QO7HQUAPXKMZB4EGC2O.pcm
+2026-06-15T06:23:28.1402780Z 
+2026-06-15T06:23:28.1560840Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/CoreGraphics-2TBXS3MDOBS2BVS9II9LHXMDU.pcm
+2026-06-15T06:23:28.1700170Z 
+2026-06-15T06:23:28.1809590Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Security-8UEGNCI5MT719W13F4HVSSV0K.pcm
+2026-06-15T06:23:28.2111410Z 
+2026-06-15T06:23:28.2212700Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/CFNetwork-DNDVFBX5C06JPSO2ILXBZUBBT.pcm
+2026-06-15T06:23:28.2312530Z 
+2026-06-15T06:23:28.2413580Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/CoreAudio-ERDL7R5N25GNNE29W8MIC8KSX.pcm
+2026-06-15T06:23:28.2513250Z 
+2026-06-15T06:23:28.2618300Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/CoreText-AGN7YY7KB584460WZW6C9M2PZ.pcm
+2026-06-15T06:23:28.4307420Z 
+2026-06-15T06:23:28.4374520Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/ImageIO-EMR0PHRBNV3P39URNBXVUYB1Y.pcm
+2026-06-15T06:23:28.4394440Z 
+2026-06-15T06:23:28.4395230Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Foundation-9LJ48RWWUM0R38ERVAKJDVQTD.pcm
+2026-06-15T06:23:28.7085880Z 
+2026-06-15T06:23:28.7107330Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/CoreData-9D569KQWMJY5WBKFZS2CO47XB.pcm
+2026-06-15T06:23:28.9253460Z 
+2026-06-15T06:23:28.9373460Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Accessibility-A8UWHRPDGLWY2IWKP4QTOLNVM.pcm
+2026-06-15T06:23:28.9480320Z 
+2026-06-15T06:23:28.9482420Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/CoreMIDI-E7HW5X7DMMRR4NBQBMKZZ7NV9.pcm
+2026-06-15T06:23:28.9587070Z 
+2026-06-15T06:23:28.9587700Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Network-74E2OWIXEG85FRMKR11BG50NL.pcm
+2026-06-15T06:23:28.9681730Z 
+2026-06-15T06:23:28.9783030Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/UniformTypeIdentifiers-15ZRMHVOFT1FCEHOY9Q7F07AG.pcm
+2026-06-15T06:23:28.9884130Z 
+2026-06-15T06:23:28.9985060Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/AudioToolbox-1PDC00HDFLFD7YN8F9VXE714B.pcm
+2026-06-15T06:23:29.2361550Z 
+2026-06-15T06:23:29.2463220Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/_LocationEssentials-CSPYYFQCZLBHREBU7YGYK2L1B.pcm
+2026-06-15T06:23:29.2567690Z 
+2026-06-15T06:23:29.2669120Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/CoreTransferable-94OI4VFVX2ILQ40UF6TFTISN6.pcm
+2026-06-15T06:23:29.2770240Z 
+2026-06-15T06:23:29.2872220Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/DataDetection-8CWKQX1TPBO7PO6EZXLE3ZG91.pcm
+2026-06-15T06:23:29.2980660Z 
+2026-06-15T06:23:29.3096720Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/OSLog-27BLLASFKM39RD67SJLZPSABM.pcm
+2026-06-15T06:23:29.3208540Z 
+2026-06-15T06:23:29.3355330Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/CoreLocation-25NE6L23DWTT6IGV68ABS86LM.pcm
+2026-06-15T06:23:29.3490800Z 
+2026-06-15T06:23:29.3592570Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/OpenGLES-54DWNC81FZFULJSNL6217CD9A.pcm
+2026-06-15T06:23:29.3720110Z 
+2026-06-15T06:23:29.3846650Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/AVRouting-BGPM1ZXM5UIZ9AI7VQ4UQFOAN.pcm
+2026-06-15T06:23:29.3971470Z 
+2026-06-15T06:23:29.4166460Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/IOSurface-9CCIXKUSXPYCCG24BXTIXNJ3R.pcm
+2026-06-15T06:23:29.4308480Z 
+2026-06-15T06:23:29.4351120Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/UserNotifications-75ABD5FUKNRGZITHZP864H90H.pcm
+2026-06-15T06:23:29.4459870Z 
+2026-06-15T06:23:29.4561710Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Metal-4MX3RU2F7CEOES2G7MKGP87E.pcm
+2026-06-15T06:23:29.5484930Z 
+2026-06-15T06:23:29.5486670Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/FileProvider-4G4ZQUHKXH0FSB2ARD30D1E84.pcm
+2026-06-15T06:23:29.5487290Z 
+2026-06-15T06:23:29.5487790Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Symbols-1KKV4SDYFLLWFGRB00KFS9GX6.pcm
+2026-06-15T06:23:29.5488400Z 
+2026-06-15T06:23:29.5488980Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/UIUtilities-BCAQQR4IWT7382M544AODHG2.pcm
+2026-06-15T06:23:29.5490090Z 
+2026-06-15T06:23:29.5491030Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/CoreVideo-DCYF0DIAXIQLZ1TP99TL2HT3J.pcm
+2026-06-15T06:23:29.6207700Z 
+2026-06-15T06:23:29.6219470Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/CoreImage-B8BGHCR6B8KKPL9BR4OX5N31R.pcm
+2026-06-15T06:23:29.8507060Z 
+2026-06-15T06:23:29.8639730Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Accelerate-2OMHDZ8X907CJVRMC0LU9GP1R.pcm
+2026-06-15T06:23:30.5926560Z 
+2026-06-15T06:23:30.6030100Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/CoreMedia-PDBX5QWXZ8MMO9UBM1S2JE4E.pcm
+2026-06-15T06:23:30.6132260Z 
+2026-06-15T06:23:30.6233200Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/QuartzCore-73LHTKY738KJKF8WZ770W0KNB.pcm
+2026-06-15T06:23:30.6333550Z 
+2026-06-15T06:23:30.6435000Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/MediaToolbox-52P72JN4MMNH6CQSQUJE9DJ2D.pcm
+2026-06-15T06:23:30.6534890Z 
+2026-06-15T06:23:30.6636040Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/AVFAudio-6ZMY6GKFF0OXAZ8GHZOPEG0HO.pcm
+2026-06-15T06:23:30.6745770Z 
+2026-06-15T06:23:30.6877080Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/SwiftUICore-6SOWVOIQDKPD5QJ6XXBYDBIMD.pcm
+2026-06-15T06:23:30.6978210Z 
+2026-06-15T06:23:30.7082510Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/UIKit-3RRX4L13MHR20ANB9B38Y7XPB.pcm
+2026-06-15T06:23:31.0127320Z 
+2026-06-15T06:23:31.0132770Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/AVFoundation-1RCL071PF2PFB8A80ADMJDQ8Z.pcm
+2026-06-15T06:23:31.0135100Z 
+2026-06-15T06:23:31.0138280Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Photos-A0MCE8Q09TXR8Q9D271YE9IDC.pcm
+2026-06-15T06:23:31.0142680Z 
+2026-06-15T06:23:31.0226140Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/SwiftUI-7S7WBYBR22W7BYPRB6QKZ4RAN.pcm
+2026-06-15T06:23:31.0743000Z 
+2026-06-15T06:23:31.0745310Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/PhotosUI-E891PXE1G1VBXEGZFG6DT8HNE.pcm
+2026-06-15T06:23:31.1115330Z 
+2026-06-15T06:23:31.1129170Z SwiftEmitModule normal arm64 Emitting\ module\ for\ PostShot (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:31.2152450Z 
+2026-06-15T06:23:31.2173860Z EmitSwiftModule normal arm64 (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:31.2174460Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:31.2174760Z     
+2026-06-15T06:23:31.9619760Z 
+2026-06-15T06:23:31.9663180Z SwiftCompile normal arm64 Compiling\ ContentView.swift,\ ImageCompositor.swift,\ ImageExporter.swift,\ OverlapDetector.swift,\ PhotoSaver.swift /Users/runner/work/PostShot/PostShot/Sources/Views/ContentView.swift /Users/runner/work/PostShot/PostShot/Sources/Stitching/ImageCompositor.swift /Users/runner/work/PostShot/PostShot/Sources/Utils/ImageExporter.swift /Users/runner/work/PostShot/PostShot/Sources/Stitching/OverlapDetector.swift /Users/runner/work/PostShot/PostShot/Sources/Utils/PhotoSaver.swift (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:31.9673130Z SwiftCompile normal arm64 /Users/runner/work/PostShot/PostShot/Sources/Views/ContentView.swift (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:31.9735300Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:31.9802320Z     
+2026-06-15T06:23:39.7798390Z 
+2026-06-15T06:23:39.7928860Z SwiftCompile normal arm64 /Users/runner/work/PostShot/PostShot/Sources/Stitching/ImageCompositor.swift (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:39.8055770Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:39.8172950Z     
+2026-06-15T06:23:39.8273770Z 
+2026-06-15T06:23:39.8375420Z SwiftCompile normal arm64 /Users/runner/work/PostShot/PostShot/Sources/Utils/ImageExporter.swift (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:39.8486420Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:39.8589930Z     
+2026-06-15T06:23:39.8705970Z 
+2026-06-15T06:23:39.8829010Z SwiftCompile normal arm64 /Users/runner/work/PostShot/PostShot/Sources/Stitching/OverlapDetector.swift (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:39.8962060Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:39.9069310Z     
+2026-06-15T06:23:39.9177010Z 
+2026-06-15T06:23:39.9301280Z SwiftCompile normal arm64 /Users/runner/work/PostShot/PostShot/Sources/Utils/PhotoSaver.swift (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:39.9412450Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:39.9516650Z     
+2026-06-15T06:23:39.9616990Z 
+2026-06-15T06:23:39.9728010Z SwiftCompile normal arm64 Compiling\ PixelBuffer.swift,\ PostShotApp.swift,\ PreviewView.swift,\ SelectedImage.swift,\ ShareSheet.swift /Users/runner/work/PostShot/PostShot/Sources/Stitching/PixelBuffer.swift /Users/runner/work/PostShot/PostShot/Sources/PostShotApp.swift /Users/runner/work/PostShot/PostShot/Sources/Views/PreviewView.swift /Users/runner/work/PostShot/PostShot/Sources/Views/SelectedImage.swift /Users/runner/work/PostShot/PostShot/Sources/Views/ShareSheet.swift (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:39.9834990Z 
+2026-06-15T06:23:39.9937360Z SwiftCompile normal arm64 /Users/runner/work/PostShot/PostShot/Sources/Stitching/PixelBuffer.swift (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:40.0047420Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:40.0139910Z     
+2026-06-15T06:23:40.0240670Z 
+2026-06-15T06:23:40.0341880Z SwiftCompile normal arm64 /Users/runner/work/PostShot/PostShot/Sources/PostShotApp.swift (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:40.0443530Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:40.0544090Z     
+2026-06-15T06:23:40.0667000Z 
+2026-06-15T06:23:40.0768200Z SwiftCompile normal arm64 /Users/runner/work/PostShot/PostShot/Sources/Views/PreviewView.swift (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:40.0770460Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:40.0871860Z     
+2026-06-15T06:23:40.0972440Z 
+2026-06-15T06:23:40.1073610Z SwiftCompile normal arm64 /Users/runner/work/PostShot/PostShot/Sources/Views/SelectedImage.swift (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:40.1170900Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:40.1274670Z     
+2026-06-15T06:23:40.1386710Z 
+2026-06-15T06:23:40.1487820Z SwiftCompile normal arm64 /Users/runner/work/PostShot/PostShot/Sources/Views/ShareSheet.swift (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:40.1572360Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:40.1675580Z     
+2026-06-15T06:23:40.1776720Z 
+2026-06-15T06:23:40.1906730Z SwiftCompile normal arm64 Compiling\ StitchEngine.swift,\ StitchViewModel.swift,\ ThumbnailStrip.swift,\ ZoomableScrollView.swift /Users/runner/work/PostShot/PostShot/Sources/Stitching/StitchEngine.swift /Users/runner/work/PostShot/PostShot/Sources/Views/StitchViewModel.swift /Users/runner/work/PostShot/PostShot/Sources/Views/ThumbnailStrip.swift /Users/runner/work/PostShot/PostShot/Sources/Views/ZoomableScrollView.swift (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:40.2034390Z 
+2026-06-15T06:23:40.2135570Z SwiftCompile normal arm64 /Users/runner/work/PostShot/PostShot/Sources/Stitching/StitchEngine.swift (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:40.2279660Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:40.2385720Z     
+2026-06-15T06:23:40.2540860Z 
+2026-06-15T06:23:40.2656450Z SwiftCompile normal arm64 /Users/runner/work/PostShot/PostShot/Sources/Views/StitchViewModel.swift (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:40.2794210Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:40.2918230Z     
+2026-06-15T06:23:40.3031510Z 
+2026-06-15T06:23:40.3154720Z SwiftCompile normal arm64 /Users/runner/work/PostShot/PostShot/Sources/Views/ThumbnailStrip.swift (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:40.3295070Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:40.3396450Z     
+2026-06-15T06:23:40.3507480Z 
+2026-06-15T06:23:40.3623090Z SwiftCompile normal arm64 /Users/runner/work/PostShot/PostShot/Sources/Views/ZoomableScrollView.swift (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:40.3730150Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:40.3834310Z     
+2026-06-15T06:23:40.3944050Z 
+2026-06-15T06:23:40.4053440Z SwiftDriverJobDiscovery normal arm64 Emitting module for PostShot (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:40.4165330Z 
+2026-06-15T06:23:40.4270250Z SwiftDriver\ Compilation\ Requirements PostShot normal arm64 com.apple.xcode.tools.swift.compiler (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:40.4375470Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:40.4638480Z     builtin-Swift-Compilation-Requirements -- /Applications/Xcode_26.5.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name PostShot -Onone @/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios16.0-simulator -g -module-cache-path /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -profile-coverage-mapping -profile-generate -enable-testing -index-store-path /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator -F /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448ffb7d586738ff35573a713a18216ade27.sdkstatcache -output-file-map /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot-generated-files.hmap -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot-own-target-headers.hmap -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot-project-headers.hmap -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/DerivedSources/arm64 -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot-Swift.h -working-directory /Users/runner/work/PostShot/PostShot -experimental-emit-module-separately -disable-cmo
+2026-06-15T06:23:40.4722900Z 
+2026-06-15T06:23:40.4823920Z SwiftDriverJobDiscovery normal arm64 Compiling PixelBuffer.swift, PostShotApp.swift, PreviewView.swift, SelectedImage.swift, ShareSheet.swift (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:40.4925100Z 
+2026-06-15T06:23:40.5029670Z SwiftMergeGeneratedHeaders /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/DerivedSources/PostShot-Swift.h /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot-Swift.h (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:40.5126300Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:40.5234670Z     builtin-swiftHeaderTool -arch arm64 /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot-Swift.h -o /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/DerivedSources/PostShot-Swift.h
+2026-06-15T06:23:40.5333990Z 
+2026-06-15T06:23:40.5436570Z Copy /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot.swiftmodule (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:40.5538250Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:40.5646450Z     builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot.swiftmodule /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.swiftmodule/arm64-apple-ios-simulator.swiftmodule
+2026-06-15T06:23:40.5740770Z 
+2026-06-15T06:23:40.5847290Z Copy /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.swiftmodule/arm64-apple-ios-simulator.swiftdoc /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot.swiftdoc (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:40.5951490Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:40.6054860Z     builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot.swiftdoc /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.swiftmodule/arm64-apple-ios-simulator.swiftdoc
+2026-06-15T06:23:40.6161110Z 
+2026-06-15T06:23:40.6263620Z Copy /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.swiftmodule/arm64-apple-ios-simulator.abi.json /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot.abi.json (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:40.6346140Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:40.6474410Z     builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot.abi.json /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.swiftmodule/arm64-apple-ios-simulator.abi.json
+2026-06-15T06:23:40.6587370Z 
+2026-06-15T06:23:40.6721090Z Copy /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot.swiftsourceinfo (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:40.6831320Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:40.6961280Z     builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot.swiftsourceinfo /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo
+2026-06-15T06:23:40.7071920Z 
+2026-06-15T06:23:40.7206490Z SwiftDriver PostShotTests normal arm64 com.apple.xcode.tools.swift.compiler (in target 'PostShotTests' from project 'PostShot')
+2026-06-15T06:23:40.7307230Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:40.7519090Z     builtin-SwiftDriver -- /Applications/Xcode_26.5.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name PostShotTests -Onone @/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests.SwiftFileList -DDEBUG -plugin-path /Applications/Xcode_26.5.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios16.0-simulator -g -module-cache-path /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -profile-coverage-mapping -profile-generate -enable-testing -index-store-path /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator -F /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -parse-as-library -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448ffb7d586738ff35573a713a18216ade27.sdkstatcache -output-file-map /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/PostShotTests-generated-files.hmap -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/PostShotTests-own-target-headers.hmap -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/PostShotTests-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/PostShotTests-project-headers.hmap -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/DerivedSources/arm64 -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests-Swift.h -working-directory /Users/runner/work/PostShot/PostShot -experimental-emit-module-separately -disable-cmo
+2026-06-15T06:23:40.7537850Z 
+2026-06-15T06:23:40.7639300Z SwiftDriverJobDiscovery normal arm64 Compiling StitchEngine.swift, StitchViewModel.swift, ThumbnailStrip.swift, ZoomableScrollView.swift (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:40.7746990Z 
+2026-06-15T06:23:40.7857400Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules/XCUIAutomation-AUXMFUTFG7ZZ03M3EFSXCPF4G.pcm
+2026-06-15T06:23:40.7958740Z 
+2026-06-15T06:23:40.8027250Z SwiftDriverJobDiscovery normal arm64 Compiling ContentView.swift, ImageCompositor.swift, ImageExporter.swift, OverlapDetector.swift, PhotoSaver.swift (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:40.8028110Z 
+2026-06-15T06:23:40.8028680Z SwiftDriver\ Compilation PostShot normal arm64 com.apple.xcode.tools.swift.compiler (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:40.8029410Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:40.8045850Z     builtin-Swift-Compilation -- /Applications/Xcode_26.5.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name PostShot -Onone @/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios16.0-simulator -g -module-cache-path /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -profile-coverage-mapping -profile-generate -enable-testing -index-store-path /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator -F /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448ffb7d586738ff35573a713a18216ade27.sdkstatcache -output-file-map /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot-generated-files.hmap -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot-own-target-headers.hmap -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot-project-headers.hmap -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/DerivedSources/arm64 -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot-Swift.h -working-directory /Users/runner/work/PostShot/PostShot -experimental-emit-module-separately -disable-cmo
+2026-06-15T06:23:40.8062400Z 
+2026-06-15T06:23:40.8063220Z Ld /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/PostShot.debug.dylib normal (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:40.8064220Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:40.8083240Z     /Applications/Xcode_26.5.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios16.0-simulator -dynamiclib -isysroot /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -L/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator -F/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -F/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator -filelist /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot.LinkFileList -install_name @rpath/PostShot.debug.dylib -Xlinker -rpath -Xlinker /usr/lib/swift -Xlinker -rpath -Xlinker @executable_path/Frameworks -Xlinker -dead_strip -Xlinker -object_path_lto -Xlinker /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -debug_variant -Xlinker -dependency_info -Xlinker /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot_dependency_info.dat -fobjc-link-runtime -fprofile-instr-generate -L/Applications/Xcode_26.5.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot.swiftmodule @/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot-linker-args.resp -Xlinker -alias -Xlinker _main -Xlinker ___debug_main_executable_dylib_entry_point -o /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/PostShot.debug.dylib
+2026-06-15T06:23:40.8092570Z 
+2026-06-15T06:23:40.8093460Z SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules/XCTest-DS3JANQRY6FBD4DETJTPW34BD.pcm
+2026-06-15T06:23:40.8094490Z 
+2026-06-15T06:23:40.8095370Z SwiftExplicitDependencyCompileModuleFromInterface arm64 /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules/XCUIAutomation-1KOZI28CR97SF.swiftmodule
+2026-06-15T06:23:40.8096440Z 
+2026-06-15T06:23:40.8097530Z SwiftExplicitDependencyCompileModuleFromInterface arm64 /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules/XCTest-IC25LERLC2LO.swiftmodule
+2026-06-15T06:23:40.8098520Z 
+2026-06-15T06:23:40.8099660Z ConstructStubExecutorLinkFileList /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot-ExecutorLinkFileList-normal-arm64.txt (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:40.8101420Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:40.8103870Z     construct-stub-executor-link-file-list /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/PostShot.debug.dylib /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor_no_swift_entry_point.a /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor.a --output /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot-ExecutorLinkFileList-normal-arm64.txt
+2026-06-15T06:23:40.8106540Z note: Using stub executor library with Swift entry point. (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:40.8107110Z 
+2026-06-15T06:23:40.8107860Z Ld /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/PostShot normal (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:40.8108920Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:40.8115110Z     /Applications/Xcode_26.5.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios16.0-simulator -isysroot /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator -F/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator -Xlinker -rpath -Xlinker @executable_path -Xlinker -rpath -Xlinker @executable_path/Frameworks -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -debug_variant -e ___debug_blank_executor_main -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_dylib -Xlinker /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot-DebugDylibPath-normal-arm64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_instlnm -Xlinker /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot-DebugDylibInstallName-normal-arm64.txt -Xlinker -filelist -Xlinker /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot-ExecutorLinkFileList-normal-arm64.txt /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/PostShot.debug.dylib -o /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/PostShot
+2026-06-15T06:23:40.8127160Z 
+2026-06-15T06:23:40.8127980Z CopySwiftLibs /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:40.8129110Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:40.8134950Z     builtin-swiftStdLibTool --copy --verbose --scan-executable /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/PostShot.debug.dylib --scan-folder /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/Frameworks --scan-folder /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/PlugIns --scan-folder /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/SystemExtensions --scan-folder /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/Extensions --platform iphonesimulator --toolchain /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.3zv9FT/Metal.xctoolchain --toolchain /Applications/Xcode_26.5.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/Frameworks --strip-bitcode --strip-bitcode-tool /Applications/Xcode_26.5.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+2026-06-15T06:23:40.8141010Z Ignoring --strip-bitcode because --sign was not passed
+2026-06-15T06:23:40.8141450Z 
+2026-06-15T06:23:40.8141820Z ExtractAppIntentsMetadata (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:40.8142410Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:40.8150290Z     /Applications/Xcode_26.5.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.3zv9FT/Metal.xctoolchain --module-name PostShot --sdk-root /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk --xcode-version 17F42 --platform-family iOS --deployment-target 16.0 --bundle-identifier com.postshot.app --output /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app --target-triple arm64-apple-ios16.0-simulator --binary-file /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/PostShot --dependency-file /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot_dependency_info.dat --stringsdata-file /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot.SwiftFileList --metadata-file-list /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot.DependencyMetadataFileList --static-metadata-file-list /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot.DependencyStaticMetadataFileList --swift-const-vals-list /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/Objects-normal/arm64/PostShot.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-06-15T06:23:40.8158950Z 2026-06-15 06:23:40.687 appintentsmetadataprocessor[85952:198032] Starting appintentsmetadataprocessor export
+2026-06-15T06:23:40.8159920Z 2026-06-15 06:23:40.702 appintentsmetadataprocessor[85952:198032] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+2026-06-15T06:23:40.8160510Z 
+2026-06-15T06:23:40.8161060Z SwiftEmitModule normal arm64 Emitting\ module\ for\ PostShotTests (in target 'PostShotTests' from project 'PostShot')
+2026-06-15T06:23:40.8162120Z SwiftCompile normal arm64 /Users/runner/work/PostShot/PostShot/Tests/StitchTests.swift (in target 'PostShotTests' from project 'PostShot')
+2026-06-15T06:23:40.8162910Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:40.8163370Z     
+2026-06-15T06:23:40.8272950Z 
+2026-06-15T06:23:40.8374280Z SwiftCompile normal arm64 Compiling\ StitchTests.swift /Users/runner/work/PostShot/PostShot/Tests/StitchTests.swift (in target 'PostShotTests' from project 'PostShot')
+2026-06-15T06:23:40.8382870Z SwiftCompile normal arm64 /Users/runner/work/PostShot/PostShot/Tests/StitchTests.swift (in target 'PostShotTests' from project 'PostShot')
+2026-06-15T06:23:40.8383580Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:40.8383980Z     
+2026-06-15T06:23:41.1330700Z 
+2026-06-15T06:23:41.1382740Z AppIntentsSSUTraining (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:41.1436870Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:41.1441670Z     /Applications/Xcode_26.5.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsnltrainingprocessor --infoplist-path /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/Info.plist --temp-dir-path /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/ssu --bundle-id com.postshot.app --product-path /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app --extracted-metadata-path /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/Metadata.appintents --metadata-file-list /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShot.build/PostShot.DependencyMetadataFileList --source-file /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/Info.plist --archive-ssu-assets
+2026-06-15T06:23:41.1446370Z 2026-06-15 06:23:40.758 appintentsnltrainingprocessor[85955:198039] Parsing options for appintentsnltrainingprocessor
+2026-06-15T06:23:41.1447270Z 2026-06-15 06:23:40.759 appintentsnltrainingprocessor[85955:198039] Starting AppIntents SSU YAML Generation
+2026-06-15T06:23:41.1447990Z 2026-06-15 06:23:40.763 appintentsnltrainingprocessor[85955:198039] No AppShortcuts found - Skipping.
+2026-06-15T06:23:41.1448480Z 
+2026-06-15T06:23:41.1449940Z ProcessInfoPlistFile /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/PlugIns/PostShotTests.xctest/Info.plist /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/empty-PostShotTests.plist (in target 'PostShotTests' from project 'PostShot')
+2026-06-15T06:23:41.1451710Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:41.1453600Z     builtin-infoPlistUtility /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/empty-PostShotTests.plist -producttype com.apple.product-type.bundle.unit-test -expandbuildsettings -format binary -platform iphonesimulator -o /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/PlugIns/PostShotTests.xctest/Info.plist
+2026-06-15T06:23:41.1455630Z 
+2026-06-15T06:23:41.1456070Z SwiftDriverJobDiscovery normal arm64 Emitting module for PostShotTests (in target 'PostShotTests' from project 'PostShot')
+2026-06-15T06:23:41.1456620Z 
+2026-06-15T06:23:41.1457150Z SwiftDriver\ Compilation\ Requirements PostShotTests normal arm64 com.apple.xcode.tools.swift.compiler (in target 'PostShotTests' from project 'PostShot')
+2026-06-15T06:23:41.1457750Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:41.1475840Z     builtin-Swift-Compilation-Requirements -- /Applications/Xcode_26.5.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name PostShotTests -Onone @/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests.SwiftFileList -DDEBUG -plugin-path /Applications/Xcode_26.5.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios16.0-simulator -g -module-cache-path /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -profile-coverage-mapping -profile-generate -enable-testing -index-store-path /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator -F /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -parse-as-library -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448ffb7d586738ff35573a713a18216ade27.sdkstatcache -output-file-map /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/PostShotTests-generated-files.hmap -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/PostShotTests-own-target-headers.hmap -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/PostShotTests-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/PostShotTests-project-headers.hmap -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/DerivedSources/arm64 -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests-Swift.h -working-directory /Users/runner/work/PostShot/PostShot -experimental-emit-module-separately -disable-cmo
+2026-06-15T06:23:41.1494020Z 
+2026-06-15T06:23:41.1495680Z SwiftMergeGeneratedHeaders /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/DerivedSources/PostShotTests-Swift.h /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests-Swift.h (in target 'PostShotTests' from project 'PostShot')
+2026-06-15T06:23:41.1497510Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:41.1499260Z     builtin-swiftHeaderTool -arch arm64 /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests-Swift.h -o /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/DerivedSources/PostShotTests-Swift.h
+2026-06-15T06:23:41.1500920Z 
+2026-06-15T06:23:41.1502430Z Copy /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShotTests.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests.swiftmodule (in target 'PostShotTests' from project 'PostShot')
+2026-06-15T06:23:41.1504120Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:41.1506370Z     builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests.swiftmodule /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShotTests.swiftmodule/arm64-apple-ios-simulator.swiftmodule
+2026-06-15T06:23:41.1508120Z 
+2026-06-15T06:23:41.1509590Z Copy /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShotTests.swiftmodule/arm64-apple-ios-simulator.swiftdoc /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests.swiftdoc (in target 'PostShotTests' from project 'PostShot')
+2026-06-15T06:23:41.1511340Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:41.1513130Z     builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests.swiftdoc /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShotTests.swiftmodule/arm64-apple-ios-simulator.swiftdoc
+2026-06-15T06:23:41.1514860Z 
+2026-06-15T06:23:41.1516700Z Copy /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShotTests.swiftmodule/arm64-apple-ios-simulator.abi.json /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests.abi.json (in target 'PostShotTests' from project 'PostShot')
+2026-06-15T06:23:41.1518420Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:41.1520230Z     builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests.abi.json /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShotTests.swiftmodule/arm64-apple-ios-simulator.abi.json
+2026-06-15T06:23:41.1521960Z 
+2026-06-15T06:23:41.1523450Z Copy /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShotTests.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests.swiftsourceinfo (in target 'PostShotTests' from project 'PostShot')
+2026-06-15T06:23:41.1525200Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:41.1527120Z     builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests.swiftsourceinfo /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShotTests.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo
+2026-06-15T06:23:41.1528940Z 
+2026-06-15T06:23:41.1529570Z SwiftDriverJobDiscovery normal arm64 Compiling StitchTests.swift (in target 'PostShotTests' from project 'PostShot')
+2026-06-15T06:23:41.1530140Z 
+2026-06-15T06:23:41.1530650Z SwiftDriver\ Compilation PostShotTests normal arm64 com.apple.xcode.tools.swift.compiler (in target 'PostShotTests' from project 'PostShot')
+2026-06-15T06:23:41.1531390Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:41.1549430Z     builtin-Swift-Compilation -- /Applications/Xcode_26.5.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name PostShotTests -Onone @/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests.SwiftFileList -DDEBUG -plugin-path /Applications/Xcode_26.5.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios16.0-simulator -g -module-cache-path /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -profile-coverage-mapping -profile-generate -enable-testing -index-store-path /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator -F /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -parse-as-library -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448ffb7d586738ff35573a713a18216ade27.sdkstatcache -output-file-map /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/PostShotTests-generated-files.hmap -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/PostShotTests-own-target-headers.hmap -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/PostShotTests-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/PostShotTests-project-headers.hmap -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/DerivedSources/arm64 -Xcc -I/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests-Swift.h -working-directory /Users/runner/work/PostShot/PostShot -experimental-emit-module-separately -disable-cmo
+2026-06-15T06:23:41.1567950Z 
+2026-06-15T06:23:41.1568690Z Ld /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/PlugIns/PostShotTests.xctest/PostShotTests normal (in target 'PostShotTests' from project 'PostShot')
+2026-06-15T06:23:41.1569680Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:41.1580610Z     /Applications/Xcode_26.5.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios16.0-simulator -bundle -isysroot /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -L/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator -L/Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -F/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator -iframework /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -iframework /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -filelist /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests.LinkFileList -Xlinker -rpath -Xlinker /usr/lib/swift -Xlinker -rpath -Xlinker @loader_path/Frameworks -Xlinker -rpath -Xlinker @executable_path/Frameworks -Xlinker -dead_strip -bundle_loader /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/PostShot -Xlinker -object_path_lto -Xlinker /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -debug_variant -Xlinker -dependency_info -Xlinker /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests_dependency_info.dat -fobjc-link-runtime -fprofile-instr-generate -L/Applications/Xcode_26.5.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests.swiftmodule @/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests-linker-args.resp -Xlinker -needed_framework -Xlinker XCTest -framework XCTest -Xlinker -needed-lXCTestSwiftSupport -lXCTestSwiftSupport /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/PostShot.debug.dylib -o /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/PlugIns/PostShotTests.xctest/PostShotTests
+2026-06-15T06:23:41.4914400Z 
+2026-06-15T06:23:41.5016110Z ExtractAppIntentsMetadata (in target 'PostShotTests' from project 'PostShot')
+2026-06-15T06:23:41.5055000Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:41.5063390Z     /Applications/Xcode_26.5.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.3zv9FT/Metal.xctoolchain --module-name PostShotTests --sdk-root /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk --xcode-version 17F42 --platform-family iOS --deployment-target 16.0 --bundle-identifier com.postshot.app.tests --output /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/PlugIns/PostShotTests.xctest --target-triple arm64-apple-ios16.0-simulator --binary-file /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/PlugIns/PostShotTests.xctest/PostShotTests --dependency-file /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests_dependency_info.dat --stringsdata-file /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests.SwiftFileList --metadata-file-list /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/PostShotTests.DependencyMetadataFileList --static-metadata-file-list /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/PostShotTests.DependencyStaticMetadataFileList --swift-const-vals-list /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/Objects-normal/arm64/PostShotTests.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-06-15T06:23:41.5612960Z 2026-06-15 06:23:41.558 appintentsmetadataprocessor[85959:198075] Starting appintentsmetadataprocessor export
+2026-06-15T06:23:41.5617260Z 2026-06-15 06:23:41.559 appintentsmetadataprocessor[85959:198075] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+2026-06-15T06:23:41.5618030Z 
+2026-06-15T06:23:41.5619050Z CopySwiftLibs /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/PlugIns/PostShotTests.xctest (in target 'PostShotTests' from project 'PostShot')
+2026-06-15T06:23:41.5620070Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:41.5703070Z     builtin-swiftStdLibTool --copy --verbose --scan-executable /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/PlugIns/PostShotTests.xctest/PostShotTests --scan-folder /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/PlugIns/PostShotTests.xctest/Frameworks --scan-folder /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/PlugIns/PostShotTests.xctest/PlugIns --scan-folder /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/PlugIns/PostShotTests.xctest/SystemExtensions --scan-folder /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/PlugIns/PostShotTests.xctest/Extensions --platform iphonesimulator --toolchain /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.3zv9FT/Metal.xctoolchain --toolchain /Applications/Xcode_26.5.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/PlugIns/PostShotTests.xctest/Frameworks --strip-bitcode --scan-executable /Applications/Xcode_26.5.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libXCTestSwiftSupport.dylib --strip-bitcode-tool /Applications/Xcode_26.5.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+2026-06-15T06:23:41.5710230Z Ignoring --strip-bitcode because --sign was not passed
+2026-06-15T06:23:41.5710510Z 
+2026-06-15T06:23:41.5710810Z AppIntentsSSUTraining (in target 'PostShotTests' from project 'PostShot')
+2026-06-15T06:23:41.5711260Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:41.5715970Z     /Applications/Xcode_26.5.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsnltrainingprocessor --infoplist-path /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/PlugIns/PostShotTests.xctest/Info.plist --temp-dir-path /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/ssu --bundle-id com.postshot.app.tests --product-path /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/PlugIns/PostShotTests.xctest --extracted-metadata-path /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/PlugIns/PostShotTests.xctest/Metadata.appintents --metadata-file-list /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Intermediates.noindex/PostShot.build/Debug-iphonesimulator/PostShotTests.build/PostShotTests.DependencyMetadataFileList --source-file /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/PlugIns/PostShotTests.xctest/Info.plist --archive-ssu-assets
+2026-06-15T06:23:41.5795170Z 2026-06-15 06:23:41.578 appintentsnltrainingprocessor[85960:198076] Parsing options for appintentsnltrainingprocessor
+2026-06-15T06:23:41.5796660Z 2026-06-15 06:23:41.578 appintentsnltrainingprocessor[85960:198076] Starting AppIntents SSU YAML Generation
+2026-06-15T06:23:41.5797500Z 2026-06-15 06:23:41.578 appintentsnltrainingprocessor[85960:198076] No AppShortcuts found - Skipping.
+2026-06-15T06:23:41.5797960Z 
+2026-06-15T06:23:41.5801800Z RegisterExecutionPolicyException /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/PlugIns/PostShotTests.xctest (in target 'PostShotTests' from project 'PostShot')
+2026-06-15T06:23:41.5802690Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:41.5803620Z     builtin-RegisterExecutionPolicyException /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/PlugIns/PostShotTests.xctest
+2026-06-15T06:23:41.5932950Z 
+2026-06-15T06:23:41.5935450Z Touch /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/PlugIns/PostShotTests.xctest (in target 'PostShotTests' from project 'PostShot')
+2026-06-15T06:23:41.5937000Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:41.5937800Z     /usr/bin/touch -c /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app/PlugIns/PostShotTests.xctest
+2026-06-15T06:23:41.6261350Z 
+2026-06-15T06:23:41.6272960Z RegisterExecutionPolicyException /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:41.6296060Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:41.6306440Z     builtin-RegisterExecutionPolicyException /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app
+2026-06-15T06:23:41.6307150Z 
+2026-06-15T06:23:41.6307960Z Validate /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:41.6308750Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:41.6309540Z     builtin-validationUtility /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app -shallow-bundle -infoplist-subpath Info.plist
+2026-06-15T06:23:41.6383950Z 
+2026-06-15T06:23:41.6386650Z Touch /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app (in target 'PostShot' from project 'PostShot')
+2026-06-15T06:23:41.6387600Z     cd /Users/runner/work/PostShot/PostShot
+2026-06-15T06:23:41.6388480Z     /usr/bin/touch -c /Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Build/Products/Debug-iphonesimulator/PostShot.app
+2026-06-15T06:23:41.6420110Z 
+2026-06-15T06:26:40.7491500Z Test Suite 'All tests' started at 2026-06-15 06:26:40.300.
+2026-06-15T06:26:40.7500980Z Test Suite 'PostShotTests.xctest' started at 2026-06-15 06:26:40.301.
+2026-06-15T06:26:40.7504060Z Test Suite 'StitchTests' started at 2026-06-15 06:26:40.301.
+2026-06-15T06:26:40.7504800Z Test Case '-[PostShotTests.StitchTests testCompositeProducesExpectedHeight]' started.
+2026-06-15T06:26:40.7609240Z Test Case '-[PostShotTests.StitchTests testCompositeProducesExpectedHeight]' passed (0.026 seconds).
+2026-06-15T06:26:40.7774900Z Test Case '-[PostShotTests.StitchTests testDetectsKnownOverlapWithinTolerance]' started.
+2026-06-15T06:26:40.7886920Z Test Case '-[PostShotTests.StitchTests testDetectsKnownOverlapWithinTolerance]' passed (0.034 seconds).
+2026-06-15T06:26:40.7990030Z Test Case '-[PostShotTests.StitchTests testDuplicateDetection]' started.
+2026-06-15T06:26:40.9790150Z /Users/runner/work/PostShot/PostShot/Tests/StitchTests.swift:77: error: -[PostShotTests.StitchTests testDuplicateDetection] : XCTAssertTrue failed - Identical images should be flagged as duplicate
+2026-06-15T06:26:40.9894210Z Test Case '-[PostShotTests.StitchTests testDuplicateDetection]' failed (0.527 seconds).
+2026-06-15T06:26:40.9953600Z Test Case '-[PostShotTests.StitchTests testEngineStitchesTwoOverlappingImages]' started.
+2026-06-15T06:26:41.0061240Z Test Case '-[PostShotTests.StitchTests testEngineStitchesTwoOverlappingImages]' passed (0.047 seconds).
+2026-06-15T06:26:41.0165140Z Test Case '-[PostShotTests.StitchTests testNoOverlapForUnrelatedImages]' started.
+2026-06-15T06:26:41.0320030Z Test Case '-[PostShotTests.StitchTests testNoOverlapForUnrelatedImages]' passed (0.023 seconds).
+2026-06-15T06:26:41.0430340Z Test Case '-[PostShotTests.StitchTests testNormalizedCorrelationBrightnessInvariance]' started.
+2026-06-15T06:26:41.0636930Z Test Case '-[PostShotTests.StitchTests testNormalizedCorrelationBrightnessInvariance]' passed (0.001 seconds).
+2026-06-15T06:26:41.0707250Z Test Case '-[PostShotTests.StitchTests testNormalizedCorrelationIdentity]' started.
+2026-06-15T06:26:41.0771280Z Test Case '-[PostShotTests.StitchTests testNormalizedCorrelationIdentity]' passed (0.001 seconds).
+2026-06-15T06:26:41.0873460Z Test Suite 'StitchTests' failed at 2026-06-15 06:26:40.965.
+2026-06-15T06:26:41.0975500Z 	 Executed 7 tests, with 1 failure (0 unexpected) in 0.659 (0.663) seconds
+2026-06-15T06:26:41.1540290Z Test Suite 'PostShotTests.xctest' failed at 2026-06-15 06:26:40.966.
+2026-06-15T06:26:41.1671450Z 	 Executed 7 tests, with 1 failure (0 unexpected) in 0.659 (0.665) seconds
+2026-06-15T06:26:41.1800920Z Test Suite 'All tests' failed at 2026-06-15 06:26:40.974.
+2026-06-15T06:26:41.1908030Z 	 Executed 7 tests, with 1 failure (0 unexpected) in 0.659 (0.674) seconds
+2026-06-15T06:27:34.5087020Z 2026-06-15 06:27:34.489 xcodebuild[84861:195168] [MT] IDETestOperationsObserverDebug: 232.811 elapsed -- Testing started completed.
+2026-06-15T06:27:34.5225530Z 2026-06-15 06:27:34.489 xcodebuild[84861:195168] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-06-15T06:27:34.5341560Z 2026-06-15 06:27:34.489 xcodebuild[84861:195168] [MT] IDETestOperationsObserverDebug: 232.812 sec, +232.812 sec -- end
+2026-06-15T06:27:44.5624130Z Failing tests:
+2026-06-15T06:27:44.5624690Z 
+2026-06-15T06:27:44.5625390Z 	StitchTests.testDuplicateDetection()
+2026-06-15T06:27:44.5625850Z Test session results, code coverage, and logs:
+2026-06-15T06:27:44.5626860Z 	/Users/runner/Library/Developer/Xcode/DerivedData/PostShot-aovienwspnsfangryepvlnejigvj/Logs/Test/Test-PostShot-2026.06.15_06-23-18-+0000.xcresult
+2026-06-15T06:27:44.5628370Z 
+2026-06-15T06:27:44.5631470Z 
+2026-06-15T06:27:44.5637360Z ** TEST FAILED **
+2026-06-15T06:27:44.5637750Z 
+2026-06-15T06:27:45.2929040Z Testing started
+2026-06-15T06:27:45.8892470Z ##[error]Process completed with exit code 65.
+2026-06-15T06:27:45.9887540Z Post job cleanup.
+2026-06-15T06:27:46.8904580Z [command]/opt/homebrew/bin/git version
+2026-06-15T06:27:47.1303590Z git version 2.54.0
+2026-06-15T06:27:47.1523350Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/54422340-3ea6-49d2-aac7-84d207d69955/.gitconfig'
+2026-06-15T06:27:47.1526380Z Temporarily overriding HOME='/Users/runner/work/_temp/54422340-3ea6-49d2-aac7-84d207d69955' before making global git config changes
+2026-06-15T06:27:47.1532970Z Adding repository directory to the temporary git global config as a safe directory
+2026-06-15T06:27:47.1536100Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/PostShot/PostShot
+2026-06-15T06:27:47.1802020Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-06-15T06:27:47.1897100Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-06-15T06:27:47.5151610Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-06-15T06:27:47.5274200Z http.https://github.com/.extraheader
+2026-06-15T06:27:47.5276380Z [command]/opt/homebrew/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-06-15T06:27:47.5814120Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-06-15T06:27:48.0112090Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-06-15T06:27:48.0418420Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-06-15T06:27:48.7253000Z Cleaning up orphan processes
+2026-06-15T06:27:50.1950330Z ##[warning]Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4. Actions will be forced to run with Node.js 24 by default starting June 16th, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
