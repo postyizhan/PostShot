@@ -84,7 +84,8 @@ struct ContentView: View {
     }
 
     private var controls: some View {
-        VStack(spacing: 12) {
+        let hasImages = !model.images.isEmpty
+        return VStack(spacing: 12) {
             if model.isStitching {
                 ProgressView(value: model.progress) {
                     Text("正在拼接… \(Int(model.progress * 100))%")
@@ -98,7 +99,7 @@ struct ContentView: View {
                 maxSelectionCount: 20,
                 matching: .images
             ) {
-                Label(model.images.isEmpty ? "选择截图" : "重新选择",
+                Label(hasImages ? "重新选择" : "选择截图",
                       systemImage: "photo.on.rectangle.angled")
                     .frame(maxWidth: .infinity)
             }
