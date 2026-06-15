@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import XCTest
 import CoreGraphics
-@testable import LongShot
+@testable import PostShot
 
 /// Validates `OverlapDetector` against synthetic images with a known overlap (SPEC §9).
 final class StitchTests: XCTestCase {

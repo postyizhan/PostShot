@@ -1,8 +1,8 @@
-# 长截图 LongShot
+# PostShot 驿站截图
 
 > Free & open-source long-screenshot stitcher for iOS — no ads, no watermark.
 
-**长截图 (LongShot)** 是一款开源、免费、无广告、无水印的 iOS 长截图拼接 App。它把你手动截好的多张系统截图,自动识别垂直重叠区域后拼接成一张完整长图。核心使用原生 **NCC(归一化互相关)** 算法检测重叠,**零第三方依赖,不使用 OpenCV**。
+**PostShot 驿站截图** 是一款开源、免费、无广告、无水印的 iOS 长截图拼接 App。它把你手动截好的多张系统截图,自动识别垂直重叠区域后拼接成一张完整长图。核心使用原生 **NCC(归一化互相关)** 算法检测重叠,**零第三方依赖,不使用 OpenCV**。
 
 整个项目在 Windows 上也能维护:工程文件由 [XcodeGen](https://github.com/yonaskolb/XcodeGen) 从 `project.yml` 生成,云端 GitHub Actions 负责编译,设备端用 SideStore 自签安装。
 
@@ -27,7 +27,7 @@
 1. **Fork** 本仓库到你自己的 GitHub 账号。
 2. 进入你 fork 后的仓库,打开 **Actions** 标签页,点击启用 Actions(首次需手动确认)。
 3. 运行名为 **Build Unsigned IPA** 的 workflow(在 Actions 页面手动触发 `workflow_dispatch`),或直接向 `main`/`master` 推送一次提交触发构建。
-4. 构建完成后,在该次 workflow run 页面底部下载 artifact **`LongShot-ipa`**(里面是未签名的 `LongShot.ipa`)。
+4. 构建完成后,在该次 workflow run 页面底部下载 artifact **`PostShot-ipa`**(里面是未签名的 `PostShot.ipa`)。
 5. 把 `.ipa` 传到你的 iPhone(隔空投送、文件 App、云盘等均可)。
 6. 在 iPhone 上用 **[SideStore](https://sidestore.io/)** 打开该 `.ipa`,用**免费 Apple ID** 完成安装(SideStore 会在设备端自动签名)。
 7. 保持设备偶尔联网,SideStore 会在 **7 天内自动续签**,避免过期。
@@ -43,7 +43,7 @@
 
 ### 💡 修改 Bundle ID(避免冲突)
 
-如果你的设备上已经装过同 Bundle ID 的 App,或想和别人区分开,fork 之后可以编辑 `project.yml`,把 `LongShot` target 下的 `PRODUCT_BUNDLE_IDENTIFIER`(默认 `com.longshot.app`)改成你自己的标识,例如 `com.yourname.longshot`。改完重新触发构建即可。
+如果你的设备上已经装过同 Bundle ID 的 App,或想和别人区分开,fork 之后可以编辑 `project.yml`,把 `PostShot` target 下的 `PRODUCT_BUNDLE_IDENTIFIER`(默认 `com.postshot.app`)改成你自己的标识,例如 `com.yourname.postshot`。改完重新触发构建即可。
 
 ---
 
@@ -52,7 +52,7 @@
 本项目对 **Windows 开发者友好**,无需本地 Mac:
 
 - **永远不要手写或直接编辑 `.xcodeproj`**。工程结构统一写在 `project.yml`,由 `xcodegen generate` 生成。改工程配置只改 `project.yml`。
-- **编译在云端进行**:GitHub Actions(`macos-14` runner)执行 `xcodegen generate` → `xcodebuild`,产出**未签名 `.ipa`**。
+- **编译在云端进行**:GitHub Actions(`macos-26` runner)执行 `xcodegen generate` → `xcodebuild`,产出**未签名 `.ipa`**。
 - **CI 绝不接触任何苹果证书、私钥或描述文件**,签名完全交给设备端的 SideStore。
 - **系统要求:iOS 16+**(`PhotosPicker` 需要)。
 
@@ -61,7 +61,7 @@
 ```bash
 brew install xcodegen
 xcodegen generate
-xcodebuild -project LongShot.xcodeproj -scheme LongShot \
+xcodebuild -project PostShot.xcodeproj -scheme PostShot \
   -configuration Release -sdk iphoneos \
   -destination 'generic/platform=iOS' \
   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build

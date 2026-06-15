@@ -10,7 +10,7 @@ build/
 *.moved-aside
 
 # XcodeGen generates the project from project.yml — never commit it
-LongShot.xcodeproj/
+PostShot.xcodeproj/
 
 # Swift Package Manager
 .build/

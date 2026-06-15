@@ -1,5 +1,5 @@
-// LongShot — 开源免费的 iOS 长截图拼接 App
-// Copyright (C) 2026 LongShot contributors
+// PostShot 驿站截图 — 开源免费的 iOS 长截图拼接 App
+// Copyright (C) 2026 PostShot contributors
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published
@@ -17,7 +17,7 @@
 import SwiftUI
 
 @main
-struct LongShotApp: App {
+struct PostShotApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
