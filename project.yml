@@ -1,0 +1,46 @@
+name: LongShot
+
+options:
+  bundleIdPrefix: com.longshot
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    # Signing is intentionally disabled — SideStore signs on-device.
+    # CI never touches Apple certificates / private keys / provisioning profiles.
+    CODE_SIGNING_REQUIRED: "NO"
+    CODE_SIGNING_ALLOWED: "NO"
+    CODE_SIGN_IDENTITY: ""
+    DEVELOPMENT_TEAM: ""
+    TARGETED_DEVICE_FAMILY: "1,2"
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+
+targets:
+  LongShot:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.longshot.app
+        INFOPLIST_FILE: Sources/Info.plist
+        # Portrait only (SPEC §4).
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        ENABLE_USER_SCRIPT_SANDBOXING: "YES"
+
+  LongShotTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Tests
+    dependencies:
+      - target: LongShot
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.longshot.app.tests
+        GENERATE_INFOPLIST_FILE: "YES"
