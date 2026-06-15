@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 import SwiftUI
 
 /// Horizontal strip of selected images. Supports delete and left/right reordering.
