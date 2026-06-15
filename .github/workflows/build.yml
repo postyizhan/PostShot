@@ -2,6 +2,10 @@ name: Build Unsigned IPA
 
 # 构建未签名 .ipa 并作为 artifact 上传(SPEC §5)。
 # CI 绝不接触任何苹果证书 / 私钥 / 描述文件 —— 签名交给设备端的 SideStore。
+#
+# 关于版本:部署目标是 iOS 16(见 project.yml,App 能跑的最低系统,保持低 = 最大兼容)。
+# 构建工具链则用当前最新:macos-26 runner + 默认 Xcode(26.x)+ iOS 26 SDK。
+# 用新 SDK 构建低部署目标的 App 是标准做法,产物在 iOS 16 到最新系统上都能装。
 
 on:
   push:
@@ -13,16 +17,10 @@ on:
 jobs:
   build:
     name: Build IPA (unsigned)
-    runs-on: macos-14
+    runs-on: macos-26
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      # macos-14 runner 预装了多个 Xcode。这里固定一个支持 iOS 16 SDK 的稳定版本。
-      # Xcode_16.app 在 macos-14 镜像上可用;若首次 CI 报路径不存在,
-      # 可改成 Xcode_15.4.app,或直接删掉此步骤使用默认 Xcode。
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_16.app
 
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -31,6 +29,8 @@ jobs:
         run: xcodegen generate
 
       # 主要必过步骤:为通用 iOS 设备构建 Release,完全禁用签名。
+      # 使用 runner 默认 Xcode(macos-26 当前默认 26.4.1),不固定具体版本路径,
+      # 避免镜像更新后写死的路径失效。
       - name: Build for generic iOS device (signing disabled)
         run: |
           xcodebuild \
@@ -59,17 +59,12 @@ jobs:
           path: LongShot.ipa
 
   test:
-    name: Unit Tests (best-effort)
-    runs-on: macos-14
+    name: Unit Tests
+    runs-on: macos-26
     # SPEC §2 / §9 重视 OverlapDetector 偏移检测的算法单测。
-    # 标记为非阻断:模拟器命名在不同镜像上可能变化,不应拖垮主构建产物。
-    continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_16.app
 
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -77,11 +72,13 @@ jobs:
       - name: Generate Xcode project
         run: xcodegen generate
 
-      # iPhone 15 模拟器名称取决于 runner 已安装的 simruntime。
-      # 若该名称不存在,请改用 'iPhone 16' 或镜像上实际可用的设备名。
+      # 动态挑选一台已安装的 iPhone 模拟器,避免写死设备名在镜像更新后失效。
+      # 当前 macos-26 镜像装的是 iPhone 17 系列(iOS 26.x 运行时)。
       - name: Run unit tests on simulator
         run: |
+          DEVICE=$(xcrun simctl list devices available | grep -oE 'iPhone 1[0-9][^(]*' | head -1 | xargs)
+          echo "使用模拟器: ${DEVICE:-iPhone 17}"
           xcodebuild test \
             -project LongShot.xcodeproj \
             -scheme LongShot \
-            -destination 'platform=iOS Simulator,name=iPhone 15'
+            -destination "platform=iOS Simulator,name=${DEVICE:-iPhone 17}"
