@@ -1,0 +1,7 @@
+# Normalize line endings — CI runs on macOS, source should be LF
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ipa binary
