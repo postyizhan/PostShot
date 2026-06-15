@@ -1,0 +1,41 @@
+# Xcode / generated project
+*.xcodeproj
+*.xcworkspace
+!default.xcworkspace
+xcuserdata/
+DerivedData/
+build/
+*.xcuserstate
+*.xcscmblueprint
+*.moved-aside
+
+# XcodeGen generates the project from project.yml — never commit it
+LongShot.xcodeproj/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# CI / build artifacts
+Payload/
+*.ipa
+*.app
+*.dSYM.zip
+*.dSYM
+
+# Fastlane / signing (never used here, but guard anyway)
+*.mobileprovision
+*.p12
+*.cer
+*.certSigningRequest
+
+# Editor
+.idea/
+.vscode/
+*.swp
