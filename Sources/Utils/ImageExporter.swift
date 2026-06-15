@@ -49,7 +49,7 @@ enum ImageExporter {
     ///
     /// Throws `ImageExporterError.fileWriteFailed` if the write fails.
     static func writeTemporaryFile(_ data: Data, fileExtension: String) throws -> URL {
-        let fileName = "LongShot-\(UUID().uuidString).\(fileExtension)"
+        let fileName = "PostShot-\(UUID().uuidString).\(fileExtension)"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
         do {
             try data.write(to: url, options: .atomic)

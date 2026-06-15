@@ -1,7 +1,7 @@
-name: LongShot
+name: PostShot
 
 options:
-  bundleIdPrefix: com.longshot
+  bundleIdPrefix: com.postshot
   deploymentTarget:
     iOS: "16.0"
   createIntermediateGroups: true
@@ -20,27 +20,27 @@ settings:
     CURRENT_PROJECT_VERSION: "1"
 
 targets:
-  LongShot:
+  PostShot:
     type: application
     platform: iOS
     sources:
       - path: Sources
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.longshot.app
+        PRODUCT_BUNDLE_IDENTIFIER: com.postshot.app
         INFOPLIST_FILE: Sources/Info.plist
         # Portrait only (SPEC §4).
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
         ENABLE_USER_SCRIPT_SANDBOXING: "YES"
 
-  LongShotTests:
+  PostShotTests:
     type: bundle.unit-test
     platform: iOS
     sources:
       - path: Tests
     dependencies:
-      - target: LongShot
+      - target: PostShot
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.longshot.app.tests
+        PRODUCT_BUNDLE_IDENTIFIER: com.postshot.app.tests
         GENERATE_INFOPLIST_FILE: "YES"

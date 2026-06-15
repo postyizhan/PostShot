@@ -24,7 +24,7 @@ final class StitchEngine {
     /// Progress is reported in 0...1 over the detection + composite phases.
     typealias ProgressHandler = (Double) -> Void
 
-    private let queue = DispatchQueue(label: "com.longshot.stitch", qos: .userInitiated)
+    private let queue = DispatchQueue(label: "com.postshot.stitch", qos: .userInitiated)
 
     /// Stitches `images` top-to-bottom. Calls `progress` on an arbitrary queue, then
     /// `completion` with the result on an arbitrary queue. Callers marshal to main.

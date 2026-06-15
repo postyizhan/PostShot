@@ -21,7 +21,7 @@ struct ContentView: View {
                 controls
             }
             .padding(.vertical)
-            .navigationTitle("长截图")
+            .navigationTitle("驿站截图")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     if !model.images.isEmpty {
