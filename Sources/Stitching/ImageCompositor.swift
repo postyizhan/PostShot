@@ -2,8 +2,14 @@
 import CoreGraphics
 import Foundation
 
-/// Merges vertically-overlapping images into a single tall canvas with feathered seams.
+/// Merges vertically-overlapping images into a single tall canvas with hard-cut seams.
 /// See SPEC §2.2. Uses sRGB, no resampling beyond width normalization.
+///
+/// Long screenshots share *identical* pixels in the overlap region (same UI, different scroll
+/// offset), so we do NOT alpha-blend the seam. Blending two near-identical regions only
+/// introduces a visible soft band wherever brightness changes (e.g. a dark bubble over a light
+/// gap washes out to a pale line). Instead each segment is drawn opaque; the later segment's
+/// top rows simply overwrite the previous segment's tail. Identical pixels → invisible seam.
 enum ImageCompositor {
 
     /// A source image paired with the overlap (in rows) it shares with the *previous* image.
@@ -13,9 +19,6 @@ enum ImageCompositor {
         /// Overlap with the previous segment, in pixels of the common (normalized) width space.
         let overlap: Int
     }
-
-    /// Height of the alpha feather transition band (SPEC §2.2: ~20–30px).
-    static let featherHeight = 24
 
     enum CompositeError: Error {
         case empty
@@ -36,9 +39,19 @@ enum ImageCompositor {
             return Int((Float(seg.image.height) * Float(width) / Float(w)).rounded())
         }
 
-        var totalHeight = 0
-        for (i, h) in scaledHeights.enumerated() {
-            totalHeight += (i == 0) ? h : max(0, h - clampOverlap(segments[i].overlap, h))
+        // Overlap of segment i with segment i-1, clamped to neither exceeding the previous
+        // nor the current segment's height. Index 0 is unused (first segment has no predecessor).
+        // The SAME clamped values drive both the canvas-height calc and segment placement, so
+        // the two can never disagree.
+        var overlaps = [Int](repeating: 0, count: segments.count)
+        for i in 1..<segments.count {
+            let cap = min(scaledHeights[i - 1], scaledHeights[i])
+            overlaps[i] = clampOverlap(segments[i].overlap, cap)
+        }
+
+        var totalHeight = scaledHeights.first ?? 0
+        for i in 1..<segments.count {
+            totalHeight += max(0, scaledHeights[i] - overlaps[i])
         }
         guard totalHeight > 0 else { throw CompositeError.empty }
 
@@ -55,19 +68,18 @@ enum ImageCompositor {
         ctx.interpolationQuality = .high
 
         // CG origin is bottom-left; lay segments from the top (highest y) downward.
-        var cursorTopY = totalHeight
+        // `topY` tracks the top edge of the segment about to be drawn. Before each non-first
+        // segment we descend by the PREVIOUS segment's non-overlapping height, so the current
+        // segment's top `overlaps[i]` rows land exactly on the previous segment's tail. Drawing
+        // opaque in order then overwrites that tail — a hard cut between identical pixels.
+        var topY = totalHeight
         for (i, seg) in segments.enumerated() {
             let h = scaledHeights[i]
-            let overlap = (i == 0) ? 0 : clampOverlap(seg.overlap, h)
-            let segBottomY = cursorTopY - h
-            let rect = CGRect(x: 0, y: CGFloat(segBottomY), width: CGFloat(width), height: CGFloat(h))
-
-            if i == 0 || overlap == 0 {
-                ctx.draw(seg.image, in: rect)
-            } else {
-                drawFeathered(ctx: ctx, image: seg.image, in: rect, overlap: overlap)
+            if i > 0 {
+                topY -= (scaledHeights[i - 1] - overlaps[i])
             }
-            cursorTopY -= (i == 0) ? h : (h - overlap)
+            let rect = CGRect(x: 0, y: CGFloat(topY - h), width: CGFloat(width), height: CGFloat(h))
+            ctx.draw(seg.image, in: rect)
         }
 
         guard let result = ctx.makeImage() else { throw CompositeError.drawFailed }
@@ -76,64 +88,5 @@ enum ImageCompositor {
 
     private static func clampOverlap(_ overlap: Int, _ height: Int) -> Int {
         max(0, min(overlap, height))
-    }
-
-    // MARK: - Feathered draw
-
-    /// Draws `image` into `rect`, ramping its top `band` rows from transparent to opaque so the
-    /// previously-drawn content (the prior segment's tail) shows through the seam.
-    private static func drawFeathered(ctx: CGContext, image: CGImage, in rect: CGRect, overlap: Int) {
-        let band = min(featherHeight, overlap)
-        guard band > 0, let mask = featherMask(width: Int(rect.width), height: Int(rect.height), band: band) else {
-            ctx.draw(image, in: rect)
-            return
-        }
-        ctx.saveGState()
-        ctx.clip(to: rect, mask: mask)
-        ctx.draw(image, in: rect)
-        ctx.restoreGState()
-    }
-
-    /// Grayscale coverage mask the size of the (scaled) segment: white (opaque) everywhere except
-    /// the top `band` rows, which ramp 0→1 downward. Used with `CGContext.clip(to:mask:)`.
-    private static func featherMask(width: Int, height: Int, band: Int) -> CGImage? {
-        guard width > 0, height > 0, band > 0, band <= height else { return nil }
-        let gray = CGColorSpaceCreateDeviceGray()
-        guard let ctx = CGContext(
-            data: nil,
-            width: width,
-            height: height,
-            bitsPerComponent: 8,
-            bytesPerRow: 0,
-            space: gray,
-            bitmapInfo: CGImageAlphaInfo.none.rawValue
-        ) else { return nil }
-
-        // Fill white (fully opaque coverage).
-        ctx.setFillColor(gray: 1.0, alpha: 1.0)
-        ctx.fill(CGRect(x: 0, y: 0, width: width, height: height))
-
-        // Top `band` rows live at the highest y (CG bottom-left origin): [height-band, height].
-        // Ramp from black at the very top (y = height) to white at y = height-band.
-        guard let gradient = CGGradient(
-            colorsSpace: gray,
-            colors: [
-                CGColor(gray: 0.0, alpha: 1.0), // top → transparent coverage
-                CGColor(gray: 1.0, alpha: 1.0), // bottom of band → opaque
-            ] as CFArray,
-            locations: [0.0, 1.0]
-        ) else { return ctx.makeImage() }
-
-        ctx.saveGState()
-        ctx.clip(to: CGRect(x: 0, y: height - band, width: width, height: band))
-        ctx.drawLinearGradient(
-            gradient,
-            start: CGPoint(x: 0, y: height),          // top
-            end: CGPoint(x: 0, y: height - band),     // bottom of band
-            options: []
-        )
-        ctx.restoreGState()
-
-        return ctx.makeImage()
     }
 }
