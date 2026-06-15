@@ -41,6 +41,22 @@ final class StitchTests: XCTestCase {
         source.cropping(to: CGRect(x: 0, y: startRow, width: source.width, height: height))!
     }
 
+    /// Reads `image` back as row-major top-down grayscale bytes (length == width*height).
+    private func grayPixels(_ image: CGImage) -> [UInt8] {
+        let w = image.width, h = image.height
+        var pixels = [UInt8](repeating: 0, count: w * h)
+        let cs = CGColorSpaceCreateDeviceGray()
+        pixels.withUnsafeMutableBytes { ptr in
+            let ctx = CGContext(
+                data: ptr.baseAddress, width: w, height: h,
+                bitsPerComponent: 8, bytesPerRow: w,
+                space: cs, bitmapInfo: CGImageAlphaInfo.none.rawValue
+            )!
+            ctx.draw(image, in: CGRect(x: 0, y: 0, width: w, height: h))
+        }
+        return pixels
+    }
+
     // MARK: - Tests
 
     func testDetectsKnownOverlapWithinTolerance() {
@@ -105,6 +121,44 @@ final class StitchTests: XCTestCase {
         let out = try ImageCompositor.composite(segments: segments, width: width)
         XCTAssertEqual(out.width, width)
         XCTAssertEqual(out.height, 400 + (400 - overlap), "Total height = hA + (hB - overlap)")
+    }
+
+    /// Pixel-level seam check: stitching two overlapping windows of a known tall image must
+    /// reproduce that tall image exactly — no duplicated or dropped rows at the seam.
+    /// (A height-only assertion misses off-by-one overlap bugs; this one catches them.)
+    func testCompositePreservesContentAcrossSeam() throws {
+        let width = 64
+        let fullHeight = 680
+        let tall = makeImage(width: width, height: fullHeight, seed: 21)
+
+        // Two windows sharing exactly 120 rows: [0,400) and [280,680).
+        let overlap = 120
+        let top = crop(tall, startRow: 0, height: 400)
+        let bottom = crop(tall, startRow: 280, height: 400)
+
+        let out = try ImageCompositor.composite(
+            segments: [
+                ImageCompositor.Segment(image: top, overlap: 0),
+                ImageCompositor.Segment(image: bottom, overlap: overlap),
+            ],
+            width: width
+        )
+        XCTAssertEqual(out.height, fullHeight, "Stitched height must match the original tall image")
+
+        // The stitched result must equal the original tall image pixel-for-pixel.
+        let expected = grayPixels(tall)
+        let actual = grayPixels(out)
+        XCTAssertEqual(actual.count, expected.count, "Pixel buffer sizes must match")
+
+        var mismatches = 0
+        let n = min(actual.count, expected.count)
+        for i in 0..<n where abs(Int(actual[i]) - Int(expected[i])) > 2 {
+            mismatches += 1
+        }
+        // A correct hard-cut stitch reproduces the source near-exactly (no scaling here).
+        // An off-by-one seam (duplicated/dropped rows) would mismatch thousands of pixels.
+        XCTAssertLessThan(mismatches, n / 100,
+                          "Seam must preserve content; \(mismatches)/\(n) pixels differ")
     }
 
     // MARK: - Engine end to end
