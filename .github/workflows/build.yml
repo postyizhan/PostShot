@@ -20,7 +20,7 @@ jobs:
     runs-on: macos-26
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -53,7 +53,7 @@ jobs:
           zip -r PostShot.ipa Payload
 
       - name: Upload IPA artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: PostShot-ipa
           path: PostShot.ipa
@@ -64,7 +64,7 @@ jobs:
     # SPEC §2 / §9 重视 OverlapDetector 偏移检测的算法单测。
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install XcodeGen
         run: brew install xcodegen
