@@ -25,12 +25,14 @@ final class StitchTests: XCTestCase {
             }
         }
         let cs = CGColorSpaceCreateDeviceGray()
-        let ctx = CGContext(
-            data: &pixels, width: width, height: height,
-            bitsPerComponent: 8, bytesPerRow: bytesPerRow,
-            space: cs, bitmapInfo: CGImageAlphaInfo.none.rawValue
-        )!
-        return ctx.makeImage()!
+        return pixels.withUnsafeMutableBytes { ptr -> CGImage in
+            let ctx = CGContext(
+                data: ptr.baseAddress, width: width, height: height,
+                bitsPerComponent: 8, bytesPerRow: bytesPerRow,
+                space: cs, bitmapInfo: CGImageAlphaInfo.none.rawValue
+            )!
+            return ctx.makeImage()!
+        }
     }
 
     /// Returns the sub-image of `source` spanning rows [startRow, startRow+height).
