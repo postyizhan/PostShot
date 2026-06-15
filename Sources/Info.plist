@@ -24,6 +24,8 @@
 	<true/>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>需要保存拼接后的长截图到您的相册。</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>用于在本机内部接收屏幕录制扩展捕获的帧(仅本地回环,不联网)。</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
