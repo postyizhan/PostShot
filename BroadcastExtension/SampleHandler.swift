@@ -17,12 +17,14 @@ class SampleHandler: RPBroadcastSampleHandler {
 
     private var frameCounter = 0
     private var didWriteProbeFrame = false
+    private var writeError = "(未尝试写帧)"
 
     override func broadcastStarted(withSetupInfo setupInfo: [String: NSObject]?) {
         // Clear any frames from a previous session so each recording starts clean.
         try? FrameStore.reset()
         frameCounter = 0
         didWriteProbeFrame = false
+        recordDiagnostic("started")
     }
 
     override func processSampleBuffer(_ sampleBuffer: CMSampleBuffer, with sampleBufferType: RPSampleBufferType) {
@@ -33,17 +35,32 @@ class SampleHandler: RPBroadcastSampleHandler {
         // end-to-end. (Phase 1 replaces this with FrameSelector deciding which frames to keep.)
         guard !didWriteProbeFrame else { return }
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
-        guard let cgImage = Self.makeCGImage(from: pixelBuffer) else { return }
-        try? FrameStore.write(cgImage, index: 0)
-        didWriteProbeFrame = true
+        guard let cgImage = Self.makeCGImage(from: pixelBuffer) else {
+            writeError = "makeCGImage 返回 nil"
+            return
+        }
+        do {
+            try FrameStore.write(cgImage, index: 0)
+            didWriteProbeFrame = true
+            writeError = "ok"
+        } catch {
+            writeError = "写帧失败:\(error)"
+        }
         // cgImage / pixelBuffer go out of scope here — nothing retained.
     }
 
     override func broadcastFinished() {
-        // Stash the observed frame count so the app can display "received N frames".
-        if let defaults = UserDefaults(suiteName: AppGroup.identifier) {
-            defaults.set(frameCounter, forKey: "lastBroadcastFrameCount")
-        }
+        recordDiagnostic("finished")
+    }
+
+    /// Records what the EXTENSION sees into the App Group, so the app can compare. If the group
+    /// is not actually shared, the app simply won't see these values — itself a useful signal.
+    private func recordDiagnostic(_ phase: String) {
+        guard let defaults = UserDefaults(suiteName: AppGroup.identifier) else { return }
+        defaults.set(frameCounter, forKey: "lastBroadcastFrameCount")
+        defaults.set(AppGroup.containerURL?.path ?? "(nil)", forKey: "extContainerPath")
+        defaults.set(writeError, forKey: "extWriteResult")
+        defaults.set(phase, forKey: "extPhase")
     }
 
     /// Converts a video `CVPixelBuffer` to a `CGImage` via Core Graphics, no external deps.
