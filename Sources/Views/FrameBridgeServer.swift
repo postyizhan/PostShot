@@ -19,7 +19,7 @@ final class FrameBridgeServer: ObservableObject {
         do {
             let params = NWParameters.tcp
             params.allowLocalEndpointReuse = true
-            let listener = try NWListener(using: params, port: NWEndpoint.Port(rawValue: FrameBridge.port)!)
+            let listener = try NWListener(using: params, on: NWEndpoint.Port(rawValue: FrameBridge.port)!)
             self.listener = listener
 
             listener.stateUpdateHandler = { [weak self] state in
@@ -65,7 +65,7 @@ final class FrameBridgeServer: ObservableObject {
                 }
             }
             if error == nil && !isComplete {
-                self?.receive(on: conn)
+                Task { @MainActor in self?.receive(on: conn) }
             }
         }
     }
