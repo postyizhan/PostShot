@@ -110,7 +110,7 @@ enum ImageCompositor {
         ) else { return nil }
 
         // Fill white (fully opaque coverage).
-        ctx.setGrayFillColor(gray: 1.0, alpha: 1.0)
+        ctx.setFillColor(gray: 1.0, alpha: 1.0)
         ctx.fill(CGRect(x: 0, y: 0, width: width, height: height))
 
         // Top `band` rows live at the highest y (CG bottom-left origin): [height-band, height].

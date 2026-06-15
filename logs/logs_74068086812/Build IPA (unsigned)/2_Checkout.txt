@@ -1,0 +1,73 @@
+﻿2026-06-15T05:47:39.8084240Z ##[group]Run actions/checkout@v4
+2026-06-15T05:47:39.8085320Z with:
+2026-06-15T05:47:39.8085670Z   repository: postyizhan/PostShot
+2026-06-15T05:47:39.8089070Z   token: ***
+2026-06-15T05:47:39.8089390Z   ssh-strict: true
+2026-06-15T05:47:39.8089710Z   ssh-user: git
+2026-06-15T05:47:39.8090040Z   persist-credentials: true
+2026-06-15T05:47:39.8090390Z   clean: true
+2026-06-15T05:47:39.8090720Z   sparse-checkout-cone-mode: true
+2026-06-15T05:47:39.8091090Z   fetch-depth: 1
+2026-06-15T05:47:39.8091410Z   fetch-tags: false
+2026-06-15T05:47:39.8091730Z   show-progress: true
+2026-06-15T05:47:39.8092050Z   lfs: false
+2026-06-15T05:47:39.8092350Z   submodules: false
+2026-06-15T05:47:39.8092680Z   set-safe-directory: true
+2026-06-15T05:47:39.8093160Z ##[endgroup]
+2026-06-15T05:47:40.1681000Z Syncing repository: postyizhan/PostShot
+2026-06-15T05:47:40.1685650Z ##[group]Getting Git version info
+2026-06-15T05:47:40.1686430Z Working directory is '/Users/runner/work/PostShot/PostShot'
+2026-06-15T05:47:40.1687400Z [command]/opt/homebrew/bin/git version
+2026-06-15T05:47:40.2231720Z git version 2.54.0
+2026-06-15T05:47:40.2967760Z ##[endgroup]
+2026-06-15T05:47:40.3182500Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/57f4dd20-a9c1-4a1d-99ba-325d37be8632/.gitconfig'
+2026-06-15T05:47:40.3198430Z Temporarily overriding HOME='/Users/runner/work/_temp/57f4dd20-a9c1-4a1d-99ba-325d37be8632' before making global git config changes
+2026-06-15T05:47:40.3199780Z Adding repository directory to the temporary git global config as a safe directory
+2026-06-15T05:47:40.3200930Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/PostShot/PostShot
+2026-06-15T05:47:40.3203270Z Deleting the contents of '/Users/runner/work/PostShot/PostShot'
+2026-06-15T05:47:40.3204390Z ##[group]Initializing the repository
+2026-06-15T05:47:40.3205100Z [command]/opt/homebrew/bin/git init /Users/runner/work/PostShot/PostShot
+2026-06-15T05:47:40.3319870Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-06-15T05:47:40.3322630Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-06-15T05:47:40.3323530Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-06-15T05:47:40.3324140Z hint: call:
+2026-06-15T05:47:40.3324670Z hint:
+2026-06-15T05:47:40.3325200Z hint: 	git config --global init.defaultBranch <name>
+2026-06-15T05:47:40.3325790Z hint:
+2026-06-15T05:47:40.3326300Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-06-15T05:47:40.3327040Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-06-15T05:47:40.3327780Z hint:
+2026-06-15T05:47:40.3345270Z hint: 	git branch -m <name>
+2026-06-15T05:47:40.3345970Z hint:
+2026-06-15T05:47:40.3346500Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-06-15T05:47:40.3347270Z Initialized empty Git repository in /Users/runner/work/PostShot/PostShot/.git/
+2026-06-15T05:47:40.3350580Z [command]/opt/homebrew/bin/git remote add origin https://github.com/postyizhan/PostShot
+2026-06-15T05:47:40.3431650Z ##[endgroup]
+2026-06-15T05:47:40.3432710Z ##[group]Disabling automatic garbage collection
+2026-06-15T05:47:40.3433590Z [command]/opt/homebrew/bin/git config --local gc.auto 0
+2026-06-15T05:47:40.3524610Z ##[endgroup]
+2026-06-15T05:47:40.3525500Z ##[group]Setting up auth
+2026-06-15T05:47:40.3536340Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-06-15T05:47:40.3637590Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-06-15T05:47:40.4775340Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-06-15T05:47:40.4851390Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-06-15T05:47:40.6047650Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-06-15T05:47:40.6187080Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-06-15T05:47:40.6998930Z [command]/opt/homebrew/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-06-15T05:47:40.7076990Z ##[endgroup]
+2026-06-15T05:47:40.7077970Z ##[group]Fetching the repository
+2026-06-15T05:47:40.7084440Z [command]/opt/homebrew/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +4105dc728acc021e51ef2013a6b5e3bc04e4d89f:refs/remotes/origin/main
+2026-06-15T05:47:41.2061710Z From https://github.com/postyizhan/PostShot
+2026-06-15T05:47:41.2148600Z  * [new ref]         4105dc728acc021e51ef2013a6b5e3bc04e4d89f -> origin/main
+2026-06-15T05:47:41.2151570Z ##[endgroup]
+2026-06-15T05:47:41.2154790Z ##[group]Determining the checkout info
+2026-06-15T05:47:41.2155830Z ##[endgroup]
+2026-06-15T05:47:41.2156490Z [command]/opt/homebrew/bin/git sparse-checkout disable
+2026-06-15T05:47:41.2231220Z [command]/opt/homebrew/bin/git config --local --unset-all extensions.worktreeConfig
+2026-06-15T05:47:41.2305570Z ##[group]Checking out the ref
+2026-06-15T05:47:41.2307670Z [command]/opt/homebrew/bin/git checkout --progress --force -B main refs/remotes/origin/main
+2026-06-15T05:47:41.2455490Z Switched to a new branch 'main'
+2026-06-15T05:47:41.2557100Z branch 'main' set up to track 'origin/main'.
+2026-06-15T05:47:41.2701690Z ##[endgroup]
+2026-06-15T05:47:41.2703130Z [command]/opt/homebrew/bin/git log -1 --format=%H
+2026-06-15T05:47:41.2703670Z 4105dc728acc021e51ef2013a6b5e3bc04e4d89f
