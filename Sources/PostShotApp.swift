@@ -23,6 +23,8 @@ struct PostShotApp: App {
             TabView {
                 ContentView()
                     .tabItem { Label("拼图", systemImage: "photo.on.rectangle.angled") }
+                AutoStitchView()
+                    .tabItem { Label("自动", systemImage: "wand.and.stars") }
                 CaptureView()
                     .tabItem { Label("录制", systemImage: "record.circle") }
             }
