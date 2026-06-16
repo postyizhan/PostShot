@@ -25,6 +25,7 @@ struct CaptureView: View {
                     BroadcastPickerButton(extensionBundleID: extensionBundleID)
                         .frame(width: 200, height: 80)
                     statusCard
+                    appGroupCard
                     if !server.receivedFrames.isEmpty {
                         stitchButton
                         frameGrid
@@ -68,6 +69,27 @@ struct CaptureView: View {
                 Button("清空重录") { server.reset() }
                     .font(.caption)
                     .buttonStyle(.bordered)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(.quaternary, in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    private var appGroupCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("App Group 诊断").font(.subheadline.bold())
+            row("容器可用", AppGroup.isAvailable ? "是 ✅" : "否 ❌")
+            Text(AppGroup.diagnosticPath)
+                .font(.caption2.monospaced())
+                .foregroundStyle(.secondary)
+                .lineLimit(3)
+            if AppGroup.isAvailable {
+                Text("✅ App Group 容器可用 —— 可切换到写盘架构,免后台保活")
+                    .font(.caption).foregroundStyle(.green)
+            } else {
+                Text("❌ 容器为 nil —— 免费签名确实不支持,socket + 后台保活是唯一路")
+                    .font(.caption).foregroundStyle(.orange)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
