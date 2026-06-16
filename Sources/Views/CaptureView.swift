@@ -2,31 +2,39 @@
 import SwiftUI
 import UIKit
 
-/// Phase 1 capture screen: tests the REAL frame pipeline over the loopback socket bridge.
+/// v2 capture screen: real frame pipeline over the loopback socket bridge, then "去拼接" navigates
+/// into the shared review/stitch flow (Phase 2).
 ///
 /// TEST PROTOCOL: tap record, pick 驿站截图录制, then STAY on this screen (do not switch apps) and
 /// slowly scroll the content you want captured. The extension extracts keyframes, encodes PNG, and
 /// streams them here. A handful of sparse thumbnails (not hundreds) means FrameSelector + transport
-/// work. Stitching these frames is Phase 2.
+/// work; tap 去拼接 to review and stitch them into one long image.
 struct CaptureView: View {
     private let extensionBundleID = "com.postshot.app.broadcast"
 
     @StateObject private var server = FrameBridgeServer()
+    @State private var showReview = false
 
     private let columns = [GridItem(.adaptive(minimum: 80), spacing: 8)]
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                header
-                BroadcastPickerButton(extensionBundleID: extensionBundleID)
-                    .frame(width: 200, height: 80)
-                statusCard
-                if !server.receivedFrames.isEmpty {
-                    frameGrid
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 20) {
+                    header
+                    BroadcastPickerButton(extensionBundleID: extensionBundleID)
+                        .frame(width: 200, height: 80)
+                    statusCard
+                    if !server.receivedFrames.isEmpty {
+                        stitchButton
+                        frameGrid
+                    }
                 }
+                .padding()
             }
-            .padding()
+            .navigationDestination(isPresented: $showReview) {
+                CaptureReviewView(frames: server.receivedFrames)
+            }
         }
         .onAppear { server.start() }
         .onDisappear { server.stop() }
@@ -65,6 +73,18 @@ struct CaptureView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
         .background(.quaternary, in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    private var stitchButton: some View {
+        Button {
+            showReview = true
+        } label: {
+            Label("去拼接(\(server.frameCount) 帧)", systemImage: "arrow.down.to.line.compact")
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.borderedProminent)
+        .controlSize(.large)
+        .disabled(server.frameCount < 2)
     }
 
     private var frameGrid: some View {

@@ -36,6 +36,21 @@ final class StitchViewModel: ObservableObject {
         result = nil
     }
 
+    /// Loads captured frames (Phase 2): decodes full-resolution PNG bytes from the broadcast
+    /// bridge into `SelectedImage`s, reusing the exact same decode path and review UI as the
+    /// PhotosPicker flow. Frames keep their capture order. Failed frames are skipped, not fatal.
+    func load(pngFrames: [Data]) {
+        var loaded: [SelectedImage] = []
+        for png in pngFrames {
+            if let decoded = try? ImageDecoder.decode(png) { loaded.append(decoded) }
+        }
+        images = loaded
+        result = nil
+        if loaded.isEmpty && !pngFrames.isEmpty {
+            present(error: "无法解码采集到的帧")
+        }
+    }
+
     /// Loads full-resolution data for each picked item, preserving picker order (SPEC §8).
     private func loadPickedItems() {
         let items = pickerItems
