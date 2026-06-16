@@ -4,11 +4,11 @@
 > 本文件是 v2 的事实来源,接续 SPEC.md。
 >
 > **进度状态(2026-06-16 更新)**:Phase 0 冒烟**真机验证通过** ✅——socket 桥在免费签名 + 扩展
-> 沙盒下确认能连通(真机录制时 `CaptureView` 显示"扩展已连接 / 收到消息",文本通道送达)。
-> v2 最大未知数(传输路线)已消除,全屏录制路线在侧载层成立,**不再需要回退网页方案**。
-> Phase 1 的纯算法部分 `FrameSelector` 已实现并通过 CI 单测;下一步是 Phase 1 集成
-> (真实帧提取/PNG 编码/socket 传真帧/主 App 重组)。**传输路线已从 App Group 改为本地回环
-> socket**(原因见 §0),App Group 方案作为历史保留在 §7。
+> 沙盒下确认能连通。v2 最大未知数(传输路线)已消除,**不再需要回退网页方案**。
+> **Phase 1(真实帧采集:协议分帧 + FrameSelector 筛选 + PNG 传输)和 Phase 2(拼接接线:采集帧
+> 复用 v1 审阅/拼接/预览流程)代码已完成、CI 绿**。剩余为**真机端到端实测**:录一次滚动 → 确认
+> 采集到稀疏关键帧且扩展不被 50MB 杀 → 去拼接 → 删首尾垃圾帧 → 得到一张连续长图。
+> **传输路线为本地回环 socket**(原因见 §0),App Group 方案作为历史保留在 §7。
 
 ## 0. 背景与硬约束
 
@@ -139,18 +139,24 @@ targets:
 - **若 socket 也不通**:全屏录制路线在侧载层被卡。回退到"App 内置浏览器仅网页长截图"零风险方案。
 - 这一步必须在做任何采集集成前跑通——CI+爱思+装机循环很慢,先把最大未知数消掉。
 
-### Phase 1 — 帧采集与筛选 — 🟡 算法已实现 / 集成待真机验证传输路线
+### Phase 1 — 帧采集与筛选 — ✅ 代码完成/CI 绿 / 🟡 真机实测待做
 
 - ✅ `FrameSelector` + `Engine`(粗筛纯算法,§3)已实现并通过单测。
-- ⬜ 待做(依赖 Phase 0 真机验证 socket 通后再投入):
-  - SampleHandler 里 CMSampleBuffer → 降采样提签名(喂给 FrameSelector)。
-  - 保留帧全分辨率 PNG 编码 → 通过 FrameBridgeClient socket 发出 → 立即释放。
-  - 内存安全:逐帧降采样比较,只对保留帧编码,常驻 1~2 帧。
-- ✅ 单测:已用合成"滚动序列"验证 FrameSelector 去重 + 保留逻辑正确。
+- ✅ `FrameProtocol`(类型+长度前缀二进制分帧)+ 流式 Decoder,带完整单测(往返/逐字节分块/
+  单块多消息/半截/空载荷/错误)。socket 桥从发文本升级为发真实帧。
+- ✅ `FrameEncoder`:CVPixelBuffer → 64×64 灰度签名(廉价,每帧)/ → 全分辨率 PNG(仅保留帧)。
+- ✅ `SampleHandler`:每帧提签名 → FrameSelector 筛选 → 仅保留帧编码 PNG → socket 发出 →
+  立即释放。常驻 ~1 帧,遵守 50MB 内存铁律。
+- 🟡 待真机实测:滚一屏看到的应是「几张稀疏关键帧」而非几百张,且扩展不被系统杀。
+- ✅ 单测:合成"滚动序列"验证 FrameSelector;FrameProtocol 分帧往返/分块。
 
-### Phase 2 — 拼接接线
-- 主 App:录制结束后从 socket 收齐所有保留帧(PNG→CGImage) → 复用 StitchEngine → 复用 PreviewView。
-- 复用 PhotoSaver / ImageExporter 保存分享。
+### Phase 2 — 拼接接线 — ✅ 代码完成/CI 绿 / 🟡 真机端到端待做
+- ✅ 主 App:录制结束后从 socket 收齐保留帧(PNG)→ `StitchViewModel.load(pngFrames:)`
+  复用 `ImageDecoder.decode` 解码 → 复用 `StitchEngine` → 复用 `PreviewView`。
+- ✅ 复用 v1 审阅流程:抽出共享 `StitchReviewView`(缩略图条删垃圾帧 + 裁剪 + 拼接 + 预览),
+  ContentView(PhotosPicker)与 CaptureReviewView(采集)共用,消除重复。
+- ✅ 复用 PhotoSaver / ImageExporter 保存分享(PreviewView 内已接)。
+- 🟡 待真机端到端:录一次 → 去拼接 → 删首尾垃圾帧 → 得到一张连续长图。
 
 ### Phase 3 — 采集 UX 与健壮性
 - CaptureView:RPSystemBroadcastPickerView 从 App 内启动录制 + 引导文案("缓慢滚动")。
