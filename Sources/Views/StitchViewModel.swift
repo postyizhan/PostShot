@@ -51,6 +51,18 @@ final class StitchViewModel: ObservableObject {
         }
     }
 
+    /// Auto-detects fixed bars (status/nav/input) and stitches in one shot — the Tailor-style
+    /// fully-automatic path. Sets the crop sliders to the detected values so the user can still see
+    /// and tweak them afterward, then runs `stitch()`. No-op if fewer than 2 images.
+    func autoStitch() {
+        guard images.count >= 2 else { return }
+        let cgImages = images.map { $0.cgImage }
+        let (top, bottom) = FixedBarDetector.detectFractions(cgImages)
+        topCropFraction = top
+        bottomCropFraction = bottom
+        stitch()
+    }
+
     /// Loads full-resolution data for each picked item, preserving picker order (SPEC §8).
     private func loadPickedItems() {
         let items = pickerItems

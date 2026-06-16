@@ -32,7 +32,9 @@ final class AutoStitchViewModel: ObservableObject {
     }
 
     /// Loads a session's full-resolution frames and returns a `StitchViewModel` seeded with them,
-    /// ready to drive `StitchReviewView`. Returns nil if no frames could be loaded.
+    /// then kicks off fully-automatic fixed-bar detection + stitch. The returned model drives
+    /// `StitchReviewView`, whose preview cover auto-presents once the stitch completes; the user can
+    /// dismiss it to tweak crop/order and re-stitch. Returns nil if no frames could be loaded.
     func makeStitchModel(for session: ScreenshotGrouping.ScreenshotSession) async -> StitchViewModel? {
         isPreparingSession = true
         defer { isPreparingSession = false }
@@ -43,6 +45,7 @@ final class AutoStitchViewModel: ObservableObject {
 
         let model = StitchViewModel()
         model.load(pngFrames: data)
+        model.autoStitch()
         return model
     }
 }
