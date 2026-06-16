@@ -5,15 +5,21 @@ import UIKit
 /// v2 capture screen: real frame pipeline over the loopback socket bridge, then "去拼接" navigates
 /// into the shared review/stitch flow (Phase 2).
 ///
-/// TEST PROTOCOL: tap record, pick 驿站截图录制, then STAY on this screen (do not switch apps) and
-/// slowly scroll the content you want captured. The extension extracts keyframes, encodes PNG, and
-/// streams them here. A handful of sparse thumbnails (not hundreds) means FrameSelector + transport
-/// work; tap 去拼接 to review and stitch them into one long image.
+/// BACKGROUND SURVIVAL: the socket needs both host and extension alive, but recording means leaving
+/// PostShot to scroll another app. App Groups (the store-and-forward alternative) are unavailable
+/// under free signing (verified: container nil), so we keep the host alive with silent-audio
+/// keep-alive (`AudioKeepAlive`) while this screen is active.
+///
+/// TEST PROTOCOL: tap record, pick 驿站截图录制, then switch to the target app and slowly scroll.
+/// The extension extracts keyframes, encodes PNG, and streams them here. A handful of sparse
+/// thumbnails (not hundreds) means FrameSelector + transport + background-survival work; tap 去拼接
+/// to review and stitch them into one long image.
 struct CaptureView: View {
     private let extensionBundleID = "com.postshot.app.broadcast"
 
     @StateObject private var server = FrameBridgeServer()
     @State private var showReview = false
+    private let keepAlive = AudioKeepAlive()
 
     private let columns = [GridItem(.adaptive(minimum: 80), spacing: 8)]
 
@@ -25,7 +31,6 @@ struct CaptureView: View {
                     BroadcastPickerButton(extensionBundleID: extensionBundleID)
                         .frame(width: 200, height: 80)
                     statusCard
-                    appGroupCard
                     if !server.receivedFrames.isEmpty {
                         stitchButton
                         frameGrid
@@ -37,8 +42,8 @@ struct CaptureView: View {
                 CaptureReviewView(frames: server.receivedFrames)
             }
         }
-        .onAppear { server.start() }
-        .onDisappear { server.stop() }
+        .onAppear { server.start(); keepAlive.start() }
+        .onDisappear { server.stop(); keepAlive.stop() }
     }
 
     private var header: some View {
@@ -69,27 +74,6 @@ struct CaptureView: View {
                 Button("清空重录") { server.reset() }
                     .font(.caption)
                     .buttonStyle(.bordered)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-        .background(.quaternary, in: RoundedRectangle(cornerRadius: 12))
-    }
-
-    private var appGroupCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("App Group 诊断").font(.subheadline.bold())
-            row("容器可用", AppGroup.isAvailable ? "是 ✅" : "否 ❌")
-            Text(AppGroup.diagnosticPath)
-                .font(.caption2.monospaced())
-                .foregroundStyle(.secondary)
-                .lineLimit(3)
-            if AppGroup.isAvailable {
-                Text("✅ App Group 容器可用 —— 可切换到写盘架构,免后台保活")
-                    .font(.caption).foregroundStyle(.green)
-            } else {
-                Text("❌ 容器为 nil —— 免费签名确实不支持,socket + 后台保活是唯一路")
-                    .font(.caption).foregroundStyle(.orange)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
