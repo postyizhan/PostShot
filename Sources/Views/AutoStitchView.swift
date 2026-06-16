@@ -7,15 +7,18 @@ import SwiftUI
 struct AutoStitchView: View {
     @StateObject private var model = AutoStitchViewModel()
     @State private var preparedModel: StitchViewModel?
+    @State private var showReview = false
 
     var body: some View {
         NavigationStack {
             content
                 .navigationTitle("自动拼接")
-                .navigationDestination(item: $preparedModel) { stitchModel in
-                    StitchReviewView(model: stitchModel)
-                        .navigationTitle("审阅截图")
-                        .navigationBarTitleDisplayMode(.inline)
+                .navigationDestination(isPresented: $showReview) {
+                    if let preparedModel {
+                        StitchReviewView(model: preparedModel)
+                            .navigationTitle("审阅截图")
+                            .navigationBarTitleDisplayMode(.inline)
+                    }
                 }
         }
         .task { await model.discover() }
@@ -40,7 +43,12 @@ struct AutoStitchView: View {
     private func sessionList(_ sessions: [ScreenshotGrouping.ScreenshotSession]) -> some View {
         List(sessions) { session in
             Button {
-                Task { preparedModel = await model.makeStitchModel(for: session) }
+                Task {
+                    if let prepared = await model.makeStitchModel(for: session) {
+                        preparedModel = prepared
+                        showReview = true
+                    }
+                }
             } label: {
                 sessionRow(session)
             }
