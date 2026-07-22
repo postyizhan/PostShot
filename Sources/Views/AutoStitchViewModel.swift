@@ -49,13 +49,24 @@ final class AutoStitchViewModel: ObservableObject {
         }
 
         do {
-            let decoded = try results.map { result -> SelectedImage in
+            let original = try results.map { result -> SelectedImage in
                 guard let data = result.data else { throw ImageLoadError.decodeFailed }
                 return try ImageDecoder.decode(data, orientation: result.orientation)
             }
+            let suggestion = FixedBarDetector.detectFractions(original.map(\.cgImage))
+            let sourceImages = original.map(\.cgImage)
+            let recoveredOrder = await Task.detached(priority: .userInitiated) {
+                ScreenshotSequenceOrderer.order(
+                    images: sourceImages,
+                    topCropFraction: suggestion.top,
+                    bottomCropFraction: suggestion.bottom
+                )
+            }.value
+            let decoded = recoveredOrder.map { order in order.map { original[$0] } } ?? original
             let model = StitchViewModel()
             model.load(decodedImages: decoded)
-            model.suggestFixedBarCrop()
+            model.topCropFraction = suggestion.top
+            model.bottomCropFraction = suggestion.bottom
             return model
         } catch {
             present(error: "截图解码失败。已保留原始顺序，请重试或重新选择这组截图。")

@@ -27,8 +27,8 @@ final class ScreenshotGroupingTests: XCTestCase {
     }
 
     func testLargeTimeGapSplitsSessions() {
-        // Two bursts separated by a 60s gap → two sessions.
-        let metas = [meta("a", 0), meta("b", 3), meta("c", 63), meta("d", 66)]
+        // Two bursts separated by more than the 60s import tolerance → two sessions.
+        let metas = [meta("a", 0), meta("b", 3), meta("c", 64), meta("d", 67)]
         let sessions = ScreenshotGrouping.group(metas)
         XCTAssertEqual(sessions.count, 2)
         // Most-recent session first.

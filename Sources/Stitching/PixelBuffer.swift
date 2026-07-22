@@ -86,9 +86,20 @@ extension PixelBuffer {
         // rows in memory order already yields top-down display order — no flip needed.
         // (The detector compares A's last rows against B's first rows, which only aligns
         // when rows are top-down.)
+        //
+        // Use horizontal edge energy instead of raw luminance. Chat screenshots often contain
+        // a large fixed wallpaper/background layer; raw luminance lets that layer dominate NCC
+        // and creates a false near-full-height match. Horizontal edges retain text/bubble borders
+        // while strongly reducing smooth wallpaper gradients. The first sample in each row is
+        // kept at zero so every row remains a fixed-width comparable vector.
         var rows = [Float](repeating: 0, count: sampleWidth * height)
-        for i in 0..<(sampleWidth * height) {
-            rows[i] = Float(pixels[i]) / 255.0
+        for y in 0..<height {
+            let base = y * sampleWidth
+            for x in 1..<sampleWidth {
+                let current = Float(pixels[base + x])
+                let previous = Float(pixels[base + x - 1])
+                rows[base + x] = abs(current - previous) / 255.0
+            }
         }
         return PixelBuffer(rows: rows, height: height, width: sampleWidth)
     }

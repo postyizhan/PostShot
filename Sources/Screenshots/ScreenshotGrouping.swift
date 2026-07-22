@@ -32,9 +32,10 @@ enum ScreenshotGrouping {
     }
 
     struct Config {
-        /// Max seconds between adjacent screenshots to still count as the same session. Scrolling +
-        /// screenshotting is fast, so a modest gap separates distinct capture bursts.
-        var maxGap: TimeInterval = 10
+        /// Imported screenshot batches can acquire library creation times several seconds apart
+        /// even when they belong to one scroll sequence. Use a one-minute discovery window; the
+        /// pixel-level sequence orderer still requires a complete chain of safe matched seams.
+        var maxGap: TimeInterval = 60
         /// Minimum screenshots in a session — fewer than this is not a long-screenshot candidate.
         var minGroupSize: Int = 2
 

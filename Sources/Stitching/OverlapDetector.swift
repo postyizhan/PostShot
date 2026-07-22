@@ -32,10 +32,22 @@ enum OverlapDetector {
     struct Config {
         var minOverlap: Int = 16
         var maxOverlapFraction: Float = 0.95
-        var acceptThreshold: Float = 0.85
+        /// Edge-feature NCC is lower than raw-luminance NCC on sparse chat screenshots, because
+        /// only bubble/text boundaries carry motion evidence. Calibrated against real 601x1306
+        /// chat captures: valid adjacent pairs score 0.642...0.800 with margins >= 0.31, while
+        /// unrelated simulator photos score <= 0.076. The distinct-competitor margin remains
+        /// mandatory, so this is not a score-only acceptance rule.
+        var acceptThreshold: Float = 0.60
         var candidateCount: Int = 12
         var duplicateThreshold: Float = 0.995
         var minimumScoreMargin: Float = 0.002
+        /// Minimum row separation between the winning overlap and a candidate that may count as a
+        /// *competing* hypothesis for the ambiguity margin. Adjacent overlaps (h±1) are the same
+        /// peak shifted one row; on smooth real content they score near-identically, so treating
+        /// them as competitors would reject perfect matches. A genuine second hypothesis (e.g. a
+        /// periodic/repeated-content peak) sits far from the winner. Effective separation also
+        /// scales mildly with overlap length to clear the main lobe on tall images.
+        var minCompetitorSeparation: Int = 16
     }
 
     static func detect(top: CGImage, bottom: CGImage, config: Config = Config()) -> OverlapResult {
@@ -79,33 +91,63 @@ enum OverlapDetector {
         guard let best = ranked.first, best.score.isFinite, best.score > -1 else {
             return evidence("NCC variance was insufficient")
         }
-        let second = ranked.dropFirst().first
-        let margin = second.map { best.score - $0.score }
+        // The ambiguity margin must compare the winner against a DISTINCT alignment hypothesis,
+        // not against its own adjacent shoulder. Suppress a neighborhood around the winning
+        // overlap and take the best remaining candidate as the true competitor.
+        let separation = max(config.minCompetitorSeparation, Int((Float(best.overlap) * 0.01).rounded(.up)))
+        let competitor = ranked.dropFirst().first { abs($0.overlap - best.overlap) > separation }
+        let margin = competitor.map { best.score - $0.score }
         guard best.score >= config.acceptThreshold else {
             return OverlapResult(status: .insufficientEvidence, overlap: 0, bestScore: best.score,
-                                 secondBestScore: second?.score, scoreMargin: margin,
+                                 secondBestScore: competitor?.score, scoreMargin: margin,
                                  candidates: ranked, diagnostics: ["Best score is below acceptance threshold"])
         }
+        // No competing peak outside the winner's neighborhood → the match is unambiguous.
         if let margin, margin < config.minimumScoreMargin {
             return OverlapResult(status: .ambiguous, overlap: best.overlap, bestScore: best.score,
-                                 secondBestScore: second?.score, scoreMargin: margin,
+                                 secondBestScore: competitor?.score, scoreMargin: margin,
                                  candidates: ranked, diagnostics: ["Competing overlap candidates are too close"])
         }
         return OverlapResult(status: .matched, overlap: best.overlap, bestScore: best.score,
-                             secondBestScore: second?.score, scoreMargin: margin,
+                             secondBestScore: competitor?.score, scoreMargin: margin,
                              candidates: ranked, diagnostics: [])
     }
 
+    /// Returns coarse overlap candidates for fine NCC scoring.
+    ///
+    /// Two goals must both be met, so a pure top-`keep`-by-score selection is not enough:
+    /// 1. Refine the dominant peak to ±px — keep a tight neighborhood around the best coarse row.
+    /// 2. Preserve DISTINCT competing peaks (e.g. periodic/repeated content) so genuine ambiguity
+    ///    is still detectable. These are found by non-maximum suppression across the coarse curve.
     static func coarseCandidates(aMeans: [Float], bMeans: [Float], minOverlap: Int, maxOverlap: Int, keep: Int) -> [Int] {
         guard minOverlap > 0, maxOverlap >= minOverlap, keep > 0,
               aMeans.count >= maxOverlap, bMeans.count >= maxOverlap else { return [] }
-        var scored: [(Int, Float)] = []
+        var scored: [(overlap: Int, score: Float)] = []
         for h in minOverlap...maxOverlap {
             let score = normalizedCorrelation(Array(aMeans[(aMeans.count - h)..<aMeans.count]), Array(bMeans[0..<h]))
             scored.append((h, score))
         }
-        scored.sort { $0.1 == $1.1 ? $0.0 < $1.0 : $0.1 > $1.1 }
-        return scored.prefix(keep).map(\.0)
+        scored.sort { $0.score == $1.score ? $0.overlap < $1.overlap : $0.score > $1.score }
+        guard let top = scored.first else { return [] }
+
+        var chosen: [Int] = []
+        var seen = Set<Int>()
+        func add(_ h: Int) { if seen.insert(h).inserted { chosen.append(h) } }
+
+        // (1) Dense neighborhood around the dominant peak for exact-row refinement.
+        let refineRadius = 3
+        for h in (top.overlap - refineRadius)...(top.overlap + refineRadius) where h >= minOverlap && h <= maxOverlap {
+            add(h)
+        }
+
+        // (2) NMS: walk candidates best-first, adding peaks that are separated from all
+        //     already-chosen peaks, so distinct hypotheses survive alongside the main lobe.
+        let separation = max(8, (maxOverlap - minOverlap) / max(keep, 1))
+        for cand in scored {
+            if chosen.count >= keep { break }
+            if chosen.allSatisfy({ abs($0 - cand.overlap) > separation }) { add(cand.overlap) }
+        }
+        return chosen
     }
 
     static func nccScore(aTail a: PixelBuffer, bHead b: PixelBuffer, overlap: Int) -> Float {
