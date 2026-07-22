@@ -22,6 +22,11 @@ struct AutoStitchView: View {
                 }
         }
         .task { await model.discover() }
+        .alert("无法准备截图", isPresented: $model.isShowingError, presenting: model.errorMessage) { _ in
+            Button("好", role: .cancel) {}
+        } message: { message in
+            Text(message)
+        }
     }
 
     @ViewBuilder

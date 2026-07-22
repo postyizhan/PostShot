@@ -73,7 +73,8 @@ final class StitchTests: XCTestCase {
 
         let result = OverlapDetector.detect(top: top, bottom: bottom)
 
-        XCTAssertGreaterThan(result.score, 0.85, "NCC score should be high for a real overlap")
+        XCTAssertEqual(result.status, .matched)
+        XCTAssertGreaterThan(result.bestScore, 0.85, "NCC score should be high for a real overlap")
         XCTAssertEqual(result.overlap, knownOverlap, accuracy: 2,
                        "Detected overlap must be within ±2px of ground truth (SPEC §9)")
     }
@@ -83,14 +84,16 @@ final class StitchTests: XCTestCase {
         let a = makeImage(width: width, height: 300, seed: 1)
         let b = makeImage(width: width, height: 300, seed: 9999)
         let result = OverlapDetector.detect(top: a, bottom: b)
-        XCTAssertEqual(result.overlap, 0, "Unrelated images should report no overlap")
+        XCTAssertEqual(result.status, .insufficientEvidence, "Unrelated images must not be appended silently")
+        XCTAssertEqual(result.overlap, 0)
     }
 
     func testDuplicateDetection() {
         let width = 64
         let a = makeImage(width: width, height: 300, seed: 7)
         let result = OverlapDetector.detect(top: a, bottom: a)
-        XCTAssertTrue(result.isDuplicate, "Identical images should be flagged as duplicate")
+        XCTAssertTrue(result.status == .duplicate, "Identical images should be flagged as duplicate")
+        XCTAssertEqual(result.overlap, a.height)
     }
 
     func testNormalizedCorrelationIdentity() {

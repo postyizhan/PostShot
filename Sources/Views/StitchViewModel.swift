@@ -27,63 +27,86 @@ final class StitchViewModel: ObservableObject {
     @Published private(set) var errorMessage: String?
 
     private let engine = StitchEngine()
+    private var loadTask: Task<Void, Never>?
 
     // MARK: - Selection
 
     func clear() {
+        loadTask?.cancel()
         pickerItems = []
         images = []
         result = nil
     }
 
-    /// Loads captured frames (Phase 2): decodes full-resolution PNG bytes from the broadcast
-    /// bridge into `SelectedImage`s, reusing the exact same decode path and review UI as the
-    /// PhotosPicker flow. Frames keep their capture order. Failed frames are skipped, not fatal.
-    func load(pngFrames: [Data]) {
-        var loaded: [SelectedImage] = []
-        for png in pngFrames {
-            if let decoded = try? ImageDecoder.decode(png) { loaded.append(decoded) }
-        }
-        images = loaded
+    /// Seeds already-decoded canonical images, preserving their validated order.
+    func load(decodedImages: [SelectedImage]) {
+        images = decodedImages
         result = nil
-        if loaded.isEmpty && !pngFrames.isEmpty {
-            present(error: "无法解码采集到的帧")
-        }
     }
 
-    /// Auto-detects fixed bars (status/nav/input) and stitches in one shot — the Tailor-style
-    /// fully-automatic path. Sets the crop sliders to the detected values so the user can still see
-    /// and tweak them afterward, then runs `stitch()`. No-op if fewer than 2 images.
-    func autoStitch() {
+    /// Loads captured frames through the shared canonical decoder while preserving adjacency.
+    /// Any failed frame blocks the batch instead of silently joining non-adjacent frames.
+    func load(pngFrames: [Data]) {
+        var loaded: [SelectedImage] = []
+        var failedIndices: [Int] = []
+        for (index, png) in pngFrames.enumerated() {
+            do {
+                loaded.append(try ImageDecoder.decode(png))
+            } catch {
+                failedIndices.append(index)
+            }
+        }
+        result = nil
+        guard failedIndices.isEmpty else {
+            images = []
+            present(error: failedLoadMessage(prefix: "采集帧", indices: failedIndices))
+            return
+        }
+        images = loaded
+    }
+
+    /// Produces a visible crop suggestion for review. It never starts stitching automatically.
+    func suggestFixedBarCrop() {
         guard images.count >= 2 else { return }
-        let cgImages = images.map { $0.cgImage }
-        let (top, bottom) = FixedBarDetector.detectFractions(cgImages)
-        topCropFraction = top
-        bottomCropFraction = bottom
-        stitch()
+        let suggestion = FixedBarDetector.detectFractions(images.map(\.cgImage))
+        topCropFraction = suggestion.top
+        bottomCropFraction = suggestion.bottom
     }
 
     /// Loads full-resolution data for each picked item, preserving picker order (SPEC §8).
     private func loadPickedItems() {
+        loadTask?.cancel()
         let items = pickerItems
-        guard !items.isEmpty else { return }
+        guard !items.isEmpty else {
+            images = []
+            return
+        }
 
-        Task {
+        loadTask = Task {
             var loaded: [SelectedImage] = []
-            for item in items {
+            var failedIndices: [Int] = []
+            for (index, item) in items.enumerated() {
+                guard !Task.isCancelled else { return }
                 do {
-                    guard let data = try await item.loadTransferable(type: Data.self) else { continue }
-                    let decoded = try ImageDecoder.decode(data)
-                    loaded.append(decoded)
+                    guard let data = try await item.loadTransferable(type: Data.self) else {
+                        failedIndices.append(index)
+                        continue
+                    }
+                    loaded.append(try ImageDecoder.decode(data))
+                } catch is CancellationError {
+                    return
                 } catch {
-                    // Skip an individual failed item rather than aborting the whole batch.
-                    continue
+                    failedIndices.append(index)
                 }
             }
-            self.images = loaded
-            if loaded.isEmpty {
-                self.present(error: "无法加载所选图片")
+            guard !Task.isCancelled, items == self.pickerItems else { return }
+            self.result = nil
+            guard failedIndices.isEmpty else {
+                self.images = []
+                self.present(error: self.failedLoadMessage(prefix: "所选图片", indices: failedIndices))
+                return
             }
+            self.images = loaded
         }
     }
 
@@ -91,6 +114,7 @@ final class StitchViewModel: ObservableObject {
 
     func stitch() {
         guard images.count >= 1, !isStitching else { return }
+        result = nil
         isStitching = true
         progress = 0
 
@@ -109,6 +133,7 @@ final class StitchViewModel: ObservableObject {
                 case .success(let image):
                     self.result = StitchResult(image: image)
                 case .failure(let error):
+                    self.result = nil
                     self.present(error: self.describe(error))
                 }
             }
@@ -122,12 +147,22 @@ final class StitchViewModel: ObservableObject {
         isShowingError = true
     }
 
+    private func failedLoadMessage(prefix: String, indices: [Int]) -> String {
+        let positions = indices.map { String($0 + 1) }.joined(separator: "、")
+        return "\(prefix)第 \(positions) 项加载失败。为避免改变帧相邻关系，已停止本次拼接。"
+    }
+
     private func describe(_ error: StitchEngine.StitchError) -> String {
         switch error {
         case .noImages:
             return "没有可拼接的图片"
+        case .invalidInput(let profile):
+            let details = profile.diagnostics.map { "第\($0.sourceIndex + 1)张 \($0.actual)" }.joined(separator: "、")
+            return "图片尺寸不一致：\(details)"
+        case .unsafeSeam(let seam):
+            return "第\(seam.topIndex + 1)张与第\(seam.bottomIndex + 1)张证据不足，已停止拼接"
         case .compositeFailed:
-            return "图像合成失败,请重试或减少图片数量"
+            return "图像合成失败，请重试或减少图片数量"
         }
     }
 }

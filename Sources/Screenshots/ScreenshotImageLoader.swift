@@ -2,38 +2,54 @@
 import Foundation
 import Photos
 
-/// Loads full-resolution image data for screenshots in a session, for handoff to the stitch
-/// backend. Requests original (non-downsampled) data so the long-screenshot stays sharp — the same
-/// quality contract as `ImageDecoder` in the PhotosPicker path.
+/// Loads original screenshot bytes without losing source identity or orientation metadata.
 enum ScreenshotImageLoader {
-
-    /// Loads full-resolution PNG/HEIC bytes for each screenshot id, preserving the given order.
-    /// Assets that fail to load are skipped (not fatal) so one bad item can't abort a session.
-    /// - Returns: image data in the same order as `ids` (minus any that failed).
-    static func loadImageData(for ids: [String]) async -> [Data] {
-        var result: [Data] = []
-        result.reserveCapacity(ids.count)
-        for id in ids {
-            guard let asset = ScreenshotLibrary.asset(for: id),
-                  let data = await requestData(for: asset) else { continue }
-            result.append(data)
-        }
-        return result
+    struct Result {
+        let sourceIndex: Int
+        let sourceID: String
+        let data: Data?
+        let orientation: CGImagePropertyOrientation?
     }
 
-    /// Requests original image data for one asset, bridging the callback API to async.
-    private static func requestData(for asset: PHAsset) async -> Data? {
+    /// Returns exactly one result per requested identifier, preserving order and failures.
+    static func loadImageData(for ids: [String]) async -> [Result] {
+        var results: [Result] = []
+        results.reserveCapacity(ids.count)
+        for (index, id) in ids.enumerated() {
+            guard let asset = ScreenshotLibrary.asset(for: id),
+                  let loaded = await requestData(for: asset) else {
+                results.append(Result(sourceIndex: index, sourceID: id, data: nil, orientation: nil))
+                continue
+            }
+            results.append(Result(
+                sourceIndex: index,
+                sourceID: id,
+                data: loaded.data,
+                orientation: loaded.orientation
+            ))
+        }
+        return results
+    }
+
+    private static func requestData(
+        for asset: PHAsset
+    ) async -> (data: Data, orientation: CGImagePropertyOrientation)? {
         await withCheckedContinuation { continuation in
             let options = PHImageRequestOptions()
-            options.isNetworkAccessAllowed = true   // allow iCloud-stored originals to download
+            options.isNetworkAccessAllowed = true
             options.deliveryMode = .highQualityFormat
             options.isSynchronous = false
             options.version = .current
 
             PHImageManager.default().requestImageDataAndOrientation(
-                for: asset, options: options
-            ) { data, _, _, _ in
-                continuation.resume(returning: data)
+                for: asset,
+                options: options
+            ) { data, _, orientation, _ in
+                guard let data else {
+                    continuation.resume(returning: nil)
+                    return
+                }
+                continuation.resume(returning: (data, orientation))
             }
         }
     }

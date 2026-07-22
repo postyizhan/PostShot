@@ -23,6 +23,11 @@ struct PixelBuffer {
         self.rows = rows
         self.height = height
         self.width = width
+        guard width > 0, height > 0, width <= Int.max / height,
+              rows.count == width * height else {
+            self.rowMeans = []
+            return
+        }
         var means = [Float](repeating: 0, count: height)
         let w = Float(width)
         for y in 0..<height {
@@ -34,8 +39,14 @@ struct PixelBuffer {
         self.rowMeans = means
     }
 
+    var isStructurallyValid: Bool {
+        width > 0 && height > 0 && width <= Int.max / height &&
+            rows.count == width * height && rowMeans.count == height
+    }
+
     /// Returns the contiguous grayscale samples for row `y` (length == width).
     func row(_ y: Int) -> ArraySlice<Float> {
+        guard isStructurallyValid, y >= 0, y < height else { return [] }
         let base = y * width
         return rows[base..<(base + width)]
     }

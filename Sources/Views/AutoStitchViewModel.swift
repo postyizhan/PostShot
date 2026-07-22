@@ -18,6 +18,8 @@ final class AutoStitchViewModel: ObservableObject {
 
     @Published private(set) var state: DiscoveryState = .idle
     @Published var isPreparingSession = false
+    @Published var isShowingError = false
+    @Published private(set) var errorMessage: String?
 
     /// Authorizes, fetches the Screenshots album, and groups it into sessions.
     func discover() async {
@@ -31,21 +33,43 @@ final class AutoStitchViewModel: ObservableObject {
         }
     }
 
-    /// Loads a session's full-resolution frames and returns a `StitchViewModel` seeded with them,
-    /// then kicks off fully-automatic fixed-bar detection + stitch. The returned model drives
-    /// `StitchReviewView`, whose preview cover auto-presents once the stitch completes; the user can
-    /// dismiss it to tweak crop/order and re-stitch. Returns nil if no frames could be loaded.
+    /// Loads a session's full-resolution frames and returns a model seeded for diagnostic review.
+    /// A conservative crop suggestion is visible in the sliders, but stitching never starts until
+    /// the user reviews the inputs and taps the stitch button.
     func makeStitchModel(for session: ScreenshotGrouping.ScreenshotSession) async -> StitchViewModel? {
         isPreparingSession = true
         defer { isPreparingSession = false }
 
         let ids = session.items.map(\.id)
-        let data = await ScreenshotImageLoader.loadImageData(for: ids)
-        guard !data.isEmpty else { return nil }
+        let results = await ScreenshotImageLoader.loadImageData(for: ids)
+        let failures = results.filter { $0.data == nil }
+        guard failures.isEmpty else {
+            presentLoadFailure(indices: failures.map(\.sourceIndex))
+            return nil
+        }
 
-        let model = StitchViewModel()
-        model.load(pngFrames: data)
-        model.autoStitch()
-        return model
+        do {
+            let decoded = try results.map { result -> SelectedImage in
+                guard let data = result.data else { throw ImageLoadError.decodeFailed }
+                return try ImageDecoder.decode(data, orientation: result.orientation)
+            }
+            let model = StitchViewModel()
+            model.load(decodedImages: decoded)
+            model.suggestFixedBarCrop()
+            return model
+        } catch {
+            present(error: "截图解码失败。已保留原始顺序，请重试或重新选择这组截图。")
+            return nil
+        }
+    }
+
+    private func presentLoadFailure(indices: [Int]) {
+        let positions = indices.map { String($0 + 1) }.joined(separator: "、")
+        present(error: "第 \(positions) 张截图加载失败。为避免改变相邻关系，未开始拼接。")
+    }
+
+    private func present(error: String) {
+        errorMessage = error
+        isShowingError = true
     }
 }

@@ -25,28 +25,32 @@ enum ImageLoadError: Error {
 ///
 /// We decode from the original `Data` (loaded via `loadTransferable(type: Data.self)`),
 /// never via a `UIImage` round-trip, to preserve full-resolution sharpness (SPEC §8).
+private extension UIImage {
+    func resizedForDecoder(scale: CGFloat) -> UIImage {
+        guard scale < 1 else { return self }
+        let size = CGSize(width: CGFloat(size.width) * scale, height: CGFloat(size.height) * scale)
+        let renderer = UIGraphicsImageRenderer(size: size)
+        return renderer.image { _ in draw(in: CGRect(origin: .zero, size: size)) }
+    }
+}
 enum ImageDecoder {
-
     /// Max thumbnail edge in pixels for the strip.
     static let thumbnailMaxPixel = 200
 
-    static func decode(_ data: Data) throws -> SelectedImage {
-        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else {
+    static func decode(
+        _ data: Data,
+        orientation: CGImagePropertyOrientation? = nil
+    ) throws -> SelectedImage {
+        guard let normalized = try? ImageNormalizer.normalize(
+            data: data,
+            orientationOverride: orientation.map { Int($0.rawValue) }
+        ) else {
             throw ImageLoadError.decodeFailed
         }
-        let fullOptions: [CFString: Any] = [kCGImageSourceShouldCache: false]
-        guard let full = CGImageSourceCreateImageAtIndex(source, 0, fullOptions as CFDictionary) else {
-            throw ImageLoadError.decodeFailed
-        }
-
-        let thumbOptions: [CFString: Any] = [
-            kCGImageSourceCreateThumbnailFromImageAlways: true,
-            kCGImageSourceCreateThumbnailWithTransform: true,
-            kCGImageSourceThumbnailMaxPixelSize: thumbnailMaxPixel,
-        ]
-        let thumbCG = CGImageSourceCreateThumbnailAtIndex(source, 0, thumbOptions as CFDictionary)
-        let thumbnail = thumbCG.map { UIImage(cgImage: $0) } ?? UIImage(cgImage: full)
-
-        return SelectedImage(cgImage: full, thumbnail: thumbnail)
+        let full = normalized.image
+        let thumbSize = thumbnailMaxPixel
+        let scale = min(1, CGFloat(thumbSize) / CGFloat(max(full.width, full.height)))
+        let thumb = UIImage(cgImage: full).resizedForDecoder(scale: scale)
+        return SelectedImage(cgImage: full, thumbnail: thumb)
     }
 }
