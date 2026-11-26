@@ -1,30 +1,34 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import Foundation
-import ImageIO
 import Network
 import UIKit
 
-/// Main-app side of the loopback frame bridge: a TCP listener on 127.0.0.1 that receives
-/// length-prefixed `FrameProtocol` messages from the broadcast extension on a serial queue.
+/// Main-app side of the loopback frame bridge: receives length-prefixed `FrameProtocol` messages
+/// from the broadcast extension and streams frame payloads directly into `CaptureFrameStore` on
+/// disk so dense captures never bloat app RAM.
 @MainActor
 final class FrameBridgeServer: ObservableObject {
     struct CapturedPreview: Identifiable {
         let id = UUID()
+        let poolIndex: Int
         let thumbnail: UIImage
     }
 
+    let frameStore = CaptureFrameStore()
+
     @Published private(set) var status = "未启动"
-    @Published private(set) var receivedFrames: [Data] = []
     @Published private(set) var previews: [CapturedPreview] = []
     @Published private(set) var lastControl = "(无)"
     @Published private(set) var isFinished = false
 
-    var frameCount: Int { receivedFrames.count }
+    var frameCount: Int { previews.count }
 
     private let transport = Transport()
 
     func start() {
+        let store = frameStore
         transport.start(
+            store: store,
             onState: { [weak self] text in
                 Task { @MainActor in self?.status = text }
             },
@@ -34,8 +38,13 @@ final class FrameBridgeServer: ObservableObject {
                     self?.isFinished = false
                 }
             },
-            onMessage: { [weak self] message, thumbnail in
-                Task { @MainActor in self?.handle(message: message, thumbnail: thumbnail) }
+            onFrameStored: { [weak self] index, thumbnail in
+                Task { @MainActor in
+                    self?.previews.append(CapturedPreview(poolIndex: index, thumbnail: thumbnail))
+                }
+            },
+            onControl: { [weak self] text in
+                Task { @MainActor in self?.handleControl(text) }
             }
         )
     }
@@ -44,67 +53,47 @@ final class FrameBridgeServer: ObservableObject {
         transport.stop()
     }
 
-    /// Clears collected frames for a fresh recording (keeps the listener running).
+    /// Clears collected frames and disk files for a fresh recording (keeps listener running).
     func reset() {
-        receivedFrames.removeAll()
+        frameStore.reset()
         previews.removeAll()
         lastControl = "(无)"
         isFinished = false
     }
 
-    private func handle(message: FrameProtocol.Message, thumbnail: UIImage?) {
-        switch message.type {
-        case .frame:
-            receivedFrames.append(message.payload)
-            if let thumbnail {
-                previews.append(CapturedPreview(thumbnail: thumbnail))
-            }
-        case .control:
-            let raw = String(data: message.payload, encoding: .utf8) ?? ""
-            if raw == "started" {
-                lastControl = "录制进行中"
-            } else if raw.hasPrefix("finished") {
-                let parts = raw.split(separator: " ")
-                let countText = parts.count > 1 ? String(parts[1]) : "\(receivedFrames.count)"
-                lastControl = "已完成（发送 \(countText) 帧）"
-                isFinished = true
-            } else {
-                lastControl = raw.isEmpty ? "(空)" : raw
-            }
+    private func handleControl(_ raw: String) {
+        if raw == "started" {
+            lastControl = "录制进行中"
+        } else if raw.hasPrefix("finished") {
+            let parts = raw.split(separator: " ")
+            let countText = parts.count > 1 ? String(parts[1]) : "\(previews.count)"
+            lastControl = "已完成（采集 \(countText) 帧）"
+            isFinished = true
+        } else {
+            lastControl = raw.isEmpty ? "(空)" : raw
         }
-    }
-
-    nonisolated fileprivate static func makePreviewThumbnail(from png: Data) -> UIImage? {
-        guard let source = CGImageSourceCreateWithData(png as CFData, nil) else { return nil }
-        let options: [CFString: Any] = [
-            kCGImageSourceCreateThumbnailFromImageAlways: true,
-            kCGImageSourceCreateThumbnailWithTransform: true,
-            kCGImageSourceThumbnailMaxPixelSize: 240,
-        ]
-        guard let cg = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else {
-            return nil
-        }
-        return UIImage(cgImage: cg)
     }
 }
 
 /// Serial-queue-isolated socket listener and per-connection decoder state so `NWConnection`
-/// (which gained `Sendable` only in iOS 17) never crosses `@MainActor` boundaries on iOS 16.
+/// never crosses `@MainActor` boundaries on iOS 16.
 private final class Transport: @unchecked Sendable {
     private let queue = DispatchQueue(label: "com.postshot.bridge.server", qos: .userInitiated)
     private var listener: NWListener?
     private var sessions: [ObjectIdentifier: (conn: NWConnection, decoder: FrameProtocol.Decoder)] = [:]
 
     func start(
+        store: CaptureFrameStore,
         onState: @escaping @Sendable (String) -> Void,
         onConnected: @escaping @Sendable () -> Void,
-        onMessage: @escaping @Sendable (FrameProtocol.Message, UIImage?) -> Void
+        onFrameStored: @escaping @Sendable (Int, UIImage) -> Void,
+        onControl: @escaping @Sendable (String) -> Void
     ) {
         queue.async { [weak self] in
             guard let self, self.listener == nil else { return }
             do {
                 let params = NWParameters.tcp
-                params.allowLocalEndpointReuse = true
+                params.acceptLocalOnly = true
                 let listener = try NWListener(using: params, on: NWEndpoint.Port(rawValue: FrameBridge.port)!)
                 self.listener = listener
                 onState("启动中…")
@@ -117,7 +106,10 @@ private final class Transport: @unchecked Sendable {
                     }
                 }
                 listener.newConnectionHandler = { [weak self] conn in
-                    self?.accept(conn, onState: onState, onConnected: onConnected, onMessage: onMessage)
+                    self?.accept(
+                        conn, store: store, onState: onState,
+                        onConnected: onConnected, onFrameStored: onFrameStored, onControl: onControl
+                    )
                 }
                 listener.start(queue: self.queue)
             } catch {
@@ -138,9 +130,11 @@ private final class Transport: @unchecked Sendable {
 
     private func accept(
         _ conn: NWConnection,
+        store: CaptureFrameStore,
         onState: @escaping @Sendable (String) -> Void,
         onConnected: @escaping @Sendable () -> Void,
-        onMessage: @escaping @Sendable (FrameProtocol.Message, UIImage?) -> Void
+        onFrameStored: @escaping @Sendable (Int, UIImage) -> Void,
+        onControl: @escaping @Sendable (String) -> Void
     ) {
         let id = ObjectIdentifier(conn)
         sessions[id] = (conn, FrameProtocol.Decoder())
@@ -150,13 +144,15 @@ private final class Transport: @unchecked Sendable {
             if case .cancelled = state { self?.sessions.removeValue(forKey: id) }
         }
         conn.start(queue: queue)
-        receiveLoop(id: id, onState: onState, onMessage: onMessage)
+        receiveLoop(id: id, store: store, onState: onState, onFrameStored: onFrameStored, onControl: onControl)
     }
 
     private func receiveLoop(
         id: ObjectIdentifier,
+        store: CaptureFrameStore,
         onState: @escaping @Sendable (String) -> Void,
-        onMessage: @escaping @Sendable (FrameProtocol.Message, UIImage?) -> Void
+        onFrameStored: @escaping @Sendable (Int, UIImage) -> Void,
+        onControl: @escaping @Sendable (String) -> Void
     ) {
         guard let conn = sessions[id]?.conn else { return }
         conn.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self] data, _, isComplete, error in
@@ -164,8 +160,14 @@ private final class Transport: @unchecked Sendable {
             if let data, !data.isEmpty {
                 do {
                     for msg in try entry.decoder.push(data) {
-                        let thumb = msg.type == .frame ? FrameBridgeServer.makePreviewThumbnail(from: msg.payload) : nil
-                        onMessage(msg, thumb)
+                        switch msg.type {
+                        case .frame:
+                            if let saved = store.append(msg.payload) {
+                                onFrameStored(saved.index, saved.thumbnail)
+                            }
+                        case .control:
+                            onControl(String(data: msg.payload, encoding: .utf8) ?? "")
+                        }
                     }
                 } catch {
                     entry.decoder.reset()
@@ -176,7 +178,10 @@ private final class Transport: @unchecked Sendable {
                 }
             }
             if error == nil && !isComplete {
-                self.receiveLoop(id: id, onState: onState, onMessage: onMessage)
+                self.receiveLoop(
+                    id: id, store: store, onState: onState,
+                    onFrameStored: onFrameStored, onControl: onControl
+                )
             } else {
                 entry.conn.cancel()
                 self.sessions.removeValue(forKey: id)

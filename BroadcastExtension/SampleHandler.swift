@@ -4,26 +4,21 @@ import CoreMedia
 import CoreVideo
 import Foundation
 
-/// Broadcast Upload Extension entry point: real-time keyframe selection and loopback streaming.
+/// Broadcast Upload Extension entry point: dense keyframe selection and loopback streaming.
 ///
-/// Per video frame:
-///   1. Extract a cheap 64×64 grayscale signature inside an `autoreleasepool`.
-///   2. Ask `FrameSelector.Engine` whether this frame has scrolled enough to be a keyframe.
-///   3. ONLY for kept frames: encode full-resolution PNG, enqueue over loopback TCP, and release.
-/// Resident memory stays at ~1–2 frames, well under the ~50 MB extension limit.
-///
-/// The host app keeps its loopback TCP listener alive in the background via `AudioKeepAlive`
-/// while the user switches to the target app and scrolls.
+/// Streams ~8%-stride keyframes (`FrameSelector.Config.denseBroadcast`) over loopback TCP into the
+/// host app's disk-backed `CaptureFrameStore` so `StitchEngine` has intermediate frames available
+/// whenever a fast scroll or outlier frame requires gap backfill.
 class SampleHandler: RPBroadcastSampleHandler {
 
     private struct PendingTail {
-        let png: Data
+        let data: Data
         let signature: [Float]
         let timestamp: TimeInterval
     }
 
     private let bridge = FrameBridgeClient()
-    private let selector = FrameSelector.Engine()
+    private let selector = FrameSelector.Engine(config: .denseBroadcast)
     private let stateLock = NSLock()
     private var lastTimestamp: TimeInterval?
     private var pendingTail: PendingTail?
@@ -48,33 +43,32 @@ class SampleHandler: RPBroadcastSampleHandler {
             var tailToFlush: PendingTail?
             stateLock.lock()
             let timestamp = monotonicSeconds(of: sampleBuffer)
-            // If ProMotion stopped delivering frames for >= 0.7s while resting on an unkept scroll
-            // endpoint (e.g. bottom of page before user reaches up to stop broadcast), flush that
-            // clean resting frame before evaluating the new UI-interaction frame.
-            if let tail = pendingTail, timestamp - tail.timestamp >= 0.7 {
+            if let tail = pendingTail, timestamp - tail.timestamp >= 0.55 {
                 tailToFlush = tail
                 pendingTail = nil
                 selector.recordForcedKeep(signature: tail.signature, at: tail.timestamp)
             }
             let decision = selector.consider(signature, at: timestamp)
-            let shouldSnapshotTail = (decision == .skipThrottled || decision == .skipMinorChange)
-                && (timestamp - lastTailSnapshotTime >= 0.16)
+            // Snapshot only on sub-stride scroll endpoints (never on throttled active flicks) so
+            // frame encoding never blocks high-velocity scrolling callbacks.
+            let shouldSnapshotTail = (decision == .skipMinorChange)
+                && (timestamp - lastTailSnapshotTime >= 0.35)
             if decision.isKeep {
                 pendingTail = nil
             }
             stateLock.unlock()
 
             if let tailToFlush {
-                _ = bridge.sendFrame(tailToFlush.png)
+                _ = bridge.sendFrame(tailToFlush.data)
             }
 
             if decision.isKeep {
-                if let png = FrameEncoder.png(from: pixelBuffer) {
-                    _ = bridge.sendFrame(png)
+                if let encoded = FrameEncoder.encodedFrame(from: pixelBuffer) {
+                    _ = bridge.sendFrame(encoded)
                 }
-            } else if shouldSnapshotTail, let png = FrameEncoder.png(from: pixelBuffer) {
+            } else if shouldSnapshotTail, let encoded = FrameEncoder.encodedFrame(from: pixelBuffer) {
                 stateLock.lock()
-                pendingTail = PendingTail(png: png, signature: signature, timestamp: timestamp)
+                pendingTail = PendingTail(data: encoded, signature: signature, timestamp: timestamp)
                 lastTailSnapshotTime = timestamp
                 stateLock.unlock()
             }
@@ -92,7 +86,7 @@ class SampleHandler: RPBroadcastSampleHandler {
         stateLock.unlock()
 
         if let finalTail {
-            _ = bridge.sendFrame(finalTail.png)
+            _ = bridge.sendFrame(finalTail.data)
         }
         bridge.finish(keptCount: count)
     }

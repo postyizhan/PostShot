@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import SwiftUI
 
-/// Post-capture review: decodes captured PNG frames into a `StitchViewModel`, auto-suggests
-/// fixed-bar cropping, and reuses the shared `StitchReviewView`.
+/// Post-capture review: selects sparse primary keyframes from `CaptureFrameStore` while retaining
+/// the dense disk pool for automatic gap backfill, auto-detects fixed bars, and shares `StitchReviewView`.
 struct CaptureReviewView: View {
-    let frames: [Data]
+    let store: CaptureFrameStore
 
     @StateObject private var model = StitchViewModel(autoSuggestCrop: true)
     @State private var isLoading = true
@@ -13,7 +13,7 @@ struct CaptureReviewView: View {
     var body: some View {
         Group {
             if isLoading {
-                ProgressView("正在解码采集帧…")
+                ProgressView("正在提取关键帧…")
             } else if model.images.isEmpty {
                 VStack(spacing: 12) {
                     Image(systemName: "photo.badge.exclamationmark")
@@ -41,7 +41,7 @@ struct CaptureReviewView: View {
         .task {
             guard !didLoad else { return }
             didLoad = true
-            await model.loadAsync(pngFrames: frames)
+            await model.loadFromStore(store)
             await model.suggestFixedBarCropAsync()
             isLoading = false
         }

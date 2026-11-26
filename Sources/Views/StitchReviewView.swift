@@ -13,6 +13,13 @@ struct StitchReviewView: View {
                 highlightedSeam: model.failedSeam,
                 isDisabled: model.isStitching
             )
+            if let notice = model.stitchNotice {
+                Label(notice, systemImage: "sparkles")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal)
+            }
             if let seam = model.failedSeam {
                 seamRecoveryCard(seam)
             }

@@ -2,14 +2,13 @@
 import CoreGraphics
 import Foundation
 
-/// Merges vertically-overlapping images into a single tall canvas with hard-cut seams.
+/// Merges vertically-overlapping images into a single tall canvas with midpoint hard-cut seams.
 /// Uses sRGB, no resampling beyond width normalization.
 ///
 /// Long screenshots share *identical* pixels in the overlap region (same UI, different scroll
-/// offset), so we do NOT alpha-blend the seam. Blending two near-identical regions only
-/// introduces a visible soft band wherever brightness changes (e.g. a dark bubble over a light
-/// gap washes out to a pale line). Instead each segment is drawn opaque; the later segment's
-/// top rows simply overwrite the previous segment's tail. Identical pixels → invisible seam.
+/// offset), so we do NOT alpha-blend the seam. Instead each seam is placed at `overlap / 2` —
+/// the vertical midpoint of the shared region — so any residual nav-bar hairline, drop shadow,
+/// or frosted-glass tint sitting near either segment's outer edge falls inside the discarded half.
 enum ImageCompositor {
 
     /// A source image paired with the overlap (in rows) it shares with the *previous* image.
@@ -48,8 +47,9 @@ enum ImageCompositor {
         ) else { throw CompositeError.contextCreationFailed }
         ctx.interpolationQuality = segments.allSatisfy({ $0.image.width == width }) ? .none : .high
 
-        // CG origin is bottom-left; lay segments from the top (highest y) downward so each
-        // subsequent segment's top rows overwrite the previous segment's overlapping tail.
+        // CG origin is bottom-left; lay segments from the top (highest y) downward. For i > 0,
+        // clip out the top half of the overlap (`cut = overlap / 2`) so the seam lands cleanly in
+        // the interior of the shared region rather than along segment i's top edge.
         var topY = layout.totalHeight
         for (i, seg) in segments.enumerated() {
             let h = layout.scaledHeights[i]
@@ -57,7 +57,15 @@ enum ImageCompositor {
                 topY -= (layout.scaledHeights[i - 1] - layout.overlaps[i])
             }
             let rect = CGRect(x: 0, y: CGFloat(topY - h), width: CGFloat(width), height: CGFloat(h))
-            ctx.draw(seg.image, in: rect)
+            let cut = i > 0 ? (layout.overlaps[i] / 2) : 0
+            if cut > 0, h > cut {
+                ctx.saveGState()
+                ctx.clip(to: CGRect(x: 0, y: CGFloat(topY - h), width: CGFloat(width), height: CGFloat(h - cut)))
+                ctx.draw(seg.image, in: rect)
+                ctx.restoreGState()
+            } else {
+                ctx.draw(seg.image, in: rect)
+            }
         }
 
         guard let result = ctx.makeImage() else { throw CompositeError.drawFailed }

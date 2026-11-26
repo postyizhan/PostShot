@@ -32,27 +32,15 @@ enum OverlapDetector {
     struct Config {
         var minOverlap: Int = 16
         var maxOverlapFraction: Float = 0.985
-        /// Edge-feature NCC is lower than raw-luminance NCC on sparse chat screenshots, because
-        /// only bubble/text boundaries carry motion evidence. Calibrated against real 601x1306
-        /// chat captures: valid adjacent pairs score 0.642...0.800 with margins >= 0.31, while
-        /// unrelated simulator photos score <= 0.076. The distinct-competitor margin remains
-        /// mandatory, so this is not a score-only acceptance rule.
+        /// Edge-feature NCC floor calibrated against real sparse chat & web captures.
         var acceptThreshold: Float = 0.60
-        /// Stricter floor for micro-scrolls above `maxOverlapFraction` (`98.5%..<100%`), where
-        /// nearly the entire viewport overlaps so genuine matches correlate strongly.
+        /// Stricter floor for micro-scrolls above `maxOverlapFraction` (`98.5%..<100%`).
         var highOverlapAcceptThreshold: Float = 0.80
-        /// Full-height correlation floor for near-duplicate broadcast frames whose minor H.264 or
-        /// status-bar clock noise puts `fullScore` just under `duplicateThreshold` (`0.995`).
+        /// Full-height correlation floor for near-duplicate broadcast frames.
         var nearDuplicateThreshold: Float = 0.92
         var candidateCount: Int = 12
         var duplicateThreshold: Float = 0.995
         var minimumScoreMargin: Float = 0.002
-        /// Minimum row separation between the winning overlap and a candidate that may count as a
-        /// *competing* hypothesis for the ambiguity margin. Adjacent overlaps (h±1) are the same
-        /// peak shifted one row; on smooth real content they score near-identically, so treating
-        /// them as competitors would reject perfect matches. A genuine second hypothesis (e.g. a
-        /// periodic/repeated-content peak) sits far from the winner. Effective separation also
-        /// scales mildly with overlap length to clear the main lobe on tall images.
         var minCompetitorSeparation: Int = 16
     }
 
@@ -74,13 +62,21 @@ enum OverlapDetector {
             return duplicateResult(height: a.height, score: fullScore)
         }
 
-        let maxOverlap = min(Int(Float(a.height) * config.maxOverlapFraction), Int(Float(b.height) * config.maxOverlapFraction))
-        guard maxOverlap >= config.minOverlap else {
+        let maxOverlap = min(
+            Int(Float(a.height) * config.maxOverlapFraction),
+            Int(Float(b.height) * config.maxOverlapFraction)
+        )
+        // On tall full-resolution screenshots, avoid 16-row (< 1% height) coincidences by scaling
+        // the floor to ~4% of height while keeping `config.minOverlap` exact on compact test images.
+        let scaledFloor = a.height >= 450 ? max(config.minOverlap, a.height / 25) : config.minOverlap
+        let effectiveMin = min(scaledFloor, maxOverlap)
+        guard maxOverlap >= config.minOverlap, effectiveMin >= config.minOverlap else {
             return evidence("Too few rows for the configured overlap search")
         }
-        let coarse = coarseCandidates(aMeans: a.rowMeans, bMeans: b.rowMeans,
-                                      minOverlap: config.minOverlap, maxOverlap: maxOverlap,
-                                      keep: config.candidateCount)
+        let coarse = coarseCandidates(
+            aMeans: a.rowMeans, bMeans: b.rowMeans,
+            minOverlap: effectiveMin, maxOverlap: maxOverlap, keep: config.candidateCount
+        )
         let ranked = buildRankedCandidates(coarse: coarse, maxOverlap: maxOverlap, top: a, bottom: b, config: config)
         return classify(ranked: ranked, fullScore: fullScore, fullHeight: a.height, config: config)
     }
@@ -102,9 +98,7 @@ enum OverlapDetector {
                       candidates: [OverlapCandidate(overlap: height, score: score)], diagnostics: [])
     }
 
-    /// Scores primary candidates and merges high-confidence micro-scroll peaks in `(maxOverlap, height)`
-    /// so periodic lower peaks (`>= 0.60`) can never mask a genuine `98.5%..<100%` overlap, while
-    /// weak fixed-wallpaper tails (`< highOverlapAcceptThreshold`) never enter competition.
+    /// Scores primary candidates and merges high-confidence micro-scroll peaks in `(maxOverlap, height)`.
     private static func buildRankedCandidates(
         coarse: [Int], maxOverlap: Int, top a: PixelBuffer, bottom b: PixelBuffer, config: Config
     ) -> [OverlapCandidate] {
@@ -155,39 +149,53 @@ enum OverlapDetector {
                              candidates: ranked, diagnostics: [])
     }
 
-    /// Returns coarse overlap candidates for fine NCC scoring.
+    /// Returns coarse overlap candidates for fine 2D NCC scoring.
     ///
-    /// Two goals must both be met, so a pure top-`keep`-by-score selection is not enough:
-    /// 1. Refine the dominant peak to ±px — keep a tight neighborhood around the best coarse row.
-    /// 2. Preserve DISTINCT competing peaks (e.g. periodic/repeated content) so genuine ambiguity
-    ///    is still detectable. These are found by non-maximum suppression across the coarse curve.
-    static func coarseCandidates(aMeans: [Float], bMeans: [Float], minOverlap: Int, maxOverlap: Int, keep: Int) -> [Int] {
+    /// Damps ultra-short 1D correlation noise (`h / (h + 24)`) so coincidental blank+text spikes
+    /// cannot hijack rank #1, and refines a `±3px` neighborhood around EVERY distinct NMS peak so
+    /// 1–2px offsets between 1D row-means and 2D edge features never miss the true overlap.
+    static func coarseCandidates(
+        aMeans: [Float], bMeans: [Float], minOverlap: Int, maxOverlap: Int, keep: Int
+    ) -> [Int] {
         guard minOverlap > 0, maxOverlap >= minOverlap, keep > 0,
               aMeans.count >= maxOverlap, bMeans.count >= maxOverlap else { return [] }
-        var scored: [(overlap: Int, score: Float)] = []
+        var scored: [(overlap: Int, rankScore: Float)] = []
+        scored.reserveCapacity(maxOverlap - minOverlap + 1)
         for h in minOverlap...maxOverlap {
-            let score = normalizedCorrelation(Array(aMeans[(aMeans.count - h)..<aMeans.count]), Array(bMeans[0..<h]))
-            scored.append((h, score))
+            let raw = normalizedCorrelation(
+                Array(aMeans[(aMeans.count - h)..<aMeans.count]),
+                Array(bMeans[0..<h])
+            )
+            let weight = raw > 0 ? Float(h) / Float(h + 24) : 1
+            scored.append((h, raw * weight))
         }
-        scored.sort { $0.score == $1.score ? $0.overlap < $1.overlap : $0.score > $1.score }
-        guard let top = scored.first else { return [] }
+        scored.sort { $0.rankScore == $1.rankScore ? $0.overlap < $1.overlap : $0.rankScore > $1.rankScore }
+
+        let peakLimit = max(2, min(keep, 8))
+        let peakSeparation = max(12, (maxOverlap - minOverlap) / 32)
+        var peakCenters: [Int] = []
+        for cand in scored where peakCenters.count < peakLimit {
+            if peakCenters.allSatisfy({ abs($0 - cand.overlap) > peakSeparation }) {
+                peakCenters.append(cand.overlap)
+            }
+        }
 
         var chosen: [Int] = []
         var seen = Set<Int>()
-        func add(_ h: Int) { if seen.insert(h).inserted { chosen.append(h) } }
-
-        // (1) Dense neighborhood around the dominant peak for exact-row refinement.
         let refineRadius = 3
-        for h in (top.overlap - refineRadius)...(top.overlap + refineRadius) where h >= minOverlap && h <= maxOverlap {
-            add(h)
+        for center in peakCenters {
+            for h in (center - refineRadius)...(center + refineRadius)
+            where h >= minOverlap && h <= maxOverlap && seen.insert(h).inserted {
+                chosen.append(h)
+            }
         }
-
-        // (2) NMS: walk candidates best-first, adding peaks that are separated from all
-        //     already-chosen peaks, so distinct hypotheses survive alongside the main lobe.
-        let separation = max(8, (maxOverlap - minOverlap) / max(keep, 1))
-        for cand in scored {
-            if chosen.count >= keep { break }
-            if chosen.allSatisfy({ abs($0 - cand.overlap) > separation }) { add(cand.overlap) }
+        let wideSeparation = max(16, (maxOverlap - minOverlap) / max(keep, 1))
+        for cand in scored where chosen.count < peakLimit * (refineRadius * 2 + 1) + keep {
+            if peakCenters.allSatisfy({ abs($0 - cand.overlap) > wideSeparation }),
+               seen.insert(cand.overlap).inserted {
+                chosen.append(cand.overlap)
+                peakCenters.append(cand.overlap)
+            }
         }
         return chosen
     }

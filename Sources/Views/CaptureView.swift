@@ -24,7 +24,7 @@ struct CaptureView: View {
                     BroadcastPickerButton(extensionBundleID: extensionBundleID)
                         .frame(width: 200, height: 80)
                     statusCard
-                    if !server.receivedFrames.isEmpty {
+                    if server.frameCount > 0 {
                         stitchButton
                         frameGrid
                     }
@@ -32,7 +32,7 @@ struct CaptureView: View {
                 .padding()
             }
             .navigationDestination(isPresented: $showReview) {
-                CaptureReviewView(frames: server.receivedFrames)
+                CaptureReviewView(store: server.frameStore)
             }
         }
         .onAppear { server.start(); keepAlive.start() }

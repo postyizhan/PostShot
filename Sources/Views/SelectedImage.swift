@@ -11,6 +11,8 @@ struct SelectedImage: Identifiable, Equatable {
     let cgImage: CGImage
     /// Small thumbnail for the strip UI.
     let thumbnail: UIImage
+    /// Optional index into `CaptureFrameStore` when sourced from a dense screen recording.
+    var poolIndex: Int? = nil
 
     static func == (lhs: SelectedImage, rhs: SelectedImage) -> Bool {
         lhs.id == rhs.id
@@ -22,8 +24,6 @@ enum ImageLoadError: Error {
 }
 
 /// Decodes full-resolution image data into a `CGImage` plus a downscaled 1× thumbnail.
-///
-/// Decodes directly from raw `Data` via `ImageNormalizer` so full-resolution sharpness is preserved.
 private extension UIImage {
     func resizedForDecoder(scale: CGFloat) -> UIImage {
         guard scale < 1 else { return self }
@@ -34,13 +34,15 @@ private extension UIImage {
         return renderer.image { _ in draw(in: CGRect(origin: .zero, size: targetSize)) }
     }
 }
+
 enum ImageDecoder {
     /// Max thumbnail edge in pixels for the strip.
     static let thumbnailMaxPixel = 200
 
     static func decode(
         _ data: Data,
-        orientation: CGImagePropertyOrientation? = nil
+        orientation: CGImagePropertyOrientation? = nil,
+        poolIndex: Int? = nil
     ) throws -> SelectedImage {
         guard let normalized = try? ImageNormalizer.normalize(
             data: data,
@@ -52,6 +54,6 @@ enum ImageDecoder {
         let thumbSize = thumbnailMaxPixel
         let scale = min(1, CGFloat(thumbSize) / CGFloat(max(full.width, full.height)))
         let thumb = UIImage(cgImage: full).resizedForDecoder(scale: scale)
-        return SelectedImage(cgImage: full, thumbnail: thumb)
+        return SelectedImage(cgImage: full, thumbnail: thumb, poolIndex: poolIndex)
     }
 }

@@ -42,8 +42,9 @@ enum FrameSelector {
         var bottomIgnoreFraction: Float = 0.125
 
         /// Minimum vertical scroll displacement (fraction of full frame height) required during
-        /// active scrolling (~14% advance => <=86% overlap, comfortably inside OverlapDetector's range).
-        var minScrollFraction: Float = 0.14
+        /// active scrolling (~20% advance => ~80% raw / ~75% post-crop overlap). With fixed bars
+        /// correctly cropped this halves seam count versus 14% while overlap stays generous.
+        var minScrollFraction: Float = 0.20
 
         /// Aligned mean-abs-diff below which a candidate shift `< minScrollFraction` counts as a
         /// genuine micro-scroll of the previous kept frame.
@@ -59,6 +60,18 @@ enum FrameSelector {
         var signatureWidth: Int = 64
 
         init() {}
+
+        /// Dense preset for live ReplayKit capture when frames stream into the host app's disk
+        /// pool (`CaptureFrameStore`), giving `StitchEngine` intermediate frames for gap backfill.
+        static var denseBroadcast: Config {
+            var cfg = Config()
+            cfg.minInterval = 0.09
+            cfg.minScrollFraction = 0.08
+            cfg.settleInterval = 0.50
+            cfg.settledMinScrollFraction = 0.03
+            cfg.maxFrames = 240
+            return cfg
+        }
     }
 
     /// Why a frame was kept or dropped. Distinct skip reasons make the coarse pass testable and

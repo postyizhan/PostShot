@@ -2,42 +2,64 @@
 import CoreGraphics
 import Foundation
 
-/// Detects fixed UI bars (status bar / nav bar / bottom input bar) across a burst of screenshots,
-/// so they can be auto-cropped before stitching — the Tailor-style "no manual sliders" experience.
+/// Detects fixed UI bars (status bar / nav bar / frosted-glass toolbar / bottom input or tab bar)
+/// across a burst of screenshots so they can be auto-cropped before stitching.
 ///
-/// KEY INSIGHT: within one session the screenshots are pixel-identical wherever content overlaps,
-/// and a FIXED bar sits at the same screen position in every shot — so row `y` of the bar is
-/// identical across all frames, while scrolling content at row `y` differs from frame to frame.
-/// A fixed band is therefore the maximal run of rows, anchored at the top or bottom edge, that
-/// stays identical across every consecutive frame pair.
-///
-/// Pure and unit-testable: the core works on `PixelBuffer`s (downsampled 64-wide grayscale rows),
-/// so synthetic sequences with known bars validate it on CI without real images.
+/// Handles real-world iOS chrome across arbitrary apps:
+/// 1. **Chrome-outlier filtering** — strips leading/trailing non-session frames (e.g. Control
+///    Center pulled down to stop recording) before scanning so they cannot veto bar detection.
+/// 2. **Status-band skip** — on portrait Dynamic Island screens, runs a second scan below the
+///    status band (`6.5%`) so an animating island cannot hide a static app nav bar underneath.
+/// 3. **Frosted-glass bars** — iOS `UIVisualEffectView` bars let blurred low-frequency tint drift
+///    by `2%–7%` while keeping high-frequency horizontal glyph/border edges locked in place.
+/// 4. **Trim-to-structure & inward margin** — retreats flat body whitespace back to real bar
+///    structure, then adds a tiny `0.5%` inward margin to clear residual semi-transparent lines.
 enum FixedBarDetector {
 
     struct Config {
-        /// Per-row raw-luminance mean-abs-diff (0...1) below which two rows count as identical.
+        /// Per-row raw-luminance mean-abs-diff (0...1) below which two opaque rows match.
         var rowMatchThreshold: Float = 0.015
-        /// Cap on automatically suggested band fraction so whitespace margins can never eat body
-        /// content (manual sliders still allow up to 30% when dragged explicitly).
+        /// Cap on automatically suggested band fraction so whitespace margins never eat body content.
         var maxBandFraction: Float = 0.18
-        /// Fraction of highest-diff columns trimmed inside the outer status/home-indicator bands
-        /// (`<= 10%` from top/bottom) when `width >= 32`, absorbing narrow clock or recording-pill
-        /// changes without letting narrow scrolling content inside the body look fixed.
+        /// Fraction of highest-diff columns trimmed inside the outer `<= 10%` bands when `width >= 32`.
         var statusBandTrimColumnFraction: Float = 0.09
+        /// Height fraction of the portrait status bar + Dynamic Island band skipped by the second scan.
+        var statusBandFraction: Float = 0.065
+        /// Minimum height/width ratio for the portrait status-band skip (full-screen iPhones ≈ 2.16).
+        var statusBandMinAspect: Float = 2.0
+        /// Max raw-luminance drift tolerated across a frosted-glass (`UIVisualEffectView`) bar row.
+        var frostedLuminanceThreshold: Float = 0.075
+        /// Max mean adjacent-column edge diff tolerated across a frosted-glass bar row.
+        var frostedMeanEdgeThreshold: Float = 0.012
+        /// Max single-column edge jump tolerated on frosted glass (rejects sharp scrolling text/UI).
+        var frostedMaxEdgeThreshold: Float = 0.055
+        /// Max chrome mean-abs-diff from the medoid frame before a frame is treated as an outlier
+        /// scene (e.g. Control Center or app switcher) and excluded from bar detection.
+        var chromeOutlierThreshold: Float = 0.085
+        /// Row max−min luminance below which a row carries no horizontal structure.
+        var flatRangeThreshold: Float = 0.02
+        /// Adjacent row-mean luminance delta below which two rows show no vertical step.
+        var flatStepThreshold: Float = 0.01
+        /// Extra inward margin added to non-zero detected bars to strip semi-transparent hairlines.
+        var edgeMarginFraction: Float = 0.005
 
         init() {}
     }
 
+    /// Top fraction the screen-recording entry always crops (status bar + Dynamic Island), even
+    /// when the page has no app nav bar for the detector to find.
+    static let recordingStatusBandFloor: Float = 0.065
+
     /// Crop fractions (top, bottom), 0...maxBandFraction, for `StitchEngine.Options`.
-    ///
-    /// IMPORTANT: Builds raw grayscale luminance buffers rather than `PixelBuffer.from(_:)`
-    /// (which stores tiny horizontal-edge deltas ~0.005 that would underflow `rowMatchThreshold`
-    /// and falsely classify scrolling text/whitespace as fixed bars).
-    static func detectFractions(_ images: [CGImage], config: Config = Config()) -> (top: Float, bottom: Float) {
+    static func detectFractions(
+        _ images: [CGImage], config: Config = Config(), minimumTopFraction: Float = 0
+    ) -> (top: Float, bottom: Float) {
         let buffers = images.compactMap { luminanceBuffer(from: $0) }
-        guard buffers.count == images.count else { return (0, 0) }
-        return fractions(forBuffers: buffers, config: config)
+        guard buffers.count == images.count, let first = images.first, first.width > 0 else { return (0, 0) }
+        let aspect = Float(first.height) / Float(first.width)
+        return fractions(
+            forBuffers: buffers, aspectRatio: aspect, config: config, minimumTopFraction: minimumTopFraction
+        )
     }
 
     /// Downsamples `image` horizontally to `sampleWidth` raw grayscale luminance samples (0...1)
@@ -66,8 +88,10 @@ enum FixedBarDetector {
         return PixelBuffer(rows: rows, height: height, width: sampleWidth)
     }
 
-    /// Raw fixed-band row counts (top, bottom) across the frame sequence.
-    static func detect(buffers: [PixelBuffer], config: Config = Config()) -> (topRows: Int, bottomRows: Int) {
+    /// Fixed-band row counts (top, bottom) across the frame sequence.
+    static func detect(
+        buffers: [PixelBuffer], aspectRatio: Float? = nil, config: Config = Config()
+    ) -> (topRows: Int, bottomRows: Int) {
         guard buffers.count >= 2 else { return (0, 0) }
         let width = buffers[0].width, height = buffers[0].height
         guard width > 0, height > 0,
@@ -75,72 +99,38 @@ enum FixedBarDetector {
             return (0, 0)
         }
 
-        var top = 0
-        while top < height && rowFixed(top, height: height, buffers, config) { top += 1 }
+        let filtered = filterChromeOutliers(buffers, config: config)
+        let active = filtered.count >= 2 ? filtered : buffers
 
-        var bottom = 0
-        while bottom < height && rowFixed(height - 1 - bottom, height: height, buffers, config) { bottom += 1 }
+        let strictTop = fixedRun(from: 0, step: 1, active, config)
+        let strictBottom = fixedRun(from: height - 1, step: -1, active, config)
+        if strictTop >= height { return (strictTop, strictBottom) }
 
-        return (top, bottom)
+        var top = strictTop
+        let statusRows = statusBandRows(aspectRatio: aspectRatio, height: height, config: config)
+        if statusRows > 0, statusRows < height {
+            let run = fixedRun(from: statusRows, step: 1, active, config)
+            if run > 0 { top = max(top, statusRows + run) }
+        }
+        return (shrinkTop(top, active, config), shrinkBottom(strictBottom, active, config))
     }
 
-    /// Applies the cap and the all-fixed guard, converting row counts to fractions.
-    static func fractions(forBuffers buffers: [PixelBuffer], config: Config = Config()) -> (top: Float, bottom: Float) {
-        let (top, bottom) = detect(buffers: buffers, config: config)
+    /// Applies the inward edge margin, floor, cap, and all-fixed guard, returning fractions.
+    static func fractions(
+        forBuffers buffers: [PixelBuffer],
+        aspectRatio: Float? = nil,
+        config: Config = Config(),
+        minimumTopFraction: Float = 0
+    ) -> (top: Float, bottom: Float) {
+        let (top, bottom) = detect(buffers: buffers, aspectRatio: aspectRatio, config: config)
         guard let height = buffers.first?.height, height > 0 else { return (0, 0) }
-        // Everything matched → frames are duplicates / no scroll; cropping would be meaningless.
         guard top + bottom < height else { return (0, 0) }
-        let topFrac = min(Float(top) / Float(height), config.maxBandFraction)
-        let bottomFrac = min(Float(bottom) / Float(height), config.maxBandFraction)
+        let margin = config.edgeMarginFraction.isFinite ? max(0, config.edgeMarginFraction) : 0
+        let floor = minimumTopFraction.isFinite ? max(0, minimumTopFraction) : 0
+        let rawTop = top > 0 ? (Float(top) / Float(height) + margin) : 0
+        let rawBottom = bottom > 0 ? (Float(bottom) / Float(height) + margin) : 0
+        let topFrac = min(max(rawTop, floor), config.maxBandFraction)
+        let bottomFrac = min(rawBottom, config.maxBandFraction)
         return (topFrac, bottomFrac)
-    }
-
-    /// True iff row `y` matches across all frames (for 2–4 frames) or all-but-one frame (for >= 5
-    /// frames, tolerating a single transition frame anywhere at the start, middle, or end).
-    private static func rowFixed(_ y: Int, height: Int, _ buffers: [PixelBuffer], _ config: Config) -> Bool {
-        let count = buffers.count
-        let requiredMatches = count >= 5 ? (count - 1) : count
-        let trimColumns = isOuterSystemBand(y: y, height: height)
-        for refIndex in [0, 1] where refIndex < count {
-            var matches = 0
-            for i in 0..<count {
-                if i == refIndex || rowDiff(buffers[refIndex], buffers[i], y, trimColumns: trimColumns, config) <= config.rowMatchThreshold {
-                    matches += 1
-                }
-            }
-            if matches >= requiredMatches { return true }
-            if requiredMatches == count { break }
-        }
-        return false
-    }
-
-    private static func isOuterSystemBand(y: Int, height: Int) -> Bool {
-        let margin = max(1, height / 10)
-        return y < margin || y >= height - margin
-    }
-
-    /// Mean absolute difference between row `y` of two buffers, trimming narrow outlier columns
-    /// only within the outer system status / Home-indicator bands.
-    private static func rowDiff(
-        _ a: PixelBuffer, _ b: PixelBuffer, _ y: Int, trimColumns: Bool, _ config: Config
-    ) -> Float {
-        let aRow = a.row(y), bRow = b.row(y)
-        let n = min(aRow.count, bRow.count)
-        guard n > 0 else { return 0 }
-        let aBase = aRow.startIndex, bBase = bRow.startIndex
-        let frac = config.statusBandTrimColumnFraction.isFinite ? max(0, min(config.statusBandTrimColumnFraction, 0.2)) : 0
-        let trimCount = (trimColumns && n >= 32) ? Int((Float(n) * frac).rounded(.down)) : 0
-        guard trimCount > 0, trimCount < n else {
-            var sum: Float = 0
-            for i in 0..<n { sum += abs(aRow[aBase + i] - bRow[bBase + i]) }
-            return sum / Float(n)
-        }
-        var diffs = [Float](repeating: 0, count: n)
-        for i in 0..<n { diffs[i] = abs(aRow[aBase + i] - bRow[bBase + i]) }
-        diffs.sort()
-        let keepCount = n - trimCount
-        var sum: Float = 0
-        for i in 0..<keepCount { sum += diffs[i] }
-        return sum / Float(keepCount)
     }
 }

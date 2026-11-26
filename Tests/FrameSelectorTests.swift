@@ -186,14 +186,18 @@ final class FrameSelectorTests: XCTestCase {
         let state = FrameSelector.State(signature: first, timestamp: 0, keptCount: 1)
 
         // 3/64 rows (~4.7% scroll) and 6/64 rows (~9.4% scroll) during active scrolling
-        // (< settleInterval 0.9s, < minScrollFraction 14% = 8 rows) must wait for more advance.
+        // (< settleInterval 0.9s, < minScrollFraction 20% = 12.8 rows) must wait for more advance.
         let micro3 = gridSignature(source: source, scrollRows: 3)
         let micro6 = gridSignature(source: source, scrollRows: 6)
         XCTAssertEqual(FrameSelector.decide(signature: micro3, timestamp: 0.3, state: state), .skipMinorChange)
         XCTAssertEqual(FrameSelector.decide(signature: micro6, timestamp: 0.6, state: state), .skipMinorChange)
 
-        // 12/64 rows (~18.8% scroll, ~81% overlap) crosses minScrollFraction (14%) -> keep.
-        let advanced = gridSignature(source: source, scrollRows: 12)
+        // 12/64 rows (~18.8% scroll) is still below minScrollFraction (20%) -> keep waiting.
+        let micro12 = gridSignature(source: source, scrollRows: 12)
+        XCTAssertEqual(FrameSelector.decide(signature: micro12, timestamp: 0.65, state: state), .skipMinorChange)
+
+        // 14/64 rows (~21.9% scroll, ~78% overlap) crosses minScrollFraction (20%) -> keep.
+        let advanced = gridSignature(source: source, scrollRows: 14)
         XCTAssertEqual(FrameSelector.decide(signature: advanced, timestamp: 0.7, state: state), .keep)
     }
 

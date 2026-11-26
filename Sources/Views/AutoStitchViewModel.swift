@@ -3,8 +3,7 @@ import SwiftUI
 import Photos
 
 /// Drives the Tailor-style auto-discovery flow: request read access, fetch screenshots, cluster
-/// them into sessions, and (on selection) load a session's full-resolution frames into a
-/// `StitchViewModel` for the shared review/stitch UI.
+/// them into sessions, and load a session's full-resolution frames into `StitchViewModel`.
 @MainActor
 final class AutoStitchViewModel: ObservableObject {
 
@@ -12,7 +11,7 @@ final class AutoStitchViewModel: ObservableObject {
         case idle
         case loading
         case denied
-        case empty           // access granted but no screenshot sessions found
+        case empty
         case loaded([ScreenshotGrouping.ScreenshotSession])
     }
 
@@ -21,7 +20,6 @@ final class AutoStitchViewModel: ObservableObject {
     @Published var isShowingError = false
     @Published private(set) var errorMessage: String?
 
-    /// Authorizes, fetches the Screenshots album, and groups it into sessions.
     func discover() async {
         state = .loading
         do {
@@ -33,9 +31,7 @@ final class AutoStitchViewModel: ObservableObject {
         }
     }
 
-    /// Loads a session's full-resolution frames and returns a model seeded for diagnostic review.
-    /// A conservative crop suggestion is visible in the sliders, but stitching never starts until
-    /// the user reviews the inputs and taps the stitch button.
+    /// Loads a session's full-resolution frames and returns a model seeded for review and stitch.
     func makeStitchModel(for session: ScreenshotGrouping.ScreenshotSession) async -> StitchViewModel? {
         isPreparingSession = true
         defer { isPreparingSession = false }
@@ -49,25 +45,36 @@ final class AutoStitchViewModel: ObservableObject {
         }
 
         do {
-            let (decoded, suggestion) = try await Task.detached(priority: .userInitiated) {
+            let prepared = try await Task.detached(priority: .userInitiated) {
                 let original = try results.map { result -> SelectedImage in
                     guard let data = result.data else { throw ImageLoadError.decodeFailed }
                     return try ImageDecoder.decode(data, orientation: result.orientation)
                 }
                 let sourceImages = original.map(\.cgImage)
-                let suggestion = FixedBarDetector.detectFractions(sourceImages)
+                let initialCrop = FixedBarDetector.detectFractions(sourceImages)
                 let recoveredOrder = ScreenshotSequenceOrderer.order(
                     images: sourceImages,
-                    topCropFraction: suggestion.top,
-                    bottomCropFraction: suggestion.bottom
+                    topCropFraction: initialCrop.top,
+                    bottomCropFraction: initialCrop.bottom
                 )
                 let ordered = recoveredOrder.map { order in order.map { original[$0] } } ?? original
-                return (ordered, suggestion)
+                let excluded: [Int]
+                if let order = recoveredOrder, order.count < original.count {
+                    let kept = Set(order)
+                    excluded = original.indices.filter { !kept.contains($0) }
+                } else {
+                    excluded = []
+                }
+                let finalCrop = excluded.isEmpty
+                    ? initialCrop
+                    : FixedBarDetector.detectFractions(ordered.map(\.cgImage))
+                return (ordered, finalCrop, excluded)
             }.value
             let model = StitchViewModel(autoSuggestCrop: true)
-            model.load(decodedImages: decoded)
-            model.topCropFraction = suggestion.top
-            model.bottomCropFraction = suggestion.bottom
+            model.load(decodedImages: prepared.0)
+            model.topCropFraction = prepared.1.top
+            model.bottomCropFraction = prepared.1.bottom
+            model.notePreExcluded(indices: prepared.2)
             return model
         } catch {
             present(error: "这组截图解码失败，请重试或改用手动选图拼接。")

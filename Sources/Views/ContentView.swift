@@ -4,7 +4,7 @@ import PhotosUI
 
 /// Main screen (v1 flow): pick screenshots, then reorder/trim/stitch/preview via `StitchReviewView`.
 struct ContentView: View {
-    @StateObject private var model = StitchViewModel()
+    @StateObject private var model = StitchViewModel(autoSuggestCrop: true)
 
     var body: some View {
         NavigationStack {

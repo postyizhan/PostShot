@@ -2,10 +2,11 @@
 import CoreGraphics
 import Foundation
 
-/// Recovers the top-to-bottom order of a small imported screenshot batch from overlap evidence.
-/// Photos creation dates can describe import order rather than capture/scroll order.
+/// Recovers the top-to-bottom order of a small imported screenshot batch from overlap evidence,
+/// automatically excluding up to `maxExcludedOutliers` unrelated screenshots (e.g. Control Center).
 enum ScreenshotSequenceOrderer {
     static let maximumAutomaticCount = 12
+    static let maxExcludedOutliers = 2
 
     static func order(
         images: [CGImage],
@@ -26,7 +27,7 @@ enum ScreenshotSequenceOrderer {
         guard buffers.count == images.count else { return nil }
 
         let scores = matchScores(buffers: buffers, config: detectorConfig)
-        return bestCompletePath(scores: scores)
+        return bestLongestPath(scores: scores)
     }
 
     private static func matchScores(
@@ -52,8 +53,9 @@ enum ScreenshotSequenceOrderer {
         return scores
     }
 
-    /// Held-Karp dynamic programming. Batches are capped at 12, so worst case is bounded.
-    private static func bestCompletePath(scores: [[Float?]]) -> [Int]? {
+    /// Held-Karp dynamic programming. Prefers a complete path over all screenshots; if an outlier
+    /// breaks completeness, falls back to the longest valid chain dropping at most 2 outliers.
+    private static func bestLongestPath(scores: [[Float?]]) -> [Int]? {
         let count = scores.count
         guard count >= 2, count < Int.bitWidth else { return nil }
         let stateCount = 1 << count
@@ -78,6 +80,19 @@ enum ScreenshotSequenceOrderer {
                 }
             }
         }
-        return states[stateCount - 1].compactMap { $0 }.max { $0.score < $1.score }?.path
+
+        let minLen = max(2, count - maxExcludedOutliers)
+        for targetLen in stride(from: count, through: minLen, by: -1) {
+            var best: Entry?
+            for mask in 1..<stateCount where mask.nonzeroBitCount == targetLen {
+                for entry in states[mask].compactMap({ $0 }) {
+                    if best == nil || entry.score > best!.score {
+                        best = entry
+                    }
+                }
+            }
+            if let best { return best.path }
+        }
+        return nil
     }
 }

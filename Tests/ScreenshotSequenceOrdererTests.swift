@@ -51,4 +51,18 @@ final class ScreenshotSequenceOrdererTests: XCTestCase {
             images: [a, b, c], topCropFraction: 0, bottomCropFraction: 0
         ))
     }
+
+    func testExcludesControlCenterOutlierAndOrdersRemainingScreenshots() {
+        let source = makeImage(width: 64, height: 1120, seed: 99)
+        let w0 = crop(source, start: 0, height: 400)
+        let w1 = crop(source, start: 260, height: 400)
+        let w2 = crop(source, start: 520, height: 400)
+        let outlier = makeImage(width: 64, height: 400, seed: 777_777)
+        let mixed = [w2, outlier, w0, w1]
+
+        let order = ScreenshotSequenceOrderer.order(
+            images: mixed, topCropFraction: 0, bottomCropFraction: 0
+        )
+        XCTAssertEqual(order, [2, 3, 0], "Must drop unrelated outlier at index 1 and recover w0→w1→w2")
+    }
 }
