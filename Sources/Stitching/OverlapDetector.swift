@@ -31,13 +31,19 @@ struct OverlapResult: Equatable {
 enum OverlapDetector {
     struct Config {
         var minOverlap: Int = 16
-        var maxOverlapFraction: Float = 0.95
+        var maxOverlapFraction: Float = 0.985
         /// Edge-feature NCC is lower than raw-luminance NCC on sparse chat screenshots, because
         /// only bubble/text boundaries carry motion evidence. Calibrated against real 601x1306
         /// chat captures: valid adjacent pairs score 0.642...0.800 with margins >= 0.31, while
         /// unrelated simulator photos score <= 0.076. The distinct-competitor margin remains
         /// mandatory, so this is not a score-only acceptance rule.
         var acceptThreshold: Float = 0.60
+        /// Stricter floor for micro-scrolls above `maxOverlapFraction` (`98.5%..<100%`), where
+        /// nearly the entire viewport overlaps so genuine matches correlate strongly.
+        var highOverlapAcceptThreshold: Float = 0.80
+        /// Full-height correlation floor for near-duplicate broadcast frames whose minor H.264 or
+        /// status-bar clock noise puts `fullScore` just under `duplicateThreshold` (`0.995`).
+        var nearDuplicateThreshold: Float = 0.92
         var candidateCount: Int = 12
         var duplicateThreshold: Float = 0.995
         var minimumScoreMargin: Float = 0.002
@@ -61,17 +67,11 @@ enum OverlapDetector {
     static func detect(top a: PixelBuffer, bottom b: PixelBuffer, config: Config = Config()) -> OverlapResult {
         guard a.isStructurallyValid, b.isStructurallyValid, a.width == b.width,
               a.height == b.height else { return invalid("Malformed or unequal feature buffers") }
-        guard config.minOverlap > 0, config.candidateCount >= 2,
-              config.maxOverlapFraction > 0, config.maxOverlapFraction < 1,
-              config.acceptThreshold >= -1, config.acceptThreshold <= 1,
-              config.duplicateThreshold >= -1, config.duplicateThreshold <= 1,
-              config.minimumScoreMargin >= 0 else { return invalid("Invalid detector configuration") }
+        guard isValidConfig(config) else { return invalid("Invalid detector configuration") }
 
         let fullScore = nccScore(aTail: a, bHead: b, overlap: a.height)
         if fullScore >= config.duplicateThreshold {
-            return OverlapResult(status: .duplicate, overlap: a.height, bestScore: fullScore,
-                                 secondBestScore: nil, scoreMargin: nil,
-                                 candidates: [OverlapCandidate(overlap: a.height, score: fullScore)], diagnostics: [])
+            return duplicateResult(height: a.height, score: fullScore)
         }
 
         let maxOverlap = min(Int(Float(a.height) * config.maxOverlapFraction), Int(Float(b.height) * config.maxOverlapFraction))
@@ -81,19 +81,62 @@ enum OverlapDetector {
         let coarse = coarseCandidates(aMeans: a.rowMeans, bMeans: b.rowMeans,
                                       minOverlap: config.minOverlap, maxOverlap: maxOverlap,
                                       keep: config.candidateCount)
-        var ranked = coarse.map { overlap in
-            OverlapCandidate(overlap: overlap, score: nccScore(aTail: a, bHead: b, overlap: overlap))
+        let ranked = buildRankedCandidates(coarse: coarse, maxOverlap: maxOverlap, top: a, bottom: b, config: config)
+        return classify(ranked: ranked, fullScore: fullScore, fullHeight: a.height, config: config)
+    }
+
+    private static func isValidConfig(_ config: Config) -> Bool {
+        config.minOverlap > 0 && config.candidateCount >= 2 &&
+            config.maxOverlapFraction > 0 && config.maxOverlapFraction < 1 &&
+            config.acceptThreshold >= -1 && config.acceptThreshold <= 1 &&
+            config.highOverlapAcceptThreshold >= -1 && config.highOverlapAcceptThreshold <= 1 &&
+            config.nearDuplicateThreshold >= -1 && config.nearDuplicateThreshold <= 1 &&
+            config.duplicateThreshold >= -1 && config.duplicateThreshold <= 1 &&
+            config.minimumScoreMargin.isFinite && config.minimumScoreMargin >= 0 &&
+            config.minCompetitorSeparation >= 0
+    }
+
+    private static func duplicateResult(height: Int, score: Float) -> OverlapResult {
+        OverlapResult(status: .duplicate, overlap: height, bestScore: score,
+                      secondBestScore: nil, scoreMargin: nil,
+                      candidates: [OverlapCandidate(overlap: height, score: score)], diagnostics: [])
+    }
+
+    /// Scores primary candidates and merges high-confidence micro-scroll peaks in `(maxOverlap, height)`
+    /// so periodic lower peaks (`>= 0.60`) can never mask a genuine `98.5%..<100%` overlap, while
+    /// weak fixed-wallpaper tails (`< highOverlapAcceptThreshold`) never enter competition.
+    private static func buildRankedCandidates(
+        coarse: [Int], maxOverlap: Int, top a: PixelBuffer, bottom b: PixelBuffer, config: Config
+    ) -> [OverlapCandidate] {
+        var seen = Set(coarse)
+        var combined = coarse.map { OverlapCandidate(overlap: $0, score: nccScore(aTail: a, bHead: b, overlap: $0)) }
+        let ceilingFloor = max(config.acceptThreshold, config.highOverlapAcceptThreshold)
+        if maxOverlap + 1 < a.height {
+            for h in (maxOverlap + 1)..<a.height where seen.insert(h).inserted {
+                let score = nccScore(aTail: a, bHead: b, overlap: h)
+                if score >= ceilingFloor {
+                    combined.append(OverlapCandidate(overlap: h, score: score))
+                }
+            }
         }
-        ranked.sort {
-            if $0.score == $1.score { return $0.overlap < $1.overlap }
-            return $0.score > $1.score
+        combined.sort { $0.score == $1.score ? $0.overlap < $1.overlap : $0.score > $1.score }
+        return combined
+    }
+
+    private static func classify(
+        ranked: [OverlapCandidate], fullScore: Float, fullHeight: Int, config: Config
+    ) -> OverlapResult {
+        let nearDupFloor = max(config.acceptThreshold, config.nearDuplicateThreshold)
+        if fullScore >= nearDupFloor {
+            let fullSep = max(config.minCompetitorSeparation, Int((Float(fullHeight) * 0.01).rounded(.up)))
+            let distinct = ranked.first { abs(fullHeight - $0.overlap) > fullSep }
+            if distinct == nil || fullScore - distinct!.score >= config.minimumScoreMargin {
+                return duplicateResult(height: fullHeight, score: fullScore)
+            }
         }
         guard let best = ranked.first, best.score.isFinite, best.score > -1 else {
             return evidence("NCC variance was insufficient")
         }
-        // The ambiguity margin must compare the winner against a DISTINCT alignment hypothesis,
-        // not against its own adjacent shoulder. Suppress a neighborhood around the winning
-        // overlap and take the best remaining candidate as the true competitor.
         let separation = max(config.minCompetitorSeparation, Int((Float(best.overlap) * 0.01).rounded(.up)))
         let competitor = ranked.dropFirst().first { abs($0.overlap - best.overlap) > separation }
         let margin = competitor.map { best.score - $0.score }
@@ -102,7 +145,6 @@ enum OverlapDetector {
                                  secondBestScore: competitor?.score, scoreMargin: margin,
                                  candidates: ranked, diagnostics: ["Best score is below acceptance threshold"])
         }
-        // No competing peak outside the winner's neighborhood → the match is unambiguous.
         if let margin, margin < config.minimumScoreMargin {
             return OverlapResult(status: .ambiguous, overlap: best.overlap, bestScore: best.score,
                                  secondBestScore: competitor?.score, scoreMargin: margin,

@@ -4,8 +4,8 @@ import Foundation
 
 /// Downsampled grayscale row-feature buffer for a single image.
 ///
-/// Each image row is reduced to `sampleWidth` grayscale samples (SPEC §2.1 step 1).
-/// Comparing these "row signatures" is sufficient and fast for pure vertical scroll.
+/// Each image row is reduced to `sampleWidth` horizontal-edge samples.
+/// Comparing these row signatures is fast and suppresses fixed chat wallpapers during vertical scroll.
 struct PixelBuffer {
 
     /// Number of horizontal samples per row.
@@ -16,7 +16,7 @@ struct PixelBuffer {
     let height: Int
     let width: Int
 
-    /// Per-row mean grayscale, length == height. Used by the 1D coarse search (SPEC §2.1 step 2).
+    /// Per-row mean feature value, length == height. Used by the 1D coarse search.
     let rowMeans: [Float]
 
     init(rows: [Float], height: Int, width: Int) {
@@ -60,7 +60,7 @@ extension PixelBuffer {
     /// horizontal averaging) at full vertical resolution, then reads back luminance.
     static func from(_ image: CGImage, sampleWidth: Int = PixelBuffer.sampleWidth) -> PixelBuffer? {
         let height = image.height
-        guard height > 0, sampleWidth > 0 else { return nil }
+        guard height > 0, sampleWidth > 0, sampleWidth <= Int.max / height else { return nil }
 
         let colorSpace = CGColorSpaceCreateDeviceGray()
         let bytesPerRow = sampleWidth

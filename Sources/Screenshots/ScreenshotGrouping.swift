@@ -8,10 +8,9 @@ import Foundation
 /// + pixel size), so the clustering logic is fully unit-testable on CI without a device or photo
 /// library. The Photos read layer maps `PHAsset`s into `ScreenshotMeta` and feeds this.
 ///
-/// Heuristic (SPEC: long-screenshot candidates are bursts of same-screen captures): a session is a
-/// maximal run of screenshots where each adjacent pair was taken within `maxGap` seconds AND has
-/// identical pixel dimensions (same screen / orientation). Runs shorter than `minGroupSize` are
-/// dropped — a lone screenshot is not a long-screenshot candidate.
+/// Heuristic: a session is a maximal run of screenshots where each adjacent pair was taken within
+/// `maxGap` seconds AND has identical pixel dimensions (same screen / orientation). Runs shorter
+/// than `minGroupSize` are dropped — a lone screenshot is not a long-screenshot candidate.
 enum ScreenshotGrouping {
 
     /// Lightweight metadata for one screenshot, decoupled from `PHAsset`.

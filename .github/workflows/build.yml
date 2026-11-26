@@ -1,6 +1,6 @@
 name: Build Unsigned IPA
 
-# 构建未签名 .ipa 并作为 artifact 上传(SPEC §5)。
+# 构建未签名 .ipa 并作为 artifact 上传。
 # CI 绝不接触任何苹果证书 / 私钥 / 描述文件 —— 签名交给设备端的 SideStore。
 #
 # 关于版本:部署目标是 iOS 16(见 project.yml,App 能跑的最低系统,保持低 = 最大兼容)。
@@ -61,7 +61,6 @@ jobs:
   test:
     name: Unit Tests
     runs-on: macos-26
-    # SPEC §2 / §9 重视 OverlapDetector 偏移检测的算法单测。
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -73,10 +72,9 @@ jobs:
         run: xcodegen generate
 
       # 动态挑选一台已安装的 iPhone 模拟器,避免写死设备名在镜像更新后失效。
-      # 当前 macos-26 镜像装的是 iPhone 17 系列(iOS 26.x 运行时)。
       - name: Run unit tests on simulator
         run: |
-          DEVICE=$(xcrun simctl list devices available | grep -oE 'iPhone 1[0-9][^(]*' | head -1 | xargs)
+          DEVICE=$(xcrun simctl list devices available | grep -oE 'iPhone [1-9][0-9]*[^(]*' | head -1 | xargs)
           echo "使用模拟器: ${DEVICE:-iPhone 17}"
           xcodebuild test \
             -project PostShot.xcodeproj \

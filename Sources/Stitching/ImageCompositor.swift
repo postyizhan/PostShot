@@ -3,7 +3,7 @@ import CoreGraphics
 import Foundation
 
 /// Merges vertically-overlapping images into a single tall canvas with hard-cut seams.
-/// See SPEC §2.2. Uses sRGB, no resampling beyond width normalization.
+/// Uses sRGB, no resampling beyond width normalization.
 ///
 /// Long screenshots share *identical* pixels in the overlap region (same UI, different scroll
 /// offset), so we do NOT alpha-blend the seam. Blending two near-identical regions only
@@ -31,52 +31,30 @@ enum ImageCompositor {
     /// `width` is the normalized common width; all images are drawn scaled to it and heights
     /// scale proportionally. Overlap values are interpreted in this width space.
     static func composite(segments: [Segment], width: Int) throws -> CGImage {
-        guard !segments.isEmpty, width > 0 else { throw CompositeError.empty }
-
-        let scaledHeights: [Int] = segments.map { seg in
-            let w = seg.image.width
-            guard w > 0 else { return 0 }
-            return Int((Float(seg.image.height) * Float(width) / Float(w)).rounded())
+        let layout = try computeLayout(segments: segments, width: width)
+        guard width <= Int.max / 4, layout.totalHeight <= Int.max / (width * 4) else {
+            throw CompositeError.contextCreationFailed
         }
-
-        // Overlap of segment i with segment i-1, clamped to neither exceeding the previous
-        // nor the current segment's height. Index 0 is unused (first segment has no predecessor).
-        // The SAME clamped values drive both the canvas-height calc and segment placement, so
-        // the two can never disagree.
-        var overlaps = [Int](repeating: 0, count: segments.count)
-        for i in 1..<segments.count {
-            let cap = min(scaledHeights[i - 1], scaledHeights[i])
-            overlaps[i] = clampOverlap(segments[i].overlap, cap)
-        }
-
-        var totalHeight = scaledHeights.first ?? 0
-        for i in 1..<segments.count {
-            totalHeight += max(0, scaledHeights[i] - overlaps[i])
-        }
-        guard totalHeight > 0 else { throw CompositeError.empty }
 
         let colorSpace = CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
         guard let ctx = CGContext(
             data: nil,
             width: width,
-            height: totalHeight,
+            height: layout.totalHeight,
             bitsPerComponent: 8,
             bytesPerRow: 0,
             space: colorSpace,
             bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
         ) else { throw CompositeError.contextCreationFailed }
-        ctx.interpolationQuality = .high
+        ctx.interpolationQuality = segments.allSatisfy({ $0.image.width == width }) ? .none : .high
 
-        // CG origin is bottom-left; lay segments from the top (highest y) downward.
-        // `topY` tracks the top edge of the segment about to be drawn. Before each non-first
-        // segment we descend by the PREVIOUS segment's non-overlapping height, so the current
-        // segment's top `overlaps[i]` rows land exactly on the previous segment's tail. Drawing
-        // opaque in order then overwrites that tail — a hard cut between identical pixels.
-        var topY = totalHeight
+        // CG origin is bottom-left; lay segments from the top (highest y) downward so each
+        // subsequent segment's top rows overwrite the previous segment's overlapping tail.
+        var topY = layout.totalHeight
         for (i, seg) in segments.enumerated() {
-            let h = scaledHeights[i]
+            let h = layout.scaledHeights[i]
             if i > 0 {
-                topY -= (scaledHeights[i - 1] - overlaps[i])
+                topY -= (layout.scaledHeights[i - 1] - layout.overlaps[i])
             }
             let rect = CGRect(x: 0, y: CGFloat(topY - h), width: CGFloat(width), height: CGFloat(h))
             ctx.draw(seg.image, in: rect)
@@ -84,6 +62,34 @@ enum ImageCompositor {
 
         guard let result = ctx.makeImage() else { throw CompositeError.drawFailed }
         return result
+    }
+
+    private struct Layout {
+        let scaledHeights: [Int]
+        let overlaps: [Int]
+        let totalHeight: Int
+    }
+
+    private static func computeLayout(segments: [Segment], width: Int) throws -> Layout {
+        guard !segments.isEmpty, width > 0 else { throw CompositeError.empty }
+        let scaledHeights: [Int] = segments.map { seg in
+            let w = seg.image.width
+            guard w > 0 else { return 0 }
+            return Int((Float(seg.image.height) * Float(width) / Float(w)).rounded())
+        }
+        var overlaps = [Int](repeating: 0, count: segments.count)
+        for i in 1..<segments.count {
+            let cap = min(scaledHeights[i - 1], scaledHeights[i])
+            overlaps[i] = clampOverlap(segments[i].overlap, cap)
+        }
+        var totalHeight = scaledHeights.first ?? 0
+        for i in 1..<segments.count {
+            let delta = max(0, scaledHeights[i] - overlaps[i])
+            guard totalHeight <= Int.max - delta else { throw CompositeError.contextCreationFailed }
+            totalHeight += delta
+        }
+        guard totalHeight > 0 else { throw CompositeError.empty }
+        return Layout(scaledHeights: scaledHeights, overlaps: overlaps, totalHeight: totalHeight)
     }
 
     private static func clampOverlap(_ overlap: Int, _ height: Int) -> Int {

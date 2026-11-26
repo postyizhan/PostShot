@@ -21,16 +21,17 @@ enum ImageLoadError: Error {
     case decodeFailed
 }
 
-/// Decodes full-resolution image data into a `CGImage` plus a downscaled thumbnail.
+/// Decodes full-resolution image data into a `CGImage` plus a downscaled 1× thumbnail.
 ///
-/// We decode from the original `Data` (loaded via `loadTransferable(type: Data.self)`),
-/// never via a `UIImage` round-trip, to preserve full-resolution sharpness (SPEC §8).
+/// Decodes directly from raw `Data` via `ImageNormalizer` so full-resolution sharpness is preserved.
 private extension UIImage {
     func resizedForDecoder(scale: CGFloat) -> UIImage {
         guard scale < 1 else { return self }
-        let size = CGSize(width: CGFloat(size.width) * scale, height: CGFloat(size.height) * scale)
-        let renderer = UIGraphicsImageRenderer(size: size)
-        return renderer.image { _ in draw(in: CGRect(origin: .zero, size: size)) }
+        let targetSize = CGSize(width: max(1, size.width * scale), height: max(1, size.height * scale))
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let renderer = UIGraphicsImageRenderer(size: targetSize, format: format)
+        return renderer.image { _ in draw(in: CGRect(origin: .zero, size: targetSize)) }
     }
 }
 enum ImageDecoder {

@@ -3,7 +3,7 @@ import XCTest
 import CoreGraphics
 @testable import PostShot
 
-/// Validates `OverlapDetector` against synthetic images with a known overlap (SPEC §9).
+/// Validates `OverlapDetector` and `StitchEngine` against synthetic images with known overlaps.
 final class StitchTests: XCTestCase {
 
     // MARK: - Synthetic image builder
@@ -139,7 +139,7 @@ final class StitchTests: XCTestCase {
         XCTAssertEqual(result.status, .matched,
                        "Smooth-content overlap must be accepted; got \(result.status) \(result.diagnostics)")
         XCTAssertEqual(result.overlap, knownOverlap, accuracy: 2,
-                       "Detected overlap must be within ±2px of ground truth (SPEC §9)")
+                       "Detected overlap must be within ±2px of ground truth")
     }
 
     /// End-to-end: the engine must stitch a smooth-content overlapping pair into the full height.
@@ -174,7 +174,7 @@ final class StitchTests: XCTestCase {
         XCTAssertEqual(result.status, .matched)
         XCTAssertGreaterThan(result.bestScore, 0.85, "NCC score should be high for a real overlap")
         XCTAssertEqual(result.overlap, knownOverlap, accuracy: 2,
-                       "Detected overlap must be within ±2px of ground truth (SPEC §9)")
+                       "Detected overlap must be within ±2px of ground truth")
     }
 
     func testNoOverlapForUnrelatedImages() {

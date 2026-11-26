@@ -41,10 +41,24 @@ enum ScreenshotImageLoader {
             options.isSynchronous = false
             options.version = .current
 
+            let resumeLock = NSLock()
+            var didResume = false
+
             PHImageManager.default().requestImageDataAndOrientation(
                 for: asset,
                 options: options
-            ) { data, _, orientation, _ in
+            ) { data, _, orientation, info in
+                if let isDegraded = info?[PHImageResultIsDegradedKey] as? Bool, isDegraded {
+                    return
+                }
+                resumeLock.lock()
+                guard !didResume else {
+                    resumeLock.unlock()
+                    return
+                }
+                didResume = true
+                resumeLock.unlock()
+
                 guard let data else {
                     continuation.resume(returning: nil)
                     return

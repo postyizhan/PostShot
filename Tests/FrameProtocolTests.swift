@@ -3,7 +3,7 @@ import XCTest
 @testable import PostShot
 
 /// Validates `FrameProtocol` framing/reassembly over an arbitrarily-chunked byte stream.
-/// Pure logic, no sockets — the one CI-verifiable new piece of Phase 1.
+/// Pure logic, no sockets — runs deterministically on CI.
 final class FrameProtocolTests: XCTestCase {
 
     // MARK: - Round trip

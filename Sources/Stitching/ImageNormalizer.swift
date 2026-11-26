@@ -111,7 +111,9 @@ enum ImageNormalizer {
     private static func convertToCanonicalColorSpace(_ image: CGImage) throws -> CGImage {
         let width = image.width
         let height = image.height
-        guard width > 0, height > 0, width <= Int.max / 4 else { throw Error.metadataInvalid }
+        guard width > 0, height > 0, width <= Int.max / 4, (width * 4) <= Int.max / height else {
+            throw Error.metadataInvalid
+        }
         guard let space = CGColorSpace(name: CGColorSpace.sRGB),
               let context = CGContext(
                 data: nil,

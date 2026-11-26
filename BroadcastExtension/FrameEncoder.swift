@@ -10,10 +10,9 @@ import Foundation
 /// Converts broadcast `CVPixelBuffer` frames into the two things the extension needs:
 /// a cheap grayscale signature (for `FrameSelector`) and full-resolution PNG bytes (for kept frames).
 ///
-/// Memory discipline (SPEC_v2 §2): the signature path draws into a tiny fixed-size grayscale context
-/// (`signatureSize²` bytes), never a full-resolution buffer, so every incoming frame is cheap to
-/// evaluate. Only frames the selector keeps pay the full PNG-encode cost, and the caller releases
-/// them immediately after sending.
+/// Memory discipline: the signature path scales in Core Image space and draws into a tiny fixed-size
+/// grayscale context (`signatureSize²` bytes), never allocating a full-resolution `CGImage` on
+/// skipped frames. Only kept frames pay the full PNG-encode cost and are released immediately.
 enum FrameEncoder {
 
     /// Edge length of the square grayscale signature grid. 64×64 keeps the signature ~4 KB while
@@ -21,9 +20,20 @@ enum FrameEncoder {
     static let signatureSize = 64
 
     /// Builds a downsampled grayscale signature (values 0...1, row-major) from a pixel buffer.
-    /// Returns `nil` if a drawing context can't be made. Cheap: one small CoreGraphics draw.
+    /// Returns `nil` if a drawing context can't be made. Scales with area/lanczos-quality
+    /// downsampling in Core Image space so thin text strokes don't alias across vertical shifts.
     static func signature(from pixelBuffer: CVPixelBuffer) -> [Float]? {
         let size = signatureSize
+        let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
+        let extent = ciImage.extent
+        guard extent.width > 0, extent.height > 0 else { return nil }
+        let bounds = CGRect(x: 0, y: 0, width: size, height: size)
+        let transform = CGAffineTransform(translationX: -extent.origin.x, y: -extent.origin.y)
+            .scaledBy(x: CGFloat(size) / extent.width, y: CGFloat(size) / extent.height)
+        let scaled = ciImage
+            .clampedToExtent()
+            .transformed(by: transform, highQualityDownsample: true)
+            .cropped(to: bounds)
         let colorSpace = CGColorSpaceCreateDeviceGray()
         var gray = [UInt8](repeating: 0, count: size * size)
 
@@ -32,9 +42,9 @@ enum FrameEncoder {
                 data: ptr.baseAddress, width: size, height: size,
                 bitsPerComponent: 8, bytesPerRow: size,
                 space: colorSpace, bitmapInfo: CGImageAlphaInfo.none.rawValue
-            ), let cg = makeCGImage(from: pixelBuffer) else { return false }
-            ctx.interpolationQuality = .low
-            ctx.draw(cg, in: CGRect(x: 0, y: 0, width: size, height: size))
+            ), let cg = sharedContext.createCGImage(scaled, from: bounds) else { return false }
+            ctx.interpolationQuality = .none
+            ctx.draw(cg, in: bounds)
             return true
         }
         guard drawn else { return nil }
@@ -62,7 +72,11 @@ enum FrameEncoder {
         return sharedContext.createCGImage(ciImage, from: ciImage.extent)
     }
 
-    /// Reused CIContext. Creating one per frame leaks scratch allocations; one shared software
-    /// context keeps footprint flat across a recording.
-    private static let sharedContext = CIContext(options: [.useSoftwareRenderer: true])
+    /// Reused software CIContext with intermediate caching disabled to keep memory flat under
+    /// ReplayKit's ~50 MB process limit.
+    private static let sharedContext = CIContext(options: [
+        .useSoftwareRenderer: true,
+        .cacheIntermediates: false,
+        .highQualityDownsample: true,
+    ])
 }

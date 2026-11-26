@@ -32,9 +32,10 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.postshot.app
         INFOPLIST_FILE: Sources/Info.plist
-        # Portrait only (SPEC §4).
+        # Portrait only.
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
         ENABLE_USER_SCRIPT_SANDBOXING: "YES"
+        CODE_SIGN_IDENTITY: ""
 
   PostShotBroadcast:
     type: app-extension

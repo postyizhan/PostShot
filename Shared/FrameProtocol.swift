@@ -1,20 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import Foundation
 
-/// Length-prefixed binary framing for the loopback bridge (Phase 1).
+/// Length-prefixed binary framing for the loopback TCP frame bridge.
 ///
-/// The Phase-0 smoke test sent newline-delimited TEXT, which cannot carry PNG bytes — binary
-/// payloads contain `0x0A` and every other byte value, so there is no safe delimiter. This protocol
-/// frames each message as a fixed header followed by an exact-length payload, so the receiver can
-/// reassemble messages from an arbitrarily-chunked TCP byte stream.
+/// Frames each message as a fixed 5-byte header followed by an exact-length payload so the
+/// receiver can reassemble PNG keyframes and control messages from an arbitrarily-chunked stream.
 ///
 /// Wire format per message:
 /// ```
 /// [1 byte: type][4 bytes: payload length, big-endian UInt32][payload bytes...]
 /// ```
-/// Pure and allocation-light: the encoder builds one `Data`, the `Decoder` buffers partial bytes
-/// and emits whole messages. Fully unit-testable without sockets (the one CI-verifiable new logic
-/// this phase adds).
 enum FrameProtocol {
 
     /// Message kind. Kept as a raw `UInt8` so unknown future types fail loudly rather than silently.
@@ -32,9 +27,9 @@ enum FrameProtocol {
     /// Header size in bytes: 1 type + 4 length.
     static let headerSize = 5
 
-    /// Safety cap on a single payload (16 MiB). A full-resolution PNG screenshot is well under this;
-    /// a larger declared length means a desync or hostile sender, so we reject rather than allocate.
-    static let maxPayloadSize: UInt32 = 16 * 1024 * 1024
+    /// Safety cap on a single payload (32 MiB), accommodating noisy high-resolution iPhone / iPad
+    /// PNG frames while still rejecting corrupt/desynced length headers without huge allocations.
+    static let maxPayloadSize: UInt32 = 32 * 1024 * 1024
 
     // MARK: - Encoding
 
@@ -42,10 +37,17 @@ enum FrameProtocol {
     static func encode(type: MessageType, payload: Data) -> Data {
         var out = Data(capacity: headerSize + payload.count)
         out.append(type.rawValue)
-        var lengthBE = UInt32(payload.count).bigEndian
+        let clampedCount = UInt32(min(payload.count, Int(UInt32.max)))
+        var lengthBE = clampedCount.bigEndian
         withUnsafeBytes(of: &lengthBE) { out.append(contentsOf: $0) }
         out.append(payload)
         return out
+    }
+
+    /// Encodes one message only if `payload.count <= maxPayloadSize`.
+    static func encodeIfValid(type: MessageType, payload: Data) -> Data? {
+        guard payload.count <= Int(maxPayloadSize) else { return nil }
+        return encode(type: type, payload: payload)
     }
 
     /// Convenience: encode a control text line.
@@ -97,6 +99,9 @@ enum FrameProtocol {
                 messages.append(Message(type: type, payload: payload))
 
                 buffer.removeSubrange(buffer.startIndex..<(buffer.startIndex + total))
+                if buffer.isEmpty {
+                    buffer.removeAll(keepingCapacity: false)
+                }
             }
 
             return messages

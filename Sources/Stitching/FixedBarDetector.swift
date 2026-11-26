@@ -22,6 +22,10 @@ enum FixedBarDetector {
         /// Never crop more than this fraction off either end (matches the manual slider cap), so a
         /// misdetection can't eat real content.
         var maxBandFraction: Float = 0.3
+        /// Fraction of highest-diff columns trimmed inside the outer status/home-indicator bands
+        /// (`<= 10%` from top/bottom) when `width >= 32`, absorbing narrow clock or recording-pill
+        /// changes without letting narrow scrolling content inside the body look fixed.
+        var statusBandTrimColumnFraction: Float = 0.09
 
         init() {}
     }
@@ -36,14 +40,17 @@ enum FixedBarDetector {
     /// Raw fixed-band row counts (top, bottom) across the frame sequence.
     static func detect(buffers: [PixelBuffer], config: Config = Config()) -> (topRows: Int, bottomRows: Int) {
         guard buffers.count >= 2 else { return (0, 0) }
-        let height = buffers[0].height
-        guard height > 0, buffers.allSatisfy({ $0.height == height }) else { return (0, 0) }
+        let width = buffers[0].width, height = buffers[0].height
+        guard width > 0, height > 0,
+              buffers.allSatisfy({ $0.isStructurallyValid && $0.width == width && $0.height == height }) else {
+            return (0, 0)
+        }
 
         var top = 0
-        while top < height && rowFixed(top, buffers, config) { top += 1 }
+        while top < height && rowFixed(top, height: height, buffers, config) { top += 1 }
 
         var bottom = 0
-        while bottom < height && rowFixed(height - 1 - bottom, buffers, config) { bottom += 1 }
+        while bottom < height && rowFixed(height - 1 - bottom, height: height, buffers, config) { bottom += 1 }
 
         return (top, bottom)
     }
@@ -59,22 +66,52 @@ enum FixedBarDetector {
         return (topFrac, bottomFrac)
     }
 
-    /// True iff row `y` is identical (within threshold) across every consecutive frame pair.
-    private static func rowFixed(_ y: Int, _ buffers: [PixelBuffer], _ config: Config) -> Bool {
-        for i in 1..<buffers.count where rowDiff(buffers[i - 1], buffers[i], y) > config.rowMatchThreshold {
-            return false
+    /// True iff row `y` matches across all frames (for 2–4 frames) or all-but-one frame (for >= 5
+    /// frames, tolerating a single transition frame anywhere at the start, middle, or end).
+    private static func rowFixed(_ y: Int, height: Int, _ buffers: [PixelBuffer], _ config: Config) -> Bool {
+        let count = buffers.count
+        let requiredMatches = count >= 5 ? (count - 1) : count
+        let trimColumns = isOuterSystemBand(y: y, height: height)
+        for refIndex in [0, 1] where refIndex < count {
+            var matches = 0
+            for i in 0..<count {
+                if i == refIndex || rowDiff(buffers[refIndex], buffers[i], y, trimColumns: trimColumns, config) <= config.rowMatchThreshold {
+                    matches += 1
+                }
+            }
+            if matches >= requiredMatches { return true }
+            if requiredMatches == count { break }
         }
-        return true
+        return false
     }
 
-    /// Mean absolute difference between row `y` of two buffers (same width assumed).
-    private static func rowDiff(_ a: PixelBuffer, _ b: PixelBuffer, _ y: Int) -> Float {
+    private static func isOuterSystemBand(y: Int, height: Int) -> Bool {
+        let margin = max(1, height / 10)
+        return y < margin || y >= height - margin
+    }
+
+    /// Mean absolute difference between row `y` of two buffers, trimming narrow outlier columns
+    /// only within the outer system status / Home-indicator bands.
+    private static func rowDiff(
+        _ a: PixelBuffer, _ b: PixelBuffer, _ y: Int, trimColumns: Bool, _ config: Config
+    ) -> Float {
         let aRow = a.row(y), bRow = b.row(y)
         let n = min(aRow.count, bRow.count)
         guard n > 0 else { return 0 }
-        var sum: Float = 0
         let aBase = aRow.startIndex, bBase = bRow.startIndex
-        for i in 0..<n { sum += abs(aRow[aBase + i] - bRow[bBase + i]) }
-        return sum / Float(n)
+        let frac = config.statusBandTrimColumnFraction.isFinite ? max(0, min(config.statusBandTrimColumnFraction, 0.2)) : 0
+        let trimCount = (trimColumns && n >= 32) ? Int((Float(n) * frac).rounded(.down)) : 0
+        guard trimCount > 0, trimCount < n else {
+            var sum: Float = 0
+            for i in 0..<n { sum += abs(aRow[aBase + i] - bRow[bBase + i]) }
+            return sum / Float(n)
+        }
+        var diffs = [Float](repeating: 0, count: n)
+        for i in 0..<n { diffs[i] = abs(aRow[aBase + i] - bRow[bBase + i]) }
+        diffs.sort()
+        let keepCount = n - trimCount
+        var sum: Float = 0
+        for i in 0..<keepCount { sum += diffs[i] }
+        return sum / Float(keepCount)
     }
 }

@@ -27,6 +27,7 @@ struct ContentView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     if !model.images.isEmpty {
                         Button("清空") { model.clear() }
+                            .disabled(model.isStitching)
                     }
                 }
             }
@@ -52,13 +53,13 @@ struct ContentView: View {
     }
 
     private var picker: some View {
-        PhotosPicker(
+        let labelTitle = model.images.isEmpty ? "选择截图" : "重新选择"
+        return PhotosPicker(
             selection: $model.pickerItems,
             maxSelectionCount: 20,
             matching: .images
         ) {
-            Label(model.images.isEmpty ? "选择截图" : "重新选择",
-                  systemImage: "photo.on.rectangle.angled")
+            Label(labelTitle, systemImage: "photo.on.rectangle.angled")
                 .frame(maxWidth: .infinity)
         }
         .buttonStyle(.bordered)

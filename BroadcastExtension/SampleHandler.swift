@@ -4,21 +4,22 @@ import CoreMedia
 import CoreVideo
 import Foundation
 
-/// Broadcast Upload Extension entry point — Phase 1: real frame capture + selection + transport.
+/// Broadcast Upload Extension entry point: real-time keyframe selection and loopback streaming.
 ///
-/// Per video frame (SPEC_v2 §2 memory discipline):
-///   1. Extract a cheap 64×64 grayscale signature (no full-resolution buffer).
-///   2. Ask `FrameSelector.Engine` whether this frame is a keyframe.
-///   3. ONLY for kept frames: encode full-resolution PNG, send over the socket, release immediately.
-/// Resident memory stays at ~1 frame, well under the ~50 MB extension limit.
+/// Per video frame:
+///   1. Extract a cheap 64×64 grayscale signature inside an `autoreleasepool`.
+///   2. Ask `FrameSelector.Engine` whether this frame has scrolled enough to be a keyframe.
+///   3. ONLY for kept frames: encode full-resolution PNG, enqueue over loopback TCP, and release.
+/// Resident memory stays at ~1–2 frames, well under the ~50 MB extension limit.
 ///
-/// TEST PROTOCOL: keep PostShot in the FOREGROUND on its 录制 tab while recording so the app's
-/// listener stays alive (background survival is a separate problem).
+/// The host app keeps its loopback TCP listener alive in the background via `AudioKeepAlive`
+/// while the user switches to the target app and scrolls.
 class SampleHandler: RPBroadcastSampleHandler {
 
     private let bridge = FrameBridgeClient()
     private let selector = FrameSelector.Engine()
-    private var frameClock: TimeInterval = 0
+    private let stateLock = NSLock()
+    private var lastTimestamp: TimeInterval?
 
     override func broadcastStarted(withSetupInfo setupInfo: [String: NSObject]?) {
         bridge.connect()
@@ -26,36 +27,46 @@ class SampleHandler: RPBroadcastSampleHandler {
     }
 
     override func processSampleBuffer(_ sampleBuffer: CMSampleBuffer, with sampleBufferType: RPSampleBufferType) {
-        guard sampleBufferType == .video,
-              let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+        guard sampleBufferType == .video else { return }
+        autoreleasepool {
+            guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
 
-        let timestamp = presentationSeconds(of: sampleBuffer)
+            CVPixelBufferLockBaseAddress(pixelBuffer, .readOnly)
+            defer { CVPixelBufferUnlockBaseAddress(pixelBuffer, .readOnly) }
 
-        CVPixelBufferLockBaseAddress(pixelBuffer, .readOnly)
-        defer { CVPixelBufferUnlockBaseAddress(pixelBuffer, .readOnly) }
+            guard let signature = FrameEncoder.signature(from: pixelBuffer) else { return }
 
-        guard let signature = FrameEncoder.signature(from: pixelBuffer) else { return }
-        guard selector.consider(signature, at: timestamp).isKeep else { return }
+            stateLock.lock()
+            let timestamp = monotonicSeconds(of: sampleBuffer)
+            let decision = selector.consider(signature, at: timestamp)
+            stateLock.unlock()
 
-        // Kept frame: pay the full-resolution encode cost, send, and let it deallocate.
-        if let png = FrameEncoder.png(from: pixelBuffer) {
-            bridge.sendFrame(png)
+            guard decision.isKeep, let png = FrameEncoder.png(from: pixelBuffer) else { return }
+            _ = bridge.sendFrame(png)
         }
     }
 
     override func broadcastFinished() {
-        bridge.sendControl("finished \(selector.keptCount)")
-        bridge.close()
+        stateLock.lock()
+        let count = selector.keptCount
+        stateLock.unlock()
+        bridge.finish(keptCount: count)
     }
 
-    /// Presentation timestamp in seconds; falls back to a synthetic ~60 fps clock if unavailable
-    /// so `FrameSelector`'s min-interval throttle still has a monotonic time source.
-    private func presentationSeconds(of sampleBuffer: CMSampleBuffer) -> TimeInterval {
+    /// Monotonic presentation timestamp in seconds; advances by 1/60s when PTS is absent or
+    /// non-monotonic so `FrameSelector`'s interval throttle can never stall on clock jumps.
+    private func monotonicSeconds(of sampleBuffer: CMSampleBuffer) -> TimeInterval {
         let pts = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
-        if pts.isValid && !pts.isIndefinite {
-            return CMTimeGetSeconds(pts)
+        if pts.isNumeric {
+            let seconds = CMTimeGetSeconds(pts)
+            if seconds.isFinite {
+                let clamped = lastTimestamp.map { max(seconds, $0) } ?? seconds
+                lastTimestamp = clamped
+                return clamped
+            }
         }
-        frameClock += 1.0 / 60.0
-        return frameClock
+        let next = (lastTimestamp ?? 0) + (1.0 / 60.0)
+        lastTimestamp = next
+        return next
     }
 }

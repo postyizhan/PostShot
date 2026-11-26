@@ -2,7 +2,7 @@
 import XCTest
 @testable import PostShot
 
-/// Validates `FrameSelector` (SPEC_v2 §3) against synthetic scroll sequences in signature space.
+/// Validates `FrameSelector` against synthetic 1D and 2D scroll sequences in signature space.
 ///
 /// The selector operates on downsampled grayscale signatures (`[Float]`), so these tests build
 /// signatures directly — no CoreGraphics, fully deterministic, runs on CI without a device.
@@ -60,7 +60,7 @@ final class FrameSelectorTests: XCTestCase {
         let first = window(strip, offset: 0, length: 64)
         let scrolled = window(strip, offset: 60, length: 64)
         let state = FrameSelector.State(signature: first, timestamp: 1.0, keptCount: 1)
-        // Same big advance, but only 0.1s later — inside the 0.3s min interval.
+        // Same big advance, but only 0.1s later — inside the 0.55s min interval.
         let decision = FrameSelector.decide(signature: scrolled, timestamp: 1.1, state: state)
         XCTAssertEqual(decision, .skipThrottled, "Advances within minInterval must be throttled")
     }
@@ -112,7 +112,7 @@ final class FrameSelectorTests: XCTestCase {
             t += dt
         }
 
-        // Over ~2s of scrolling with a 0.3s floor, we expect roughly 6–8 keyframes, plus the 1
+        // Over ~2s of scrolling with a 0.55s floor, we expect ~4–5 keyframes, plus the 1
         // still keyframe. Assert it's sparse (thinned) but progressing (not stuck at 1).
         XCTAssertGreaterThan(kept, 2, "Scrolling must produce multiple keyframes")
         XCTAssertLessThan(kept, 15, "Keyframes must be sparse, not one-per-frame")
@@ -138,5 +138,118 @@ final class FrameSelectorTests: XCTestCase {
             t += 0.5
         }
         XCTAssertEqual(kept, config.maxFrames, "Engine must never keep more than maxFrames")
+    }
+
+    // MARK: - 2D 64x64 broadcast signature tests
+
+    private func gridSignature(
+        source: [Float],
+        width: Int = 64,
+        height: Int = 64,
+        topBarRows: Int = 8,
+        bottomBarRows: Int = 8,
+        topValue: Float = 0.15,
+        bottomValue: Float = 0.85,
+        scrollRows: Int
+    ) -> [Float] {
+        var grid = [Float](repeating: 0, count: width * height)
+        for y in 0..<height {
+            for x in 0..<width {
+                let idx = y * width + x
+                if y < topBarRows {
+                    grid[idx] = topValue
+                } else if y >= height - bottomBarRows {
+                    grid[idx] = bottomValue
+                } else {
+                    let srcIdx = ((y + scrollRows) * width + x) % source.count
+                    grid[idx] = source[srcIdx]
+                }
+            }
+        }
+        return grid
+    }
+
+    func test2DIgnoresStatusAndHomeBarChangesWhenScrollAreaIsStill() {
+        let source = tallStrip(height: 64 * 400, seed: 21)
+        let first = gridSignature(source: source, topValue: 0.1, bottomValue: 0.9, scrollRows: 0)
+        // Dramatic change inside top/bottom 8 fixed rows, zero movement in the middle 48 rows.
+        let second = gridSignature(source: source, topValue: 0.95, bottomValue: 0.05, scrollRows: 0)
+        let state = FrameSelector.State(signature: first, timestamp: 0, keptCount: 1)
+
+        let decision = FrameSelector.decide(signature: second, timestamp: 2.0, state: state)
+        XCTAssertEqual(decision, .skipDuplicate, "Fixed UI band changes must not trigger keyframes")
+    }
+
+    func test2DSuppressesMicroScrollUntilMeaningfulDisplacement() {
+        let source = tallStrip(height: 64 * 400, seed: 22)
+        let first = gridSignature(source: source, scrollRows: 0)
+        let state = FrameSelector.State(signature: first, timestamp: 0, keptCount: 1)
+
+        // 4/64 rows (~6.25% scroll, ~93.75% overlap) and 10/64 rows (~15.6% scroll) during active
+        // scrolling (< settleInterval) must wait for further displacement.
+        let micro4 = gridSignature(source: source, scrollRows: 4)
+        let micro10 = gridSignature(source: source, scrollRows: 10)
+        XCTAssertEqual(FrameSelector.decide(signature: micro4, timestamp: 0.6, state: state), .skipMinorChange)
+        XCTAssertEqual(FrameSelector.decide(signature: micro10, timestamp: 1.1, state: state), .skipMinorChange)
+
+        // 20/64 rows (~31% scroll, ~69% overlap) crosses minScrollFraction -> keep.
+        let advanced = gridSignature(source: source, scrollRows: 20)
+        XCTAssertEqual(FrameSelector.decide(signature: advanced, timestamp: 1.2, state: state), .keep)
+    }
+
+    func test2DSettledShortTailScrollIsKeptOnce() {
+        let source = tallStrip(height: 64 * 400, seed: 23)
+        let engine = FrameSelector.Engine()
+        let start = gridSignature(source: source, scrollRows: 0)
+        XCTAssertEqual(engine.consider(start, at: 0), .keep)
+
+        // User reaches page bottom after scrolling 8/64 rows (12.5%) and rests finger.
+        let tail = gridSignature(source: source, scrollRows: 8)
+        XCTAssertEqual(engine.consider(tail, at: 0.7), .skipMinorChange, "During active scroll window, wait")
+        XCTAssertEqual(engine.consider(tail, at: 1.6), .keep, "Once settled, retain tail frame at page bottom")
+        XCTAssertEqual(engine.consider(tail, at: 2.3), .skipDuplicate, "Subsequent still frames are duplicates")
+    }
+
+    func test2DDoesNotDropLargeScrollAcrossBlankInterior() {
+        // Regression: old content at top of active band exits while new content enters at bottom,
+        // leaving a blank middle region where both shifted and guard-shift diffs equal 0.
+        let width = 64, height = 64
+        var first = [Float](repeating: 0.9, count: width * height)
+        var second = [Float](repeating: 0.9, count: width * height)
+        for y in 8..<13 {
+            for x in 0..<width { first[y * width + x] = 0.1 }
+        }
+        for y in 51..<56 {
+            for x in 0..<width { second[y * width + x] = 0.1 }
+        }
+        let state = FrameSelector.State(signature: first, timestamp: 0, keptCount: 1)
+        XCTAssertEqual(FrameSelector.decide(signature: second, timestamp: 0.8, state: state), .keep,
+                       "Large scroll across blank interior must not be mistaken for a micro-scroll")
+    }
+
+    func testReadingPauseDoesNotPrematurelyRelaxScrollFloor() {
+        let source = tallStrip(height: 64 * 400, seed: 29)
+        let engine = FrameSelector.Engine()
+        let still = gridSignature(source: source, scrollRows: 0)
+        XCTAssertEqual(engine.consider(still, at: 0), .keep)
+        // User reads a still page for 2.5s (> settleInterval), then starts scrolling by only 5 rows.
+        XCTAssertEqual(engine.consider(still, at: 2.5), .skipDuplicate)
+        let tinyScroll = gridSignature(source: source, scrollRows: 5)
+        XCTAssertEqual(engine.consider(tinyScroll, at: 2.6), .skipMinorChange,
+                       "First micro-scroll right after a reading pause must still wait for full displacement")
+    }
+
+    func testNonFiniteAndBackwardTimestampsNeverPoisonEngine() {
+        let strip = tallStrip(height: 600, seed: 31)
+        let engine = FrameSelector.Engine()
+        let first = window(strip, offset: 0, length: 256) // 256-sample 1D strip stays 1D
+        let second = window(strip, offset: 120, length: 256)
+        let third = window(strip, offset: 240, length: 256)
+
+        XCTAssertEqual(engine.consider(first, at: 100.0), .keep)
+        XCTAssertEqual(engine.consider(second, at: .nan), .skipThrottled)
+        XCTAssertEqual(engine.consider(second, at: .infinity), .skipThrottled)
+        XCTAssertEqual(engine.consider(second, at: 50.0), .skipThrottled, "Backward PTS jump is safely throttled")
+        XCTAssertEqual(engine.consider(third, at: 101.0), .keep, "Engine recovers as soon as clock advances")
     }
 }

@@ -70,7 +70,8 @@ enum PhotoSaver {
                 } else if let error {
                     continuation.resume(throwing: PhotoSaverError.saveFailed(error))
                 } else {
-                    continuation.resume(throwing: PhotoSaverError.encodingFailed)
+                    let fallback = NSError(domain: "com.postshot.photosaver", code: -1)
+                    continuation.resume(throwing: PhotoSaverError.saveFailed(fallback))
                 }
             }
         }

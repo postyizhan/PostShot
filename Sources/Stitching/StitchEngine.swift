@@ -2,13 +2,13 @@
 import CoreGraphics
 import Foundation
 
-struct StitchSeam {
+struct StitchSeam: Equatable {
     let topIndex: Int
     let bottomIndex: Int
     let result: OverlapResult
 }
 
-final class StitchEngine {
+final class StitchEngine: @unchecked Sendable {
     struct Options {
         var detectorConfig: OverlapDetector.Config = .init()
         var topCropFraction: Float = 0
@@ -27,33 +27,34 @@ final class StitchEngine {
 
     func stitch(images: [CGImage], options: Options = Options(), progress: @escaping ProgressHandler,
                 completion: @escaping (Result<CGImage, StitchError>) -> Void) {
-        queue.async { completion(self.stitchSync(images: images, options: options, progress: progress)) }
+        queue.async {
+            let outcome = autoreleasepool {
+                self.stitchSync(images: images, options: options, progress: progress)
+            }
+            completion(outcome)
+        }
     }
 
     func stitchSync(images rawImages: [CGImage], options: Options = Options(),
                     progress: ProgressHandler = { _ in }) -> Result<CGImage, StitchError> {
         guard !rawImages.isEmpty else { return .failure(.noImages) }
-        var images: [CGImage] = []
-        var cropDiagnostics: [InputDiagnostic] = []
-        for (index, image) in rawImages.enumerated() {
-            do { images.append(try ImageNormalizer.crop(image, topFraction: options.topCropFraction, bottomFraction: options.bottomCropFraction)) }
-            catch {
-                cropDiagnostics.append(InputDiagnostic(sourceIndex: index,
-                    actual: PixelSize(width: image.width, height: image.height), expected: nil,
-                    reason: .nonPositiveDimensions))
-            }
-        }
-        if !cropDiagnostics.isEmpty {
-            return .failure(.invalidInput(profile: StitchInputProfile(canonicalSize: PixelSize(width: 0, height: 0), diagnostics: cropDiagnostics)))
-        }
+        let croppedResult = cropAll(rawImages, options: options)
+        guard case .success(let images) = croppedResult else { return croppedResult.map { $0[0] } }
+
         let profile = StitchInputValidator.validate(images)
         guard profile.isValid else { return .failure(.invalidInput(profile: profile)) }
 
         var segments = [ImageCompositor.Segment(image: images[0], overlap: 0)]
         if images.count > 1 {
+            let buffers = images.map { PixelBuffer.from($0) }
             let pairCount = images.count - 1
             for index in 1..<images.count {
-                let match = OverlapDetector.detect(top: images[index - 1], bottom: images[index], config: options.detectorConfig)
+                let match: OverlapResult
+                if let topBuf = buffers[index - 1], let bottomBuf = buffers[index] {
+                    match = OverlapDetector.detect(top: topBuf, bottom: bottomBuf, config: options.detectorConfig)
+                } else {
+                    match = OverlapDetector.detect(top: images[index - 1], bottom: images[index], config: options.detectorConfig)
+                }
                 switch match.status {
                 case .matched:
                     segments.append(ImageCompositor.Segment(image: images[index], overlap: match.overlap))
@@ -74,5 +75,31 @@ final class StitchEngine {
         } catch {
             return .failure(.compositeFailed(error))
         }
+    }
+
+    private func cropAll(_ rawImages: [CGImage], options: Options) -> Result<[CGImage], StitchError> {
+        var images: [CGImage] = []
+        images.reserveCapacity(rawImages.count)
+        var cropDiagnostics: [InputDiagnostic] = []
+        for (index, image) in rawImages.enumerated() {
+            do {
+                images.append(try ImageNormalizer.crop(
+                    image, topFraction: options.topCropFraction, bottomFraction: options.bottomCropFraction
+                ))
+            } catch {
+                cropDiagnostics.append(InputDiagnostic(
+                    sourceIndex: index,
+                    actual: PixelSize(width: image.width, height: image.height),
+                    expected: nil,
+                    reason: .nonPositiveDimensions
+                ))
+            }
+        }
+        if !cropDiagnostics.isEmpty {
+            return .failure(.invalidInput(profile: StitchInputProfile(
+                canonicalSize: PixelSize(width: 0, height: 0), diagnostics: cropDiagnostics
+            )))
+        }
+        return .success(images)
     }
 }

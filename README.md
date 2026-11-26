@@ -2,65 +2,72 @@
 
 > Free & open-source long-screenshot stitcher for iOS — no ads, no watermark.
 
-**PostShot 驿站截图** 是一款开源、免费、无广告、无水印的 iOS 长截图拼接 App。它把你手动截好的多张系统截图,自动识别垂直重叠区域后拼接成一张完整长图。核心使用原生 **NCC(归一化互相关)** 算法检测重叠,**零第三方依赖,不使用 OpenCV**。
+**PostShot 驿站截图** 是一款开源、免费、无广告、无水印的 iOS 长截图 App，支持 **系统录屏滚动自动抽帧拼接**、**最近连续截图自动发现** 与 **相册手动多选拼接** 三种工作流。核心采用原生 `Accelerate`（vDSP）水平边缘 **NCC（归一化互相关）** 算法，**零第三方依赖，不使用 OpenCV**。
 
-整个项目在 Windows 上也能维护:工程文件由 [XcodeGen](https://github.com/yonaskolb/XcodeGen) 从 `project.yml` 生成,云端 GitHub Actions 负责编译,设备端用 SideStore 自签安装。
+整个项目在无本地 Mac 环境下也能维护：工程文件由 [XcodeGen](https://github.com/yonaskolb/XcodeGen) 从 `project.yml` 生成，云端 GitHub Actions 负责编译与单测，设备端可通过 SideStore 自签安装。
 
 ---
 
 ## ✨ 功能特性
 
-- 多张截图自动拼接成一张长图
-- 原生 NCC 算法检测垂直重叠偏移,接缝处羽化过渡,无重影、无硬边
-- 系统相册多选(`PhotosPicker`),取全分辨率原图,清晰度与原截图一致
-- 结果可缩放预览,一键保存到相册或分享
-- 支持手动顶部/底部裁剪,规避状态栏、导航栏跨帧误匹配
-- 竖屏、纯本地处理,不联网、不收集任何数据
-- 开源、免费、无广告、无水印
+- **三种长截图入口**：
+  - **录制**：通过 ReplayKit 系统级屏幕录制扩展实时稀疏抽帧，在任意 App 中匀速滚动一遍即可回到 PostShot 生成长图；
+  - **自动**：自动聚类相册中最近连续截取的同屏截图并恢复滚动顺序；
+  - **拼图**：通过系统 `PhotosPicker` 手动多选原图并自由调整顺序。
+- **稳健拼接与画质保真**：
+  - 水平边缘特征 NCC 抑制聊天固定壁纸干扰，精准对齐文字与卡片边界；
+  - 像素级硬拼接（无羽化重影），保持原图分辨率与 sRGB 色彩清晰度；
+  - 自动识别顶部状态栏 / 导航栏与底部输入栏 / Home 指示条并给出裁剪建议；
+  - 遇到跨页面过渡帧或重叠证据不足时安全停止（不静默乱拼），自动高亮断档帧并提供一键剔除重拼按钮。
+- **纯本地隐私安全**：所有帧传输（仅 `127.0.0.1` 本地回环）与图像合成均在设备本地完成，不连接外部服务器、不收集任何数据。
+- **开源、免费、无广告、无水印**。
 
 ---
 
-## 📲 通过 SideStore 安装(写给最终用户)
+## 📲 通过 SideStore 安装
 
-由于使用免费 Apple ID 自签,**每个人都需要 fork 本仓库、用自己的账号自行编译和签名**,不能直接分发给陌生人。
+由于使用免费 Apple ID 自签，**每个人都需要 fork 本仓库、用自己的账号自行编译和签名**，不能直接分发给陌生人。
 
 1. **Fork** 本仓库到你自己的 GitHub 账号。
-2. 进入你 fork 后的仓库,打开 **Actions** 标签页,点击启用 Actions(首次需手动确认)。
-3. 运行名为 **Build Unsigned IPA** 的 workflow(在 Actions 页面手动触发 `workflow_dispatch`),或直接向 `main`/`master` 推送一次提交触发构建。
-4. 构建完成后,在该次 workflow run 页面底部下载 artifact **`PostShot-ipa`**(里面是未签名的 `PostShot.ipa`)。
-5. 把 `.ipa` 传到你的 iPhone(隔空投送、文件 App、云盘等均可)。
-6. 在 iPhone 上用 **[SideStore](https://sidestore.io/)** 打开该 `.ipa`,用**免费 Apple ID** 完成安装(SideStore 会在设备端自动签名)。
-7. 保持设备偶尔联网,SideStore 会在 **7 天内自动续签**,避免过期。
+2. 进入 fork 后的仓库，打开 **Actions** 标签页并启用 Actions。
+3. 运行名为 **Build Unsigned IPA** 的 workflow（手动触发 `workflow_dispatch` 或推送提交到 `main`）。
+4. 构建完成后，在该次运行页面底部下载 artifact **`PostShot-ipa`**（内含未签名的 `PostShot.ipa`）。
+5. 将 `.ipa` 传到 iPhone，使用 **[SideStore](https://sidestore.io/)** 打开并用你的 Apple ID 完成签名安装。
+6. 保持设备偶尔联网，SideStore 会在 **7 天有效期内自动续签**。
 
-### ⚠️ 免费 Apple ID 限制(请务必知悉)
+### ⚠️ 免费 Apple ID 限制
 
-使用免费 Apple ID 侧载存在以下硬性限制:
+- **App 有效期 7 天**，到期前需由 SideStore 自动或手动续签。
+- **最多同时侧载 3 个 App / 扩展槽位**（免费开发者账号系统限制）。
+- **iOS 系统限制**：iOS 不允许第三方 App 自动替用户滚动其他应用界面，录屏模式下仍需手指匀速滚动目标页面，PostShot 负责自动抽帧、去状态栏与无缝拼接。
 
-- **App 有效期 7 天**,过期后需重新签名才能继续打开。
-- **最多同时侧载 3 个 App**(免费账号限制)。
-- **需偶尔联网**,让 SideStore 在到期前自动刷新签名;长期离线会导致 App 失效。
-- **无法分发给陌生人**:免费签名仅供自用或让朋友各自 fork 后自签。
+### 💡 修改 Bundle ID（避免冲突）
 
-### 💡 修改 Bundle ID(避免冲突)
+若需自定义包名，请编辑 `project.yml`，同步修改主应用与录屏扩展两个 target 的 `PRODUCT_BUNDLE_IDENTIFIER`（扩展包名需保持 `<主应用包名>.broadcast` 格式）：
 
-如果你的设备上已经装过同 Bundle ID 的 App,或想和别人区分开,fork 之后可以编辑 `project.yml`,把 `PostShot` target 下的 `PRODUCT_BUNDLE_IDENTIFIER`(默认 `com.postshot.app`)改成你自己的标识,例如 `com.yourname.postshot`。改完重新触发构建即可。
+- `PostShot`: `com.yourname.postshot`
+- `PostShotBroadcast`: `com.yourname.postshot.broadcast`
+
+`CaptureView` 会自动根据主包名匹配 `.broadcast` 扩展，无需修改源码。
 
 ---
 
-## 🛠️ 从源码构建 / 开发
+## 🛠️ 从源码构建与测试
 
-本项目对 **Windows 开发者友好**,无需本地 Mac:
+- **请勿直接手改 `.xcodeproj`**：工程结构唯一事实来源是 `project.yml`，由 `xcodegen generate` 生成。
+- **系统要求**：iOS 16.0+。
 
-- **永远不要手写或直接编辑 `.xcodeproj`**。工程结构统一写在 `project.yml`,由 `xcodegen generate` 生成。改工程配置只改 `project.yml`。
-- **编译在云端进行**:GitHub Actions(`macos-26` runner)执行 `xcodegen generate` → `xcodebuild`,产出**未签名 `.ipa`**。
-- **CI 绝不接触任何苹果证书、私钥或描述文件**,签名完全交给设备端的 SideStore。
-- **系统要求:iOS 16+**(`PhotosPicker` 需要)。
-
-本地若有 Mac,也可以手动复现 CI 流程:
+在本地 Mac 上复现 CI 构建与测试：
 
 ```bash
 brew install xcodegen
 xcodegen generate
+
+# 运行模拟器单元测试
+xcodebuild test -project PostShot.xcodeproj -scheme PostShot \
+  -destination 'platform=iOS Simulator,name=iPhone 17'
+
+# 构建未签名 Release 包
 xcodebuild -project PostShot.xcodeproj -scheme PostShot \
   -configuration Release -sdk iphoneos \
   -destination 'generic/platform=iOS' \
@@ -71,28 +78,16 @@ xcodebuild -project PostShot.xcodeproj -scheme PostShot \
 
 ## 🔍 工作原理简述
 
-拼接核心是 **NCC(归一化互相关)垂直重叠检测**:
-
-1. 把相邻两张图归一化到同宽,每行下采样成 64 维灰度行特征。
-2. 先用一维平均灰度信号做粗搜,快速圈定候选重叠高度,避免逐像素暴力比对。
-3. 再对候选区间用 `Accelerate`(vDSP)计算归一化互相关得分,对亮度漂移鲁棒,取最高分对应的重叠像素数。
-4. 合成时按偏移累积总高,在约 20–30px 的重叠过渡区做 alpha 羽化混合,消除接缝。
-
-得分低于阈值则判定无重叠、直接首尾相接;两图近乎相同则去重跳过。
+1. **录屏稀疏抽帧（`FrameEncoder` + `FrameSelector`）**：在 Broadcast Extension 的 50MB 内存预算内，将视频帧在 Core Image 空间下采样为 `64×64` 灰度签名，忽略首尾固定系统栏并结合最小滚动位移门限，仅对有效推进的关键帧编码全分辨率 PNG 通过回环 TCP 发送给主应用。
+2. **固定栏检测与规范化（`ImageNormalizer` + `FixedBarDetector`）**：统一 EXIF 方向与 sRGB 色彩空间，自动检测跨帧恒定的顶部/底部 UI 栏比例。
+3. **两段式边缘 NCC 重叠检测（`PixelBuffer` + `OverlapDetector`）**：提取 64 列水平边缘特征，先由一维行均值粗筛候选并做非极大值抑制，再用 `vDSP` 精算二维 NCC 与竞争峰显著性裕度，覆盖常规重叠与微移高重叠区间。
+4. **硬切合成（`ImageCompositor`）**：按精确重叠行数在画布上逐段硬切覆盖，消除半透明混合重影。
 
 ---
 
 ## 📄 License
 
-本项目采用 **[GNU AGPL-3.0](LICENSE)** 许可证。
+本项目采用 **[GNU AGPL-3.0](LICENSE)** 许可证：
 
-这意味着:
-
-- ✅ **任何人都能免费使用**——这正是做这个 App 的初衷:对抗 App Store 上那些付费、广告、水印的长截图工具。
-- ✅ **可以自由 fork、修改、自签、分发**。
-- ⚠️ **任何分发(包括修改后的版本)都必须以同样的 AGPL-3.0 开放完整源码**。
-
-也就是说:**没有人能把它闭源、加广告、加水印拿去卖钱**——一旦分发就必须连源码一起公开,商业克隆的动机被彻底堵死。自由属于所有人,但不许有人把它变成生意。
-
-> AGPL 的网络服务条款对当前这个纯本地 App 用不上,但为未来可能的云端/录屏功能预留了同等保护。
-
+- ✅ **任何人都能免费使用、自由 fork、修改、自签与分发**。
+- ⚠️ **任何分发（包括修改后的衍生版本）都必须以同样的 AGPL-3.0 许可证开放完整源码**，禁止闭源商用或套壳加广告/水印售卖。

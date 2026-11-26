@@ -2,24 +2,17 @@
 import SwiftUI
 import UIKit
 
-/// v2 capture screen: real frame pipeline over the loopback socket bridge, then "去拼接" navigates
-/// into the shared review/stitch flow (Phase 2).
-///
-/// BACKGROUND SURVIVAL: the socket needs both host and extension alive, but recording means leaving
-/// PostShot to scroll another app. App Groups (the store-and-forward alternative) are unavailable
-/// under free signing (verified: container nil), so we keep the host alive with silent-audio
-/// keep-alive (`AudioKeepAlive`) while this screen is active.
-///
-/// TEST PROTOCOL: tap record, pick 驿站截图录制, then switch to the target app and slowly scroll.
-/// The extension extracts keyframes, encodes PNG, and streams them here. A handful of sparse
-/// thumbnails (not hundreds) means FrameSelector + transport + background-survival work; tap 去拼接
-/// to review and stitch them into one long image.
+/// Screen-recording capture screen: receives sparse PNG keyframes over the loopback TCP bridge
+/// while `AudioKeepAlive` prevents iOS from suspending the host app in the background, then
+/// navigates into the shared review/stitch flow.
 struct CaptureView: View {
-    private let extensionBundleID = "com.postshot.app.broadcast"
+    private var extensionBundleID: String {
+        "\(Bundle.main.bundleIdentifier ?? "com.postshot.app").broadcast"
+    }
 
     @StateObject private var server = FrameBridgeServer()
+    @StateObject private var keepAlive = AudioKeepAlive()
     @State private var showReview = false
-    private let keepAlive = AudioKeepAlive()
 
     private let columns = [GridItem(.adaptive(minimum: 80), spacing: 8)]
 
@@ -51,9 +44,9 @@ struct CaptureView: View {
             Image(systemName: "record.circle")
                 .font(.system(size: 44))
                 .foregroundStyle(.red)
-            Text("全屏录制(真实帧采集)")
+            Text("全屏录制长截图")
                 .font(.headline)
-            Text("点按钮开始录屏 → 选「驿站截图录制」→ 留在本页别切走 → 缓慢滚动要截的内容")
+            Text("点按钮开始录屏 → 选「驿站截图录制」→ 切到目标 App 匀速滚动 → 结束录屏后返回拼接")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -67,7 +60,7 @@ struct CaptureView: View {
             row("收到关键帧", "\(server.frameCount)")
             row("最后控制消息", server.lastControl)
             if server.isFinished {
-                Text("✅ 录制结束,共采集 \(server.frameCount) 张关键帧(拼接为 Phase 2)")
+                Text("✅ 录制结束，共采集 \(server.frameCount) 张关键帧，点击「去拼接」审阅生成长图")
                     .font(.caption).foregroundStyle(.green)
             }
             if server.frameCount > 0 {
@@ -95,22 +88,20 @@ struct CaptureView: View {
 
     private var frameGrid: some View {
         LazyVGrid(columns: columns, spacing: 8) {
-            ForEach(Array(server.receivedFrames.enumerated()), id: \.offset) { index, png in
-                if let image = UIImage(data: png) {
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 80, height: 140)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                        .overlay(alignment: .topLeading) {
-                            Text("\(index + 1)")
-                                .font(.caption2.bold())
-                                .padding(3)
-                                .background(.black.opacity(0.6), in: Capsule())
-                                .foregroundStyle(.white)
-                                .padding(4)
-                        }
-                }
+            ForEach(Array(server.previews.enumerated()), id: \.element.id) { index, item in
+                Image(uiImage: item.thumbnail)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 80, height: 140)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .overlay(alignment: .topLeading) {
+                        Text("\(index + 1)")
+                            .font(.caption2.bold())
+                            .padding(3)
+                            .background(.black.opacity(0.6), in: Capsule())
+                            .foregroundStyle(.white)
+                            .padding(4)
+                    }
             }
         }
     }

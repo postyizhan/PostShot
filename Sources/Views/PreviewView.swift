@@ -11,13 +11,33 @@ struct PreviewView: View {
     @State private var isShowingShare = false
     @State private var statusMessage: String?
     @State private var isSaving = false
+    @State private var isExporting = false
+    @State private var flashTask: Task<Void, Never>?
 
-    private var uiImage: UIImage { UIImage(cgImage: image) }
+    /// Caps the on-screen preview below Metal's 16,384 px 2D texture limit while `save()` and
+    /// `share()` continue exporting the full-resolution `CGImage`.
+    private var displayImage: UIImage {
+        let maxEdge = max(image.width, image.height)
+        let maxTextureEdge = 12_000
+        guard maxEdge > maxTextureEdge else { return UIImage(cgImage: image) }
+        let ratio = CGFloat(maxTextureEdge) / CGFloat(maxEdge)
+        let w = max(1, Int((CGFloat(image.width) * ratio).rounded()))
+        let h = max(1, Int((CGFloat(image.height) * ratio).rounded()))
+        let space = CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
+        guard let ctx = CGContext(
+            data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: 0,
+            space: space, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else { return UIImage(cgImage: image) }
+        ctx.interpolationQuality = .medium
+        ctx.draw(image, in: CGRect(x: 0, y: 0, width: w, height: h))
+        guard let scaled = ctx.makeImage() else { return UIImage(cgImage: image) }
+        return UIImage(cgImage: scaled)
+    }
 
     var body: some View {
         NavigationStack {
             ZoomableScrollView {
-                Image(uiImage: uiImage)
+                Image(uiImage: displayImage)
                     .resizable()
                     .scaledToFit()
             }
@@ -30,12 +50,13 @@ struct PreviewView: View {
                     Button("关闭") { dismiss() }
                 }
             }
-            .sheet(isPresented: $isShowingShare) {
+            .sheet(isPresented: $isShowingShare, onDismiss: cleanupShareFile) {
                 if let shareURL {
                     ShareSheet(items: [shareURL])
                 }
             }
             .overlay(alignment: .top) { statusBanner }
+            .onDisappear { cleanupShareFile() }
         }
     }
 
@@ -48,15 +69,16 @@ struct PreviewView: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
-            .disabled(isSaving)
+            .disabled(isSaving || isExporting)
 
             Button {
-                share()
+                Task { await share() }
             } label: {
                 Label("分享", systemImage: "square.and.arrow.up")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
+            .disabled(isSaving || isExporting)
         }
         .padding()
         .background(.ultraThinMaterial)
@@ -89,20 +111,35 @@ struct PreviewView: View {
         }
     }
 
-    private func share() {
+    private func share() async {
+        isExporting = true
+        defer { isExporting = false }
+        cleanupShareFile()
+        let cgImage = image
         do {
-            let data = try ImageExporter.export(image, as: .png)
-            shareURL = try ImageExporter.writeTemporaryFile(data, fileExtension: "png")
+            let url = try await Task.detached(priority: .userInitiated) {
+                let data = try ImageExporter.export(cgImage, as: .png)
+                return try ImageExporter.writeTemporaryFile(data, fileExtension: "png")
+            }.value
+            shareURL = url
             isShowingShare = true
         } catch {
-            flash("导出失败:\(error.localizedDescription)")
+            flash("导出失败：\(error.localizedDescription)")
         }
     }
 
+    private func cleanupShareFile() {
+        guard let url = shareURL else { return }
+        try? FileManager.default.removeItem(at: url)
+        shareURL = nil
+    }
+
     private func flash(_ message: String) {
+        flashTask?.cancel()
         withAnimation { statusMessage = message }
-        Task {
+        flashTask = Task {
             try? await Task.sleep(nanoseconds: 2_000_000_000)
+            guard !Task.isCancelled else { return }
             withAnimation { statusMessage = nil }
         }
     }

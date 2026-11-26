@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // PostShot 驿站截图 — 开源免费的 iOS 长截图拼接 App
 // Copyright (C) 2026 PostShot contributors
 //
