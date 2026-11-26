@@ -16,12 +16,11 @@ import Foundation
 enum FixedBarDetector {
 
     struct Config {
-        /// Per-row mean-abs-diff (0...1) below which two rows count as identical. Small, because
-        /// true fixed bars are exact; a little slack absorbs downsample/JPEG noise.
-        var rowMatchThreshold: Float = 0.02
-        /// Never crop more than this fraction off either end (matches the manual slider cap), so a
-        /// misdetection can't eat real content.
-        var maxBandFraction: Float = 0.3
+        /// Per-row raw-luminance mean-abs-diff (0...1) below which two rows count as identical.
+        var rowMatchThreshold: Float = 0.015
+        /// Cap on automatically suggested band fraction so whitespace margins can never eat body
+        /// content (manual sliders still allow up to 30% when dragged explicitly).
+        var maxBandFraction: Float = 0.18
         /// Fraction of highest-diff columns trimmed inside the outer status/home-indicator bands
         /// (`<= 10%` from top/bottom) when `width >= 32`, absorbing narrow clock or recording-pill
         /// changes without letting narrow scrolling content inside the body look fixed.
@@ -31,10 +30,40 @@ enum FixedBarDetector {
     }
 
     /// Crop fractions (top, bottom), 0...maxBandFraction, for `StitchEngine.Options`.
+    ///
+    /// IMPORTANT: Builds raw grayscale luminance buffers rather than `PixelBuffer.from(_:)`
+    /// (which stores tiny horizontal-edge deltas ~0.005 that would underflow `rowMatchThreshold`
+    /// and falsely classify scrolling text/whitespace as fixed bars).
     static func detectFractions(_ images: [CGImage], config: Config = Config()) -> (top: Float, bottom: Float) {
-        let buffers = images.compactMap { PixelBuffer.from($0) }
+        let buffers = images.compactMap { luminanceBuffer(from: $0) }
         guard buffers.count == images.count else { return (0, 0) }
         return fractions(forBuffers: buffers, config: config)
+    }
+
+    /// Downsamples `image` horizontally to `sampleWidth` raw grayscale luminance samples (0...1)
+    /// at full vertical resolution for fixed-bar comparison.
+    static func luminanceBuffer(from image: CGImage, sampleWidth: Int = PixelBuffer.sampleWidth) -> PixelBuffer? {
+        let height = image.height
+        guard height > 0, sampleWidth > 0, sampleWidth <= Int.max / height else { return nil }
+        let colorSpace = CGColorSpaceCreateDeviceGray()
+        var pixels = [UInt8](repeating: 0, count: sampleWidth * height)
+        let ok: Bool = pixels.withUnsafeMutableBytes { ptr in
+            guard let ctx = CGContext(
+                data: ptr.baseAddress,
+                width: sampleWidth,
+                height: height,
+                bitsPerComponent: 8,
+                bytesPerRow: sampleWidth,
+                space: colorSpace,
+                bitmapInfo: CGImageAlphaInfo.none.rawValue
+            ) else { return false }
+            ctx.interpolationQuality = .medium
+            ctx.draw(image, in: CGRect(x: 0, y: 0, width: sampleWidth, height: height))
+            return true
+        }
+        guard ok else { return nil }
+        let rows = pixels.map { Float($0) / 255.0 }
+        return PixelBuffer(rows: rows, height: height, width: sampleWidth)
     }
 
     /// Raw fixed-band row counts (top, bottom) across the frame sequence.

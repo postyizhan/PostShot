@@ -172,4 +172,44 @@ final class FixedBarDetectorTests: XCTestCase {
         XCTAssertEqual(top, 0)
         XCTAssertEqual(bottom, 0)
     }
+
+    /// Critical regression: `detectFractions([CGImage])` must measure raw luminance rather than
+    /// horizontal-edge deltas so scrolling text/whitespace is NEVER mistaken for a 30% fixed bar!
+    func testDetectFractionsOnRealCGImagesDoesNotOverCropTextBody() {
+        let imgWidth = 320, imgHeight = 600
+        let topBar = 60    // 10%
+        let bottomBar = 48 // 8%
+        let images: [CGImage] = [0, 110, 220].map { scroll in
+            var pixels = [UInt8](repeating: 245, count: imgWidth * imgHeight)
+            for y in 0..<imgHeight {
+                if y < topBar {
+                    let v: UInt8 = (y == topBar - 1) ? 180 : 235
+                    for x in 0..<imgWidth { pixels[y * imgWidth + x] = v }
+                } else if y >= imgHeight - bottomBar {
+                    let v: UInt8 = (y == imgHeight - bottomBar) ? 180 : 230
+                    for x in 0..<imgWidth { pixels[y * imgWidth + x] = v }
+                } else {
+                    // Realistic low-density text lines: 6px dark strokes every 34px on white page.
+                    let contentY = y + scroll
+                    if contentY % 34 < 6 {
+                        for x in 24..<(imgWidth - 36) where (x + contentY) % 5 != 0 {
+                            pixels[y * imgWidth + x] = 45
+                        }
+                    }
+                }
+            }
+            return pixels.withUnsafeMutableBytes { ptr -> CGImage in
+                let ctx = CGContext(
+                    data: ptr.baseAddress, width: imgWidth, height: imgHeight,
+                    bitsPerComponent: 8, bytesPerRow: imgWidth,
+                    space: CGColorSpaceCreateDeviceGray(), bitmapInfo: CGImageAlphaInfo.none.rawValue
+                )!
+                return ctx.makeImage()!
+            }
+        }
+
+        let (topFrac, bottomFrac) = FixedBarDetector.detectFractions(images)
+        XCTAssertEqual(topFrac, 0.10, accuracy: 0.02, "Must stop right at the 10% top bar, never 0.30")
+        XCTAssertEqual(bottomFrac, 0.08, accuracy: 0.02, "Must stop right at the 8% bottom bar, never 0.30")
+    }
 }

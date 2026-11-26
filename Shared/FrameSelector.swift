@@ -18,23 +18,23 @@ import Foundation
 /// frames happens outside this type.
 enum FrameSelector {
 
-    /// Tunables for the coarse pass, calibrated for live ReplayKit broadcast scrolling.
+    /// Tunables for the coarse pass, calibrated for area-downsampled 64×64 ReplayKit frames.
     struct Config {
         /// Below this mean-abs-diff vs the last kept frame (over the active middle band), the
         /// screen is treated as unchanged (finger still) and dropped as a duplicate.
-        var duplicateThreshold: Float = 0.012
+        var duplicateThreshold: Float = 0.008
 
         /// At or above this active-band mean-abs-diff vs the last kept frame, content has changed
-        /// enough to evaluate scroll displacement for a new keyframe.
-        var changeThreshold: Float = 0.08
+        /// enough to evaluate scroll displacement. Kept low (`0.020`) because 64×64 area averaging
+        /// compresses black-on-white body text contrast into ~0.025–0.055 cell deltas.
+        var changeThreshold: Float = 0.020
 
-        /// Minimum wall-clock gap between two kept frames. Debounces bursts during fast scrolling
-        /// so we don't emit dozens of near-adjacent keyframes.
-        var minInterval: TimeInterval = 0.55
+        /// Short burst guard (~4.5 fps ceiling) so fast thumb flicks still retain ~50%–70% overlap
+        /// between consecutive keyframes instead of skipping an entire screen.
+        var minInterval: TimeInterval = 0.22
 
-        /// Hard cap on kept frames for one recording. Bounds memory/stitch time even if the user
-        /// scrolls a very long page or the thresholds misfire.
-        var maxFrames: Int = 60
+        /// Hard cap on kept frames for one recording. Bounds memory/stitch time on very long threads.
+        var maxFrames: Int = 120
 
         /// Top and bottom row fractions excluded from signature comparison so status bars, Dynamic
         /// Island / recording pills, nav headers, and Home indicators neither trigger nor dilute diff.
@@ -42,17 +42,17 @@ enum FrameSelector {
         var bottomIgnoreFraction: Float = 0.125
 
         /// Minimum vertical scroll displacement (fraction of full frame height) required during
-        /// active scrolling so kept keyframes land around ~45%–78% overlap instead of 90%+.
-        var minScrollFraction: Float = 0.22
+        /// active scrolling (~14% advance => <=86% overlap, comfortably inside OverlapDetector's range).
+        var minScrollFraction: Float = 0.14
 
         /// Aligned mean-abs-diff below which a candidate shift `< minScrollFraction` counts as a
         /// genuine micro-scroll of the previous kept frame.
-        var subScrollMatchThreshold: Float = 0.038
+        var subScrollMatchThreshold: Float = 0.022
 
-        /// After scrolling/pausing longer than this since the last keep, relax the displacement
-        /// floor so a short final scroll at the very bottom of a page is still captured.
-        var settleInterval: TimeInterval = 1.5
-        var settledMinScrollFraction: Float = 0.06
+        /// After scrolling/pausing longer than this since the last still frame, relax the
+        /// displacement floor so a short final scroll at the very bottom of a page is captured.
+        var settleInterval: TimeInterval = 0.9
+        var settledMinScrollFraction: Float = 0.04
 
         /// Row width of 2D signatures (`FrameEncoder.signatureSize`). Automatically falls back to
         /// 1-wide rows for short 1D test strips.
@@ -200,11 +200,12 @@ enum FrameSelector {
         let down = minShiftedDiff(movingUp: current, reference: last, grid: grid, maxShift: maxShift)
         let up = minShiftedDiff(movingUp: last, reference: current, grid: grid, maxShift: maxShift)
         let best = down.bestDiff <= up.bestDiff ? down : up
-        // Strict `< boundaryDiff - 1e-4` ensures neither monotonic gradients nor blank-interior
-        // edge-exit shifts (`bestDiff == 0` and `boundaryDiff == 0`) falsely report alignment.
+        // Strict alignment check: a genuine sub-threshold shift of the SAME screen must reduce
+        // residual error well below both `zeroLagDiff * 0.45` and `boundaryDiff / 1.4` so two
+        // distinct low-contrast text paragraphs never match by chance across candidate shifts.
         return best.bestDiff < matchThreshold
-            && best.bestDiff < zeroLagDiff * 0.65
-            && best.bestDiff + 1e-4 < best.boundaryDiff
+            && best.bestDiff < zeroLagDiff * 0.45
+            && best.bestDiff * 1.4 + 1e-4 < best.boundaryDiff
     }
 
     /// Evaluates shifts `0.5 ... maxShift` (plus integer `maxShift + 1` as guard) where
@@ -296,6 +297,18 @@ extension FrameSelector {
                 )
             }
             return decision
+        }
+        /// Forces a settled tail candidate into state (e.g. when ProMotion paused frame delivery
+        /// after a throttled scroll endpoint or when the broadcast ends).
+        func recordForcedKeep(signature: [Float], at timestamp: TimeInterval) {
+            let safeTime = state.map { max(timestamp, $0.timestamp) } ?? timestamp
+            guard (state?.keptCount ?? 0) < config.maxFrames else { return }
+            state = State(
+                signature: signature,
+                timestamp: safeTime,
+                keptCount: (state?.keptCount ?? 0) + 1,
+                lastStillTimestamp: nil
+            )
         }
     }
 }

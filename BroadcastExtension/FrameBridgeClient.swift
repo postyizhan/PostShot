@@ -9,9 +9,13 @@ import Network
 /// cannot accumulate unbounded multi-MB payloads inside the extension's ~50 MB memory limit.
 final class FrameBridgeClient {
     private let queue = DispatchQueue(label: "com.postshot.bridge.client", qos: .userInitiated)
-    private let maxInFlightFrames = 2
+    private let maxInFlightFrames = 4
     private var connection: NWConnection?
     private var inFlightFrames = 0
+
+    var canAcceptFrame: Bool {
+        queue.sync { connection != nil && inFlightFrames < maxInFlightFrames }
+    }
 
     func connect() {
         queue.sync {

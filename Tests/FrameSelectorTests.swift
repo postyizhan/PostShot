@@ -112,10 +112,10 @@ final class FrameSelectorTests: XCTestCase {
             t += dt
         }
 
-        // Over ~2s of scrolling with a 0.55s floor, we expect ~4–5 keyframes, plus the 1
+        // Over ~2s of scrolling with a 0.22s floor, we expect ~8–10 keyframes, plus the 1
         // still keyframe. Assert it's sparse (thinned) but progressing (not stuck at 1).
-        XCTAssertGreaterThan(kept, 2, "Scrolling must produce multiple keyframes")
-        XCTAssertLessThan(kept, 15, "Keyframes must be sparse, not one-per-frame")
+        XCTAssertGreaterThan(kept, 4, "Scrolling must produce multiple keyframes")
+        XCTAssertLessThan(kept, 18, "Keyframes must be sparse, not one-per-frame")
         XCTAssertEqual(engine.keptCount, kept, "Engine count must match observed keeps")
     }
 
@@ -185,16 +185,16 @@ final class FrameSelectorTests: XCTestCase {
         let first = gridSignature(source: source, scrollRows: 0)
         let state = FrameSelector.State(signature: first, timestamp: 0, keptCount: 1)
 
-        // 4/64 rows (~6.25% scroll, ~93.75% overlap) and 10/64 rows (~15.6% scroll) during active
-        // scrolling (< settleInterval) must wait for further displacement.
-        let micro4 = gridSignature(source: source, scrollRows: 4)
-        let micro10 = gridSignature(source: source, scrollRows: 10)
-        XCTAssertEqual(FrameSelector.decide(signature: micro4, timestamp: 0.6, state: state), .skipMinorChange)
-        XCTAssertEqual(FrameSelector.decide(signature: micro10, timestamp: 1.1, state: state), .skipMinorChange)
+        // 3/64 rows (~4.7% scroll) and 6/64 rows (~9.4% scroll) during active scrolling
+        // (< settleInterval 0.9s, < minScrollFraction 14% = 8 rows) must wait for more advance.
+        let micro3 = gridSignature(source: source, scrollRows: 3)
+        let micro6 = gridSignature(source: source, scrollRows: 6)
+        XCTAssertEqual(FrameSelector.decide(signature: micro3, timestamp: 0.3, state: state), .skipMinorChange)
+        XCTAssertEqual(FrameSelector.decide(signature: micro6, timestamp: 0.6, state: state), .skipMinorChange)
 
-        // 20/64 rows (~31% scroll, ~69% overlap) crosses minScrollFraction -> keep.
-        let advanced = gridSignature(source: source, scrollRows: 20)
-        XCTAssertEqual(FrameSelector.decide(signature: advanced, timestamp: 1.2, state: state), .keep)
+        // 12/64 rows (~18.8% scroll, ~81% overlap) crosses minScrollFraction (14%) -> keep.
+        let advanced = gridSignature(source: source, scrollRows: 12)
+        XCTAssertEqual(FrameSelector.decide(signature: advanced, timestamp: 0.7, state: state), .keep)
     }
 
     func test2DSettledShortTailScrollIsKeptOnce() {
@@ -203,11 +203,11 @@ final class FrameSelectorTests: XCTestCase {
         let start = gridSignature(source: source, scrollRows: 0)
         XCTAssertEqual(engine.consider(start, at: 0), .keep)
 
-        // User reaches page bottom after scrolling 8/64 rows (12.5%) and rests finger.
-        let tail = gridSignature(source: source, scrollRows: 8)
-        XCTAssertEqual(engine.consider(tail, at: 0.7), .skipMinorChange, "During active scroll window, wait")
-        XCTAssertEqual(engine.consider(tail, at: 1.6), .keep, "Once settled, retain tail frame at page bottom")
-        XCTAssertEqual(engine.consider(tail, at: 2.3), .skipDuplicate, "Subsequent still frames are duplicates")
+        // User reaches page bottom after scrolling 5/64 rows (7.8%) and rests finger.
+        let tail = gridSignature(source: source, scrollRows: 5)
+        XCTAssertEqual(engine.consider(tail, at: 0.4), .skipMinorChange, "During active scroll window, wait")
+        XCTAssertEqual(engine.consider(tail, at: 1.0), .keep, "Once settled, retain tail frame at page bottom")
+        XCTAssertEqual(engine.consider(tail, at: 1.5), .skipDuplicate, "Subsequent still frames are duplicates")
     }
 
     func test2DDoesNotDropLargeScrollAcrossBlankInterior() {
