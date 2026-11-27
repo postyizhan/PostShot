@@ -258,6 +258,7 @@ private struct TextSubBar: View {
 
 private struct DrawSubBar: View {
     @Binding var markup: EditorMarkupState
+    @State private var showClearConfirm = false
     private let swatches: [Color] = [.red, .orange, .yellow, .green, .blue]
 
     var body: some View {
@@ -279,16 +280,19 @@ private struct DrawSubBar: View {
                 }
             }
             BrushWidthChips(brushWidth: $markup.brushWidth)
-            Button { markup.strokes.removeAll() } label: {
+            Button { showClearConfirm = true } label: {
                 Image(systemName: "trash").font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(markup.strokes.isEmpty ? Color.secondary.opacity(0.45) : Color.primary)
                     .frame(width: 32, height: 32).background(Color.primary.opacity(0.08), in: Circle())
                     .contentShape(Circle())
             }
             .buttonStyle(.plain).disabled(markup.strokes.isEmpty).accessibilityLabel("清空画笔")
+            .confirmationDialog("清空所有笔画？", isPresented: $showClearConfirm, titleVisibility: .visible) {
+                Button("清空笔画", role: .destructive) { markup.strokes.removeAll() }
+                Button("取消", role: .cancel) {}
+            }
         }
     }
-
 }
 
 private struct BeautifySubBar: View {
