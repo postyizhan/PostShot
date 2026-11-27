@@ -289,17 +289,18 @@ struct ContentView: View {
     }
 
     private var needPhotoAccessSessionsCard: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 12) {
             Image(systemName: "photo.badge.plus").font(.title3).foregroundStyle(DesignTokens.accentBlue)
             Text("授权相册后可自动发现连续截图").font(.subheadline.weight(.medium))
-            HStack(spacing: 10) {
+            VStack(spacing: 8) {
                 if photoStatus == .notDetermined {
                     Button("允许访问相册") { requestPhotosFromHome() }
-                        .buttonStyle(.borderedProminent).controlSize(.small)
+                        .buttonStyle(ApplePrimaryButtonStyle())
                 }
                 Button("改用滚动录屏") { selectedTab = 2 }
-                    .buttonStyle(.bordered).controlSize(.small)
+                    .buttonStyle(AppleSecondaryButtonStyle())
             }
+            .padding(.horizontal, 4)
             .padding(.top, 2)
         }
         .frame(maxWidth: .infinity).padding(.vertical, 20).padding(.horizontal, 16).appleCard()
