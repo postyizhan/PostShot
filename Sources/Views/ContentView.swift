@@ -33,21 +33,21 @@ struct ContentView: View {
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Button {
-                            showSettings = true
-                        } label: {
-                            Image(systemName: "gearshape")
-                                .foregroundStyle(DesignTokens.accentBlue)
-                        }
-                        .accessibilityLabel("设置")
-                    }
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button {
                             showTutorial = true
                         } label: {
                             Image(systemName: "questionmark.circle")
                                 .foregroundStyle(DesignTokens.accentBlue)
                         }
                         .accessibilityLabel("使用教程")
+                    }
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button {
+                            showSettings = true
+                        } label: {
+                            Image(systemName: "gearshape")
+                                .foregroundStyle(DesignTokens.accentBlue)
+                        }
+                        .accessibilityLabel("设置")
                     }
                 }
                 .navigationDestination(isPresented: $showManualEditor) {
