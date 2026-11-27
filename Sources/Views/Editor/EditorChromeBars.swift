@@ -56,7 +56,7 @@ struct EditTopBar: View {
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.primary)
                     .padding(.horizontal, 16)
-                    .frame(height: 36)
+                    .frame(height: 44)
                     .liquidGlass(in: Capsule(), interactive: true)
                     .contentShape(Capsule())
             }
@@ -88,7 +88,7 @@ struct EditTopBar: View {
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(hasEdits ? Color.black : Color.secondary.opacity(0.55))
                 .padding(.horizontal, 18)
-                .frame(height: 36)
+                .frame(height: 44)
                 .background {
                     if hasEdits {
                         Capsule().fill(photosYellow)

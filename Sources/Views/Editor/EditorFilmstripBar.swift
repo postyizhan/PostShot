@@ -120,12 +120,13 @@ struct SourceFramesSheet: View {
     ) -> some View {
         Button(action: action) {
             Image(systemName: systemImage)
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(isDisabled ? Color.secondary.opacity(0.35) : tint)
-                .frame(width: 28, height: 28)
+                .frame(width: 36, height: 36)
                 .background(Color(.secondarySystemGroupedBackground), in: Circle())
                 .overlay(Circle().strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5))
-                .contentShape(Circle())
+                // 视觉 36pt，触控目标扩到 44pt
+                .contentShape(Circle().inset(by: -4))
         }
         .buttonStyle(.plain)
         .disabled(isDisabled)

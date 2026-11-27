@@ -64,7 +64,7 @@ struct EditorPrimaryTabPill: View {
                     VStack(spacing: 2) {
                         ZStack(alignment: .topTrailing) {
                             Image(systemName: tab.systemImage)
-                                .font(.system(size: 16, weight: .semibold))
+                                .font(.system(size: 15, weight: .semibold))
                             if modifiedTabs.contains(tab) {
                                 Circle()
                                     .fill(dirtyDotYellow)
@@ -73,7 +73,7 @@ struct EditorPrimaryTabPill: View {
                             }
                         }
                         Text(tab.title)
-                            .font(.system(size: 10, weight: .semibold))
+                            .font(.caption2.weight(.semibold))
                     }
                     .foregroundStyle(isSelected ? Color.primary : Color.secondary)
                     .frame(width: 68, height: 48)
@@ -352,7 +352,7 @@ private struct ColorSwatchDot: View {
             Circle().fill(color).frame(width: 22, height: 22)
                 .overlay(Circle().strokeBorder(Color.primary.opacity(0.18), lineWidth: 1))
                 .overlay(Circle().strokeBorder(isSelected ? DesignTokens.accentBlue : .clear, lineWidth: 2.5).padding(-3))
-                .frame(width: 32, height: 32).contentShape(Circle())
+                .frame(width: 44, height: 44).contentShape(Circle())
         }
         .buttonStyle(.plain)
     }
