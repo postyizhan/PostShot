@@ -3,10 +3,20 @@ import SwiftUI
 import PhotosUI
 import CoreGraphics
 
-/// Wraps a stitched `CGImage` so it can drive a SwiftUI `fullScreenCover(item:)`.
+/// Wraps a stitched `CGImage` along with source metadata and segment spans.
 struct StitchResult: Identifiable {
     let id = UUID()
     let image: CGImage
+    /// De-duplicated PHAsset local identifiers of the images that were stitched.
+    let sourceAssetIdentifiers: [String]
+    /// Normalized top-down vertical spans occupied by each stitched segment.
+    let segmentSpans: [SegmentSpan]
+
+    init(image: CGImage, sourceAssetIdentifiers: [String], segmentSpans: [SegmentSpan] = []) {
+        self.image = image
+        self.sourceAssetIdentifiers = sourceAssetIdentifiers
+        self.segmentSpans = segmentSpans
+    }
 }
 
 /// Owns selection, loading, auto-crop detection, backfill source, and stitching state.
@@ -89,83 +99,56 @@ final class StitchViewModel: ObservableObject {
     func loadFromStore(_ store: CaptureFrameStore) async {
         let outcome = await Task.detached(priority: .userInitiated) {
             let indices = store.selectPrimaryIndices()
-            var loaded: [SelectedImage] = []
-            var failedIndices: [Int] = []
+            var loaded: [SelectedImage] = [], failedIndices: [Int] = []
             for (pos, poolIdx) in indices.enumerated() {
                 do {
                     var item = try store.loadSelectedImage(at: poolIdx)
                     item.poolIndex = poolIdx
                     loaded.append(item)
-                } catch {
-                    failedIndices.append(pos)
-                }
+                } catch { failedIndices.append(pos) }
             }
             return (loaded, failedIndices)
         }.value
-        isRecordingSource = true
-        recordingStore = store
-        stitchNotice = nil
+        isRecordingSource = true; recordingStore = store; stitchNotice = nil
         applyLoadedFrames(outcome.0, failedIndices: outcome.1, prefix: "采集帧")
     }
 
     /// Loads captured frames off the main actor while preserving adjacency.
     func loadAsync(pngFrames: [Data]) async {
-        let outcome = await Task.detached(priority: .userInitiated) {
-            Self.decodePNGFrames(pngFrames)
-        }.value
-        isRecordingSource = true
-        recordingStore = nil
-        stitchNotice = nil
+        let outcome = await Task.detached(priority: .userInitiated) { Self.decodePNGFrames(pngFrames) }.value
+        isRecordingSource = true; recordingStore = nil; stitchNotice = nil
         applyLoadedFrames(outcome.0, failedIndices: outcome.1, prefix: "采集帧")
     }
 
     /// Synchronous convenience wrapper for tests or small pre-loaded batches.
     func load(pngFrames: [Data]) {
         let outcome = Self.decodePNGFrames(pngFrames)
-        isRecordingSource = true
-        recordingStore = nil
-        stitchNotice = nil
+        isRecordingSource = true; recordingStore = nil; stitchNotice = nil
         applyLoadedFrames(outcome.0, failedIndices: outcome.1, prefix: "采集帧")
     }
 
     nonisolated private static func decodePNGFrames(_ pngFrames: [Data]) -> ([SelectedImage], [Int]) {
-        var loaded: [SelectedImage] = []
-        var failedIndices: [Int] = []
+        var loaded: [SelectedImage] = [], failedIndices: [Int] = []
         for (index, png) in pngFrames.enumerated() {
-            do {
-                loaded.append(try ImageDecoder.decode(png))
-            } catch {
-                failedIndices.append(index)
-            }
+            do { loaded.append(try ImageDecoder.decode(png)) } catch { failedIndices.append(index) }
         }
         return (loaded, failedIndices)
     }
 
     private func applyLoadedFrames(_ loaded: [SelectedImage], failedIndices: [Int], prefix: String) {
         result = nil
-        guard failedIndices.isEmpty else {
-            images = []
-            present(error: failedLoadMessage(prefix: prefix, indices: failedIndices))
-            return
-        }
-        errorMessage = nil
-        isShowingError = false
-        images = loaded
+        guard failedIndices.isEmpty else { images = []; present(error: failedLoadMessage(prefix: prefix, indices: failedIndices)); return }
+        errorMessage = nil; isShowingError = false; images = loaded
     }
 
     func suggestFixedBarCrop() {
         guard images.count >= 2 else { return }
-        let suggestion = FixedBarDetector.detectFractions(
-            images.map(\.cgImage), minimumTopFraction: minimumTopCrop
-        )
-        applySuggestedCrop(suggestion)
+        applySuggestedCrop(FixedBarDetector.detectFractions(images.map(\.cgImage), minimumTopFraction: minimumTopCrop))
     }
 
     func suggestFixedBarCropAsync() async {
         guard images.count >= 2 else { return }
-        let expectedGen = stitchGeneration
-        let cgImages = images.map(\.cgImage)
-        let floor = minimumTopCrop
+        let expectedGen = stitchGeneration, cgImages = images.map(\.cgImage), floor = minimumTopCrop
         let suggestion = await Task.detached(priority: .userInitiated) {
             FixedBarDetector.detectFractions(cgImages, minimumTopFraction: floor)
         }.value
@@ -173,34 +156,20 @@ final class StitchViewModel: ObservableObject {
         applySuggestedCrop(suggestion)
     }
 
-    private var minimumTopCrop: Float {
-        isRecordingSource ? FixedBarDetector.recordingStatusBandFloor : 0
-    }
+    private var minimumTopCrop: Float { isRecordingSource ? FixedBarDetector.recordingStatusBandFloor : 0 }
 
     private func applySuggestedCrop(_ suggestion: (top: Float, bottom: Float)) {
-        topCropFraction = suggestion.top
-        bottomCropFraction = suggestion.bottom
-        lastSuggestedCrop = suggestion
+        topCropFraction = suggestion.top; bottomCropFraction = suggestion.bottom; lastSuggestedCrop = suggestion
     }
 
     private func refreshAutoCropAndStitchIfReady() {
         guard images.count >= 2 else { return }
-        let shouldRefresh: Bool
-        if autoSuggestCrop {
-            if let last = lastSuggestedCrop {
-                shouldRefresh = abs(topCropFraction - last.top) < 1e-4
-                    && abs(bottomCropFraction - last.bottom) < 1e-4
-            } else {
-                shouldRefresh = true
-            }
-        } else {
-            shouldRefresh = false
-        }
+        let shouldRefresh = autoSuggestCrop && (lastSuggestedCrop.map {
+            abs(topCropFraction - $0.top) < 1e-4 && abs(bottomCropFraction - $0.bottom) < 1e-4
+        } ?? true)
         cropTask?.cancel()
         cropTask = Task {
-            if shouldRefresh {
-                await suggestFixedBarCropAsync()
-            }
+            if shouldRefresh { await suggestFixedBarCropAsync() }
             guard !Task.isCancelled, images.count >= 2 else { return }
             stitch()
         }
@@ -225,8 +194,9 @@ final class StitchViewModel: ObservableObject {
                         failedIndices.append(index)
                         continue
                     }
+                    let assetID = item.itemIdentifier
                     let decoded = try await Task.detached(priority: .userInitiated) {
-                        try ImageDecoder.decode(data)
+                        try ImageDecoder.decode(data, assetIdentifier: assetID)
                     }.value
                     loaded.append(decoded)
                 } catch is CancellationError {
@@ -294,7 +264,12 @@ final class StitchViewModel: ObservableObject {
         switch outcome {
         case .success(let report):
             stitchNotice = formatNotice(report: report)
-            result = StitchResult(image: report.image)
+            let ids = Array(Set(images.compactMap(\.assetIdentifier)))
+            result = StitchResult(
+                image: report.image,
+                sourceAssetIdentifiers: ids,
+                segmentSpans: report.segmentSpans
+            )
         case .failure(let error):
             result = nil
             if case .unsafeSeam(let seam) = error {
@@ -318,38 +293,65 @@ final class StitchViewModel: ObservableObject {
         return parts.isEmpty ? nil : parts.joined(separator: "，")
     }
 
-    // MARK: - Seam Recovery
+    // MARK: - Segment Editing & Seam Recovery
+
+    /// Replaces the frame at `index` with a newly picked `PhotosPickerItem` and re-stitches.
+    @discardableResult
+    func replaceFrame(at index: Int, with item: PhotosPickerItem) async -> Bool {
+        guard images.indices.contains(index), !isStitching else { return false }
+        do {
+            guard let data = try await item.loadTransferable(type: Data.self) else {
+                present(error: "无法读取所选图片。")
+                return false
+            }
+            let assetID = item.itemIdentifier
+            let decoded = try await Task.detached(priority: .userInitiated) {
+                try ImageDecoder.decode(data, assetIdentifier: assetID)
+            }.value
+            guard images.indices.contains(index) else { return false }
+            images[index] = decoded
+            stitchNotice = nil
+            if images.count >= 2 { stitch() }
+            return true
+        } catch {
+            present(error: "替换图片失败：\(error.localizedDescription)")
+            return false
+        }
+    }
+
+    /// Removes the frame at `index` while keeping at least 2 frames, then re-stitches.
+    @discardableResult
+    func removeFrameInEditor(at index: Int) -> Bool {
+        guard images.count > 2, images.indices.contains(index), !isStitching else { return false }
+        images.remove(at: index)
+        stitchNotice = nil
+        stitch()
+        return true
+    }
 
     func removeFrameAndRetry(at index: Int) {
         guard images.indices.contains(index), !isStitching else { return }
-        images.remove(at: index)
-        refreshAutoCropAndStitchIfReady()
+        images.remove(at: index); refreshAutoCropAndStitchIfReady()
     }
 
     func trimLeadingFramesAndRetry(from startIndex: Int) {
         guard startIndex > 0, startIndex < images.count, !isStitching else { return }
-        images = Array(images[startIndex...])
-        refreshAutoCropAndStitchIfReady()
+        images = Array(images[startIndex...]); refreshAutoCropAndStitchIfReady()
     }
 
     func trimTrailingFramesAndRetry(keepingUpTo endIndex: Int) {
         guard endIndex >= 0, endIndex < images.count - 1, !isStitching else { return }
-        images = Array(images[0...endIndex])
-        refreshAutoCropAndStitchIfReady()
+        images = Array(images[0...endIndex]); refreshAutoCropAndStitchIfReady()
     }
 
     func swapPairAndRetry() {
         guard images.count == 2, !isStitching else { return }
-        images.swapAt(0, 1)
-        refreshAutoCropAndStitchIfReady()
+        images.swapAt(0, 1); refreshAutoCropAndStitchIfReady()
     }
 
     // MARK: - Errors
 
-    private func present(error: String) {
-        errorMessage = error
-        isShowingError = true
-    }
+    private func present(error: String) { errorMessage = error; isShowingError = true }
 
     private func failedLoadMessage(prefix: String, indices: [Int]) -> String {
         let labels = indices.map { String($0 + 1) }.joined(separator: "、")
@@ -358,22 +360,20 @@ final class StitchViewModel: ObservableObject {
 
     private func describe(_ error: StitchEngine.StitchError) -> String {
         switch error {
-        case .noImages:
-            return "请至少选择 2 张图片。"
+        case .noImages: return "请至少选择 2 张图片。"
         case .invalidInput(let profile):
             if let first = profile.diagnostics.first {
-                let index = first.sourceIndex + 1
+                let idx = first.sourceIndex + 1
                 switch first.reason {
                 case .empty, .nonPositiveDimensions, .impossiblePixelCount:
-                    return "第\(index)张图片尺寸无效（或裁剪比例过大），无法拼接。"
+                    return "第\(idx)张图片尺寸无效（或裁剪比例过大），无法拼接。"
                 case .dimensionMismatch:
-                    return "第\(index)张图片尺寸与首张不一致（\(first.actual) vs \(profile.canonicalSize)），无法安全拼接。"
+                    return "第\(idx)张图片尺寸与首张不一致（\(first.actual) vs \(profile.canonicalSize)），无法安全拼接。"
                 }
             }
             return "输入图片校验未通过，无法拼接。"
         case .unsafeSeam(let seam):
-            let a = seam.topIndex + 1
-            let b = seam.bottomIndex + 1
+            let a = seam.topIndex + 1, b = seam.bottomIndex + 1
             if seam.result.status == .ambiguous {
                 return "第\(a)张与第\(b)张存在多处相似内容，自动匹配不确定；可删除异常帧或调整裁剪后重试。"
             }

@@ -13,6 +13,8 @@ struct SelectedImage: Identifiable, Equatable {
     let thumbnail: UIImage
     /// Optional index into `CaptureFrameStore` when sourced from a dense screen recording.
     var poolIndex: Int? = nil
+    /// PHAsset local identifier when sourced from the photo library (manual picker or auto-discover).
+    var assetIdentifier: String? = nil
 
     static func == (lhs: SelectedImage, rhs: SelectedImage) -> Bool {
         lhs.id == rhs.id
@@ -39,10 +41,18 @@ enum ImageDecoder {
     /// Max thumbnail edge in pixels for the strip.
     static let thumbnailMaxPixel = 200
 
+    /// Decodes image `data` into a `SelectedImage`.
+    ///
+    /// - Parameters:
+    ///   - data: Raw image bytes (PNG, JPEG, HEIC, etc.)
+    ///   - orientation: Optional EXIF orientation override.
+    ///   - poolIndex: Index into `CaptureFrameStore` when sourced from a recording.
+    ///   - assetIdentifier: PHAsset local identifier when sourced from the photo library.
     static func decode(
         _ data: Data,
         orientation: CGImagePropertyOrientation? = nil,
-        poolIndex: Int? = nil
+        poolIndex: Int? = nil,
+        assetIdentifier: String? = nil
     ) throws -> SelectedImage {
         guard let normalized = try? ImageNormalizer.normalize(
             data: data,
@@ -54,6 +64,11 @@ enum ImageDecoder {
         let thumbSize = thumbnailMaxPixel
         let scale = min(1, CGFloat(thumbSize) / CGFloat(max(full.width, full.height)))
         let thumb = UIImage(cgImage: full).resizedForDecoder(scale: scale)
-        return SelectedImage(cgImage: full, thumbnail: thumb, poolIndex: poolIndex)
+        return SelectedImage(
+            cgImage: full,
+            thumbnail: thumb,
+            poolIndex: poolIndex,
+            assetIdentifier: assetIdentifier
+        )
     }
 }

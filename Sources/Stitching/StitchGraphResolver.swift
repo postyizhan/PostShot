@@ -19,6 +19,7 @@ enum StitchGraphResolver {
         let image: CGImage
         let buffer: PixelBuffer?
         let poolIndex: Int?
+        let sourceIndex: Int?
     }
 
     private struct KeptNode {
@@ -43,7 +44,7 @@ enum StitchGraphResolver {
         let hasMatchingRaws = rawImages?.count == images.count
         let nodes = images.enumerated().map { idx, img in
             let raw = hasMatchingRaws ? rawImages![idx] : img
-            return Node(rawImage: raw, image: img, buffer: PixelBuffer.from(img), poolIndex: poolIndices?[idx])
+            return Node(rawImage: raw, image: img, buffer: PixelBuffer.from(img), poolIndex: poolIndices?[idx], sourceIndex: idx)
         }
         if nodes.count == 1 {
             return .success(finalizeChain(
@@ -158,7 +159,9 @@ enum StitchGraphResolver {
     ) -> ResolvedChain {
         let firstTop = resolvedFirstTopCrop(options: options)
         let lastBottom: Float = options.keepFooter ? 0 : options.bottomCropFraction
-        var segments = kept.map { ImageCompositor.Segment(image: $0.node.image, overlap: $0.overlap) }
+        var segments = kept.map {
+            ImageCompositor.Segment(image: $0.node.image, overlap: $0.overlap, sourceIndex: $0.node.sourceIndex)
+        }
         guard !kept.isEmpty else {
             return ResolvedChain(
                 segments: segments, skippedIndices: skipped, backfilledCount: backfilled,
@@ -172,14 +175,18 @@ enum StitchGraphResolver {
            let recroppedFirst = try? ImageNormalizer.crop(
                kept[0].node.rawImage, topFraction: firstTop, bottomFraction: firstBottom
            ) {
-            segments[0] = ImageCompositor.Segment(image: recroppedFirst, overlap: 0)
+            segments[0] = ImageCompositor.Segment(
+                image: recroppedFirst, overlap: 0, sourceIndex: kept[0].node.sourceIndex
+            )
         }
         if !single, lastBottom != options.bottomCropFraction,
            let recroppedLast = try? ImageNormalizer.crop(
                kept[kept.count - 1].node.rawImage, topFraction: options.topCropFraction, bottomFraction: lastBottom
            ) {
             let lastIdx = kept.count - 1
-            segments[lastIdx] = ImageCompositor.Segment(image: recroppedLast, overlap: kept[lastIdx].overlap)
+            segments[lastIdx] = ImageCompositor.Segment(
+                image: recroppedLast, overlap: kept[lastIdx].overlap, sourceIndex: kept[lastIdx].node.sourceIndex
+            )
         }
 
         let topRows = extraPreservedRows(
@@ -341,7 +348,7 @@ enum StitchGraphResolver {
               cropped.width == canonicalSize.width, cropped.height == canonicalSize.height else {
             return nil
         }
-        return Node(rawImage: raw, image: cropped, buffer: PixelBuffer.from(cropped), poolIndex: poolIndex)
+        return Node(rawImage: raw, image: cropped, buffer: PixelBuffer.from(cropped), poolIndex: poolIndex, sourceIndex: nil)
     }
 
     private static func matchPair(

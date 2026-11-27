@@ -48,7 +48,11 @@ final class AutoStitchViewModel: ObservableObject {
             let prepared = try await Task.detached(priority: .userInitiated) {
                 let original = try results.map { result -> SelectedImage in
                     guard let data = result.data else { throw ImageLoadError.decodeFailed }
-                    return try ImageDecoder.decode(data, orientation: result.orientation)
+                    return try ImageDecoder.decode(
+                        data,
+                        orientation: result.orientation,
+                        assetIdentifier: result.sourceID
+                    )
                 }
                 let sourceImages = original.map(\.cgImage)
                 let initialCrop = FixedBarDetector.detectFractions(sourceImages)

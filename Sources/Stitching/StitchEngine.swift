@@ -29,6 +29,8 @@ struct StitchReport {
     let skippedIndices: [Int]
     /// Number of intermediate frames automatically pulled from `FrameBackfillSource`.
     let backfilledCount: Int
+    /// Normalized vertical spans occupied by each stitched segment.
+    let segmentSpans: [SegmentSpan]
 }
 
 final class StitchEngine: @unchecked Sendable {
@@ -114,11 +116,16 @@ final class StitchEngine: @unchecked Sendable {
                     protectedTopRows: chain.preservedTopRows,
                     protectedBottomRows: chain.preservedBottomRows
                 )
+                let spans = try ImageCompositor.computeSegmentSpans(
+                    segments: chain.segments,
+                    width: profile.canonicalSize.width
+                )
                 progress(1)
                 return .success(StitchReport(
                     image: output,
                     skippedIndices: chain.skippedIndices,
-                    backfilledCount: chain.backfilledCount
+                    backfilledCount: chain.backfilledCount,
+                    segmentSpans: spans
                 ))
             } catch {
                 return .failure(.compositeFailed(error))

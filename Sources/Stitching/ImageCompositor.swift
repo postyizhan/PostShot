@@ -2,6 +2,14 @@
 import CoreGraphics
 import Foundation
 
+/// Normalized vertical span (`0...1`, top-down) occupied by a stitched segment in the output image.
+struct SegmentSpan: Equatable, Sendable, Identifiable {
+    let id: Int
+    let sourceIndex: Int?
+    let topFraction: CGFloat
+    let bottomFraction: CGFloat
+}
+
 /// Merges vertically-overlapping images into a single tall canvas with midpoint hard-cut seams.
 /// Uses sRGB, no resampling beyond width normalization.
 ///
@@ -17,6 +25,14 @@ enum ImageCompositor {
         let image: CGImage
         /// Overlap with the previous segment, in pixels of the common (normalized) width space.
         let overlap: Int
+        /// 0-based index into the input image array, or `nil` for backfilled frames.
+        let sourceIndex: Int?
+
+        init(image: CGImage, overlap: Int, sourceIndex: Int? = nil) {
+            self.image = image
+            self.overlap = overlap
+            self.sourceIndex = sourceIndex
+        }
     }
 
     enum CompositeError: Error {
@@ -78,6 +94,30 @@ enum ImageCompositor {
 
         guard let result = ctx.makeImage() else { throw CompositeError.drawFailed }
         return result
+    }
+
+    /// Computes normalized top-down vertical spans (`0...1`) matching the midpoint hard-cut seams.
+    static func computeSegmentSpans(segments: [Segment], width: Int) throws -> [SegmentSpan] {
+        let layout = try computeLayout(segments: segments, width: width)
+        var topDownOrigins = [Int](repeating: 0, count: segments.count)
+        for i in 1..<segments.count {
+            topDownOrigins[i] = topDownOrigins[i - 1] + (layout.scaledHeights[i - 1] - layout.overlaps[i])
+        }
+        let seamTops = segments.indices.map { i in
+            i == 0 ? 0 : topDownOrigins[i] + (layout.overlaps[i] / 2)
+        }
+        let total = CGFloat(max(1, layout.totalHeight))
+        return segments.indices.map { i in
+            let start = max(0, min(seamTops[i], layout.totalHeight))
+            let rawEnd = (i + 1 < segments.count) ? seamTops[i + 1] : layout.totalHeight
+            let end = max(start, min(rawEnd, layout.totalHeight))
+            return SegmentSpan(
+                id: i,
+                sourceIndex: segments[i].sourceIndex,
+                topFraction: CGFloat(start) / total,
+                bottomFraction: CGFloat(end) / total
+            )
+        }
     }
 
     private struct Layout {
