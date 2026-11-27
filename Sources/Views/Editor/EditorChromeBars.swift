@@ -95,12 +95,12 @@ struct EditTopBar: View {
         Button(action: onDone) {
             Text("完成")
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(hasEdits ? Color.black : Color.secondary.opacity(0.55))
+                .foregroundStyle(hasEdits ? Color.white : Color.secondary.opacity(0.55))
                 .padding(.horizontal, 18)
                 .frame(height: 44)
                 .background {
                     if hasEdits {
-                        Capsule().fill(photosYellow)
+                        Capsule().fill(DesignTokens.accentBlue)
                     } else {
                         Capsule().fill(Color.clear).liquidGlass(in: Capsule())
                     }
