@@ -15,6 +15,7 @@ final class FrameBridgeServer: ObservableObject {
     }
 
     let frameStore = CaptureFrameStore()
+    var onBroadcastStarted: (() -> Void)?
 
     @Published private(set) var status = "未启动"
     @Published private(set) var previews: [CapturedPreview] = []
@@ -63,7 +64,13 @@ final class FrameBridgeServer: ObservableObject {
 
     private func handleControl(_ raw: String) {
         if raw == "started" {
+            if !previews.isEmpty || isFinished {
+                frameStore.reset()
+                previews.removeAll()
+            }
+            isFinished = false
             lastControl = "录制进行中"
+            onBroadcastStarted?()
         } else if raw.hasPrefix("finished") {
             let parts = raw.split(separator: " ")
             let countText = parts.count > 1 ? String(parts[1]) : "\(previews.count)"

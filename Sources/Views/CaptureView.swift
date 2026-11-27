@@ -10,8 +10,7 @@ struct CaptureView: View {
         "\(Bundle.main.bundleIdentifier ?? "com.postshot.app").broadcast"
     }
 
-    @StateObject private var server = FrameBridgeServer()
-    @StateObject private var keepAlive = AudioKeepAlive()
+    @ObservedObject var server: FrameBridgeServer
     @State private var showReview = false
 
     private let columns = [GridItem(.adaptive(minimum: 80), spacing: 8)]
@@ -35,8 +34,6 @@ struct CaptureView: View {
                 CaptureReviewView(store: server.frameStore)
             }
         }
-        .onAppear { server.start(); keepAlive.start() }
-        .onDisappear { server.stop(); keepAlive.stop() }
     }
 
     private var header: some View {
@@ -46,7 +43,7 @@ struct CaptureView: View {
                 .foregroundStyle(.red)
             Text("全屏录制长截图")
                 .font(.headline)
-            Text("点按钮开始录屏 → 选「驿站截图录制」→ 切到目标 App 匀速滚动 → 结束录屏后返回拼接")
+            Text("开始直播后系统有 3 秒倒计时 → 听到轻提示音或灵动岛变红后再开始滚动 → 结束录屏返回拼接")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)

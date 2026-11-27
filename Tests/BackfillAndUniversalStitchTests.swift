@@ -229,4 +229,39 @@ final class BackfillAndUniversalStitchTests: XCTestCase {
             XCTFail("Expected disk-pool backfill and tail rescue to succeed, got \(error)")
         }
     }
+
+    func testEngineRescuesPageHeadFromDiskStoreAfterLeadingControlCenter() {
+        let w = 64, winH = 360
+        let source = makeScrollSource(width: w, height: 1600, seed: 616)
+        let store = CaptureFrameStore()
+        defer { store.reset() }
+
+        // Pool index 0 is Control Center; pool index 1 is the true page head (startRow=0);
+        // pool indices 2..4 advance by 150px each. Primary sparse list missed index 1: [0(CC), 3, 4].
+        var poolImages: [CGImage] = [makeScrollSource(width: w, height: winH, seed: 9991)]
+        poolImages.append(contentsOf: (0...3).map { crop(source, startRow: $0 * 150, height: winH) })
+        for img in poolImages {
+            XCTAssertNotNil(store.append(encodePNG(img)))
+        }
+
+        let sparseIndices = [0, 3, 4]
+        let sparseImages = sparseIndices.compactMap { store.loadCGImage(at: $0) }
+        var options = StitchEngine.Options()
+        options.backfill = FrameBackfillSource(
+            poolIndices: sparseIndices,
+            loadFrame: { store.loadCGImage(at: $0) }
+        )
+
+        switch StitchEngine().stitchWithReportSync(images: sparseImages, options: options) {
+        case .success(let report):
+            XCTAssertEqual(report.skippedIndices, [0], "Leading Control Center frame must be skipped")
+            XCTAssertGreaterThanOrEqual(report.backfilledCount, 1,
+                                        "Must rescue pool[1] (page head) before pool[3]")
+            // True head (startRow=0) through pool[4] (startRow=450 + 360) = 810px!
+            XCTAssertEqual(report.image.height, 810, accuracy: 6,
+                           "Head rescue must recover the complete top of the page from startRow=0")
+        case .failure(let error):
+            XCTFail("Expected leading pool head rescue to succeed, got \(error)")
+        }
+    }
 }

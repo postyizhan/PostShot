@@ -77,11 +77,18 @@ enum StitchGraphResolver {
                     firstFailure = res
                 }
                 if case .connected(let segs, let added) = outcome {
-                    let head = ImageCompositor.Segment(image: nodes[start].image, overlap: 0)
+                    let lead = start > 0
+                        ? rescueLeadingPool(
+                            before: nodes[start], afterPool: nodes[start - 1].poolIndex,
+                            options: options, canonicalSize: canonicalSize
+                        )
+                        : nil
+                    let initialSegments = lead?.segments ?? [ImageCompositor.Segment(image: nodes[start].image, overlap: 0)]
                     let skipped = Array(0..<start) + Array((start + 1)..<target)
                     return .success(InitialStep(
-                        anchor: target, next: target + 1, segments: [head] + segs,
-                        skipped: skipped, backfilled: added
+                        anchor: target, next: target + 1,
+                        segments: initialSegments + segs,
+                        skipped: skipped, backfilled: (lead?.backfilled ?? 0) + added
                     ))
                 }
             }
@@ -202,6 +209,26 @@ enum StitchGraphResolver {
             return ([], 0)
         }
         return bridgePool(from: top, to: bottom, range: range, depth: depth, options: options, canonicalSize: canonicalSize)
+    }
+
+    private static func rescueLeadingPool(
+        before firstValid: Node, afterPool: Int?, options: StitchEngine.Options, canonicalSize: PixelSize
+    ) -> (segments: [ImageCompositor.Segment], backfilled: Int)? {
+        guard let pL = afterPool, let pR = firstValid.poolIndex, pR - pL >= 2 else { return nil }
+        for candidate in (pL + 1)..<pR {
+            guard let node = loadPoolNode(at: candidate, options: options, canonicalSize: canonicalSize) else {
+                continue
+            }
+            if let linked = connectOrBridge(
+                from: node, to: firstValid, range: (candidate + 1)..<pR,
+                depth: 0, options: options, canonicalSize: canonicalSize
+            ) {
+                let head = ImageCompositor.Segment(image: node.image, overlap: 0)
+                let extra = linked.segments.isEmpty ? 0 : (linked.backfilled + 1)
+                return ([head] + linked.segments, extra)
+            }
+        }
+        return nil
     }
 
     private static func rescueTrailingPool(

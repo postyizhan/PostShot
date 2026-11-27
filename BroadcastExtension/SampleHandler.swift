@@ -7,8 +7,8 @@ import Foundation
 /// Broadcast Upload Extension entry point: dense keyframe selection and loopback streaming.
 ///
 /// Streams ~8%-stride keyframes (`FrameSelector.Config.denseBroadcast`) over loopback TCP into the
-/// host app's disk-backed `CaptureFrameStore` so `StitchEngine` has intermediate frames available
-/// whenever a fast scroll or outlier frame requires gap backfill.
+/// host app's disk-backed `CaptureFrameStore`, and flushes static resting frames (such as the
+/// clean page head revealed right after Control Center closes on a ProMotion display).
 class SampleHandler: RPBroadcastSampleHandler {
 
     private struct PendingTail {
@@ -17,8 +17,9 @@ class SampleHandler: RPBroadcastSampleHandler {
         let timestamp: TimeInterval
     }
 
+    private static let denseConfig = FrameSelector.Config.denseBroadcast
     private let bridge = FrameBridgeClient()
-    private let selector = FrameSelector.Engine(config: .denseBroadcast)
+    private let selector = FrameSelector.Engine(config: denseConfig)
     private let stateLock = NSLock()
     private var lastTimestamp: TimeInterval?
     private var pendingTail: PendingTail?
@@ -43,19 +44,18 @@ class SampleHandler: RPBroadcastSampleHandler {
             var tailToFlush: PendingTail?
             stateLock.lock()
             let timestamp = monotonicSeconds(of: sampleBuffer)
-            if let tail = pendingTail, timestamp - tail.timestamp >= 0.55 {
+            if let tail = pendingTail, shouldFlushTail(tail, currentSignature: signature, at: timestamp) {
                 tailToFlush = tail
                 pendingTail = nil
                 selector.recordForcedKeep(signature: tail.signature, at: tail.timestamp)
             }
             let decision = selector.consider(signature, at: timestamp)
-            // Snapshot only on sub-stride scroll endpoints (never on throttled active flicks) so
-            // frame encoding never blocks high-velocity scrolling callbacks.
-            let shouldSnapshotTail = (decision == .skipMinorChange)
-                && (timestamp - lastTailSnapshotTime >= 0.35)
             if decision.isKeep {
                 pendingTail = nil
+                lastTailSnapshotTime = timestamp
             }
+            let shouldSnapshotTail = (decision == .skipThrottled || decision == .skipMinorChange)
+                && (timestamp - lastTailSnapshotTime >= 0.06)
             stateLock.unlock()
 
             if let tailToFlush {
@@ -75,6 +75,18 @@ class SampleHandler: RPBroadcastSampleHandler {
         }
     }
 
+    /// Flushes `pendingTail` either when ProMotion paused frame delivery for `>= 0.22s` (e.g.
+    /// resting on the static page head right after Control Center closed) or when the screen
+    /// stabilized onto `pendingTail` for `>= 0.10s`.
+    private func shouldFlushTail(
+        _ tail: PendingTail, currentSignature: [Float], at timestamp: TimeInterval
+    ) -> Bool {
+        let elapsed = timestamp - tail.timestamp
+        if elapsed >= 0.22 { return true }
+        return elapsed >= 0.10
+            && FrameSelector.meanAbsDiff(currentSignature, tail.signature) < Self.denseConfig.duplicateThreshold
+    }
+
     override func broadcastFinished() {
         stateLock.lock()
         let finalTail = pendingTail
@@ -91,8 +103,6 @@ class SampleHandler: RPBroadcastSampleHandler {
         bridge.finish(keptCount: count)
     }
 
-    /// Monotonic presentation timestamp in seconds; advances by 1/60s when PTS is absent or
-    /// non-monotonic so `FrameSelector`'s interval throttle can never stall on clock jumps.
     private func monotonicSeconds(of sampleBuffer: CMSampleBuffer) -> TimeInterval {
         let pts = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
         if pts.isNumeric {

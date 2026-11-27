@@ -1,33 +1,36 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // PostShot 驿站截图 — 开源免费的 iOS 长截图拼接 App
 // Copyright (C) 2026 PostShot contributors
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published
-// by the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-//
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import SwiftUI
 
 @main
 struct PostShotApp: App {
+    @StateObject private var bridgeServer = FrameBridgeServer()
+    @StateObject private var keepAlive = AudioKeepAlive()
+    @State private var selectedTab = 0
+
     var body: some Scene {
         WindowGroup {
-            TabView {
+            TabView(selection: $selectedTab) {
                 ContentView()
                     .tabItem { Label("拼图", systemImage: "photo.on.rectangle.angled") }
+                    .tag(0)
                 AutoStitchView()
                     .tabItem { Label("自动", systemImage: "wand.and.stars") }
-                CaptureView()
+                    .tag(1)
+                CaptureView(server: bridgeServer)
                     .tabItem { Label("录制", systemImage: "record.circle") }
+                    .tag(2)
+            }
+            .onAppear {
+                let ka = keepAlive
+                ka.start()
+                bridgeServer.onBroadcastStarted = { [weak ka] in
+                    ka?.playStartCue()
+                    selectedTab = 2
+                }
+                bridgeServer.start()
             }
         }
     }
