@@ -25,7 +25,18 @@ struct AutoStitchView: View {
                 .background(Color(.systemGroupedBackground).ignoresSafeArea())
                 .navigationTitle("自动拼接")
                 .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) { toolbarButtons }
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button { showSettings = true } label: {
+                            Image(systemName: "gearshape").foregroundStyle(DesignTokens.accentBlue)
+                        }
+                        .accessibilityLabel("设置")
+                    }
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button { showTutorial = true } label: {
+                            Image(systemName: "questionmark.circle").foregroundStyle(DesignTokens.accentBlue)
+                        }
+                        .accessibilityLabel("使用教程")
+                    }
                 }
                 .navigationDestination(isPresented: $showReview) {
                     if let m = preparedModel {
@@ -52,13 +63,6 @@ struct AutoStitchView: View {
         .alert("无法准备截图", isPresented: $model.isShowingError, presenting: model.errorMessage) { _ in
             Button("好", role: .cancel) {}
         } message: { Text($0) }
-    }
-
-    private var toolbarButtons: some View {
-        HStack(spacing: 8) {
-            LightCircleButton(systemImage: "questionmark", accessibilityLabel: "使用教程") { showTutorial = true }
-            LightCircleButton(systemImage: "gearshape", accessibilityLabel: "设置") { showSettings = true }
-        }
     }
 
     // MARK: - Content Switcher

@@ -30,11 +30,23 @@ struct CaptureView: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .navigationBarLeading) {
-                        LightCircleButton(systemImage: "waveform.path.ecg", accessibilityLabel: "录制诊断") {
-                            showDiagnostics = true
+                        Button { showDiagnostics = true } label: {
+                            Image(systemName: "waveform.path.ecg").foregroundStyle(DesignTokens.accentBlue)
                         }
+                        .accessibilityLabel("录制诊断")
                     }
-                    ToolbarItem(placement: .navigationBarTrailing) { trailingToolbarButtons }
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button { showSettings = true } label: {
+                            Image(systemName: "gearshape").foregroundStyle(DesignTokens.accentBlue)
+                        }
+                        .accessibilityLabel("设置")
+                    }
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button { showTutorial = true } label: {
+                            Image(systemName: "questionmark.circle").foregroundStyle(DesignTokens.accentBlue)
+                        }
+                        .accessibilityLabel("使用教程")
+                    }
                 }
                 .navigationDestination(isPresented: $showReview) {
                     CaptureReviewView(store: server.frameStore).environmentObject(settings)
@@ -67,13 +79,6 @@ struct CaptureView: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
-        }
-    }
-
-    private var trailingToolbarButtons: some View {
-        HStack(spacing: 8) {
-            LightCircleButton(systemImage: "questionmark", accessibilityLabel: "使用教程") { showTutorial = true }
-            LightCircleButton(systemImage: "gearshape", accessibilityLabel: "设置") { showSettings = true }
         }
     }
 
