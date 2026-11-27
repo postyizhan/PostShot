@@ -15,6 +15,7 @@ struct ContentView: View {
     @State private var showAutoEditor = false
     @State private var showSettings = false
     @State private var showTutorial = false
+    @State private var showClearConfirm = false
     @State private var photoStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
 
     @EnvironmentObject private var settings: AppSettings
@@ -173,10 +174,14 @@ struct ContentView: View {
                 Text("点按恢复调整顺序、裁边与拼接").font(.caption).foregroundStyle(.secondary)
             }
             Spacer(minLength: 8)
-            Button("清空") { model.clear() }
+            Button("清空") { showClearConfirm = true }
                 .font(.subheadline.weight(.medium))
                 .foregroundStyle(.secondary)
                 .disabled(model.isStitching)
+                .confirmationDialog("清空已选截图？", isPresented: $showClearConfirm, titleVisibility: .visible) {
+                    Button("清空截图", role: .destructive) { model.clear() }
+                    Button("取消", role: .cancel) {}
+                }
             Button("继续") { showManualEditor = true }
                 .font(.subheadline.weight(.semibold))
                 .padding(.horizontal, 14)
