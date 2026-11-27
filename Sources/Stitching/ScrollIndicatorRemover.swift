@@ -2,27 +2,33 @@
 import CoreGraphics
 import Foundation
 
-/// Removes right-edge vertical iOS scroll indicators using a two-stage algorithm:
-/// 1. Authentic cross-frame pixel replacement inside overlap zones.
-/// 2. Conservative uniform-margin pill cleanup in non-overlapped body rows.
+/// Removes right-edge vertical iOS scroll indicators using dual-flank capsule detection:
+/// an iOS scrollbar pill is strictly inset from the right screen edge (`2–9px` outer margin) and
+/// separated from right-aligned content/avatars (`>= 30px` from screen edge on 3× displays).
+/// Measuring `min(diffFromInnerFlank, diffFromOuterEdge)` isolates true inset scrollbar capsules
+/// and can never be fooled by right-aligned chat avatars, bubbles, or full-width dividers.
 enum ScrollIndicatorRemover {
 
     private struct Zone {
         let width: Int
-        let stripWidth: Int
         let refWidth: Int
-        var stripStartX: Int { width - stripWidth }
-        var refStartX: Int { width - stripWidth - refWidth }
-        var bandWidth: Int { refWidth + stripWidth }
+        let trackWidth: Int
+        let outerWidth: Int
+        var outerStartX: Int { width - outerWidth }
+        var trackStartX: Int { width - outerWidth - trackWidth }
+        var refStartX: Int { width - outerWidth - trackWidth - refWidth }
+        var stripStartX: Int { trackStartX }
+        var stripWidth: Int { trackWidth + outerWidth }
+        var bandWidth: Int { refWidth + trackWidth + outerWidth }
     }
 
-    private struct RowRefStats {
-        var uniform: Bool = false
+    private struct FlankStats {
+        var valid: Bool = false
         var meanR: Float = 0
         var meanG: Float = 0
         var meanB: Float = 0
         var meanLuma: Float = 0
-        var maxStripDiff: Float = 0
+        var pillPeak: Float = 0
     }
 
     static func clean(
@@ -37,15 +43,11 @@ enum ScrollIndicatorRemover {
     ) {
         let width = context.width
         guard width >= 48, totalHeight > 0, let rawData = context.data else { return }
-        let rawStrip = Int((Float(width) * 0.024).rounded(.up))
-        let stripWidth = min(36, min(width / 5, max(10, rawStrip)))
-        let refWidth = max(4, min(24, stripWidth))
-        guard stripWidth + refWidth <= width else { return }
-        let zone = Zone(width: width, stripWidth: stripWidth, refWidth: refWidth)
+        guard let zone = makeZone(width: width) else { return }
         let canvas = rawData.assumingMemoryBound(to: UInt8.self)
         let stride = context.bytesPerRow
 
-        let cleanedRows = cleanOverlapSeams(
+        cleanOverlapSeams(
             canvas: canvas, stride: stride, zone: zone,
             segments: segments, scaledHeights: scaledHeights,
             overlaps: overlaps, totalHeight: totalHeight, colorSpace: colorSpace
@@ -53,11 +55,20 @@ enum ScrollIndicatorRemover {
 
         let safeTop = max(0, min(protectedTopRows, totalHeight))
         let safeBottom = max(0, min(protectedBottomRows, totalHeight - safeTop))
-        cleanNonOverlappedMargins(
+        cleanRemainingCapsules(
             canvas: canvas, stride: stride, zone: zone,
-            bodyRange: safeTop..<(totalHeight - safeBottom),
-            cleanedRows: cleanedRows
+            bodyRange: safeTop..<(totalHeight - safeBottom)
         )
+    }
+
+    /// Builds a narrow right-margin geometry strictly outside right-aligned UI content (`<= 2.4%`
+    /// of width on full-res iPhone screens, i.e. rightmost ~31px on 1320px, clear of `x <= 1284` avatars).
+    private static func makeZone(width: Int) -> Zone? {
+        let outerWidth = max(2, min(5, Int((Float(width) * 0.0038).rounded(.up))))
+        let trackWidth = max(6, min(18, Int((Float(width) * 0.0135).rounded(.up))))
+        let refWidth = max(4, min(9, Int((Float(width) * 0.0068).rounded(.up))))
+        guard outerWidth + trackWidth + refWidth <= width else { return nil }
+        return Zone(width: width, refWidth: refWidth, trackWidth: trackWidth, outerWidth: outerWidth)
     }
 
     // MARK: - Stage 1: Cross-Frame Authentic Pixel Replacement
@@ -66,9 +77,8 @@ enum ScrollIndicatorRemover {
         canvas: UnsafeMutablePointer<UInt8>, stride: Int, zone: Zone,
         segments: [ImageCompositor.Segment], scaledHeights: [Int],
         overlaps: [Int], totalHeight: Int, colorSpace: CGColorSpace
-    ) -> [Bool] {
-        var cleaned = [Bool](repeating: false, count: totalHeight)
-        guard segments.count >= 2 else { return cleaned }
+    ) {
+        guard segments.count >= 2 else { return }
         var segTopY = 0
         for i in 1..<segments.count {
             let hPrev = scaledHeights[i - 1], hCurr = scaledHeights[i]
@@ -88,36 +98,37 @@ enum ScrollIndicatorRemover {
             applySeamReplacement(
                 canvas: canvas, stride: stride, zone: zone,
                 patchA: patchA, patchB: patchB,
-                seamStartY: segTopY, overlap: ov, totalHeight: totalHeight,
-                cleaned: &cleaned
+                seamStartY: segTopY, overlap: ov, totalHeight: totalHeight
             )
         }
-        return cleaned
     }
 
     private static func applySeamReplacement(
         canvas: UnsafeMutablePointer<UInt8>, stride: Int, zone: Zone,
         patchA: [UInt8], patchB: [UInt8],
-        seamStartY: Int, overlap: Int, totalHeight: Int,
-        cleaned: inout [Bool]
+        seamStartY: Int, overlap: Int, totalHeight: Int
     ) {
-        let anomA = boxSmooth5(patchRowAnomalies(patch: patchA, zone: zone, rows: overlap))
-        let anomB = boxSmooth5(patchRowAnomalies(patch: patchB, zone: zone, rows: overlap))
+        let pillA = boxSmooth5(patchDualFlankScores(patch: patchA, zone: zone, rows: overlap))
+        let pillB = boxSmooth5(patchDualFlankScores(patch: patchB, zone: zone, rows: overlap))
         let patchStride = zone.bandWidth * 4
         for r in 0..<overlap {
             let canvasY = seamStartY + r
             guard canvasY >= 0, canvasY < totalHeight else { continue }
-            guard abs(anomA[r] - anomB[r]) >= 6.0 else { continue }
-            let src = anomA[r] <= anomB[r] ? patchA : patchB
-            writeStripRow(
+            let canvasScore = canvasDualFlankScore(canvas: canvas, stride: stride, y: canvasY, zone: zone)
+            let bestIsA = pillA[r] <= pillB[r]
+            let bestScore = bestIsA ? pillA[r] : pillB[r]
+            // Never overwrite the canvas unless the candidate frame has strictly lower capsule
+            // anomaly than what is ALREADY drawn on the canvas!
+            guard canvasScore >= 8.0, canvasScore - bestScore >= 6.0 else { continue }
+            let src = bestIsA ? patchA : patchB
+            writeTrackRow(
                 canvas: canvas, canvasStride: stride, canvasY: canvasY,
                 srcPatch: src, srcRowOffset: r * patchStride, zone: zone
             )
-            cleaned[canvasY] = true
         }
     }
 
-    private static func writeStripRow(
+    private static func writeTrackRow(
         canvas: UnsafeMutablePointer<UInt8>, canvasStride: Int, canvasY: Int,
         srcPatch: [UInt8], srcRowOffset: Int, zone: Zone
     ) {
@@ -125,14 +136,9 @@ enum ScrollIndicatorRemover {
         for s in 0..<zone.stripWidth {
             let srcIdx = srcRowOffset + (zone.refWidth + s) * 4
             let dstIdx = dstRow + (zone.stripStartX + s) * 4
-            let sR = Float(srcPatch[srcIdx]), sG = Float(srcPatch[srcIdx + 1]), sB = Float(srcPatch[srcIdx + 2])
-            let dR = Float(canvas[dstIdx]), dG = Float(canvas[dstIdx + 1]), dB = Float(canvas[dstIdx + 2])
-            let diff = max(abs(sR - dR), max(abs(sG - dG), abs(sB - dB)))
-            let weight: Float = (zone.stripWidth >= 6 && s < 2 && diff <= 16.0)
-                ? (s == 0 ? 0.35 : 0.70) : 1.0
-            canvas[dstIdx] = UInt8(clamping: Int((dR + (sR - dR) * weight).rounded()))
-            canvas[dstIdx + 1] = UInt8(clamping: Int((dG + (sG - dG) * weight).rounded()))
-            canvas[dstIdx + 2] = UInt8(clamping: Int((dB + (sB - dB) * weight).rounded()))
+            canvas[dstIdx] = srcPatch[srcIdx]
+            canvas[dstIdx + 1] = srcPatch[srcIdx + 1]
+            canvas[dstIdx + 2] = srcPatch[srcIdx + 2]
             canvas[dstIdx + 3] = 255
         }
     }
@@ -163,27 +169,52 @@ enum ScrollIndicatorRemover {
         return ok ? buf : nil
     }
 
-    private static func patchRowAnomalies(patch: [UInt8], zone: Zone, rows: Int) -> [Float] {
+    /// Dual-flank capsule score `min(diffFromInnerRef, diffFromOuterEdge)`: non-zero ONLY when a
+    /// narrow vertical bar sits sandwiched between matching inner and outer margin flanks.
+    private static func patchDualFlankScores(patch: [UInt8], zone: Zone, rows: Int) -> [Float] {
         var out = [Float](repeating: 0, count: rows)
         let rowStride = zone.bandWidth * 4
-        let invRef = 1.0 / Float(max(1, zone.refWidth))
         for r in 0..<rows {
-            let base = r * rowStride
-            var sumR: Float = 0, sumG: Float = 0, sumB: Float = 0
-            for x in 0..<zone.refWidth {
-                let p = base + x * 4
-                sumR += Float(patch[p]); sumG += Float(patch[p + 1]); sumB += Float(patch[p + 2])
-            }
-            let mR = sumR * invRef, mG = sumG * invRef, mB = sumB * invRef
-            let mLuma = luma(mR, mG, mB)
-            var peak: Float = 0
-            for s in 0..<zone.stripWidth {
-                let p = base + (zone.refWidth + s) * 4
-                peak = max(peak, pixelDiff(patch[p], patch[p + 1], patch[p + 2], mR, mG, mB, mLuma))
-            }
-            out[r] = peak
+            out[r] = rowDualFlankScore(rowPtr: patch, base: r * rowStride, zone: zone)
         }
         return out
+    }
+
+    private static func canvasDualFlankScore(
+        canvas: UnsafeMutablePointer<UInt8>, stride: Int, y: Int, zone: Zone
+    ) -> Float {
+        let base = y * stride + zone.refStartX * 4
+        let count = zone.bandWidth * 4
+        let slice = Array(UnsafeBufferPointer(start: canvas.advanced(by: base), count: count))
+        return rowDualFlankScore(rowPtr: slice, base: 0, zone: zone)
+    }
+
+    private static func rowDualFlankScore(rowPtr: [UInt8], base: Int, zone: Zone) -> Float {
+        let left = meanRGB(rowPtr, base: base, startCol: 0, count: zone.refWidth)
+        let outerStart = zone.refWidth + zone.trackWidth
+        let right = meanRGB(rowPtr, base: base, startCol: outerStart, count: zone.outerWidth)
+        let leftL = luma(left.r, left.g, left.b)
+        let rightL = luma(right.r, right.g, right.b)
+        var peak: Float = 0
+        for s in 0..<zone.trackWidth {
+            let p = base + (zone.refWidth + s) * 4
+            let dL = pixelDiff(rowPtr[p], rowPtr[p + 1], rowPtr[p + 2], left.r, left.g, left.b, leftL)
+            let dR = pixelDiff(rowPtr[p], rowPtr[p + 1], rowPtr[p + 2], right.r, right.g, right.b, rightL)
+            peak = max(peak, min(dL, dR))
+        }
+        return peak
+    }
+
+    private static func meanRGB(
+        _ buf: [UInt8], base: Int, startCol: Int, count: Int
+    ) -> (r: Float, g: Float, b: Float) {
+        let inv = 1.0 / Float(max(1, count))
+        var sr: Float = 0, sg: Float = 0, sb: Float = 0
+        for i in 0..<count {
+            let p = base + (startCol + i) * 4
+            sr += Float(buf[p]); sg += Float(buf[p + 1]); sb += Float(buf[p + 2])
+        }
+        return (sr * inv, sg * inv, sb * inv)
     }
 
     private static func boxSmooth5(_ values: [Float]) -> [Float] {
@@ -199,84 +230,74 @@ enum ScrollIndicatorRemover {
         return out
     }
 
-    // MARK: - Stage 2: Conservative Non-Overlapped Margin Pill Cleanup
+    // MARK: - Stage 2: Clean Any Remaining Sandwiched Capsules (Tail & Overlapping Bars)
 
-    private static func cleanNonOverlappedMargins(
-        canvas: UnsafeMutablePointer<UInt8>, stride: Int, zone: Zone,
-        bodyRange: Range<Int>, cleanedRows: [Bool]
+    private static func cleanRemainingCapsules(
+        canvas: UnsafeMutablePointer<UInt8>, stride: Int, zone: Zone, bodyRange: Range<Int>
     ) {
-        guard bodyRange.count >= 12 else { return }
-        let maxRunLen = max(24, Int(Float(bodyRange.count) * 0.85))
-        var stats = [RowRefStats](repeating: RowRefStats(), count: bodyRange.upperBound)
-        for y in bodyRange where !cleanedRows[y] {
-            stats[y] = measureCanvasRow(canvas: canvas, stride: stride, y: y, zone: zone)
+        guard bodyRange.count >= 10 else { return }
+        var stats = [FlankStats](repeating: FlankStats(), count: bodyRange.upperBound)
+        for y in bodyRange {
+            stats[y] = measureFlanks(canvas: canvas, stride: stride, y: y, zone: zone)
         }
 
         var y = bodyRange.lowerBound
         while y < bodyRange.upperBound {
-            guard isPillCandidate(stats[y], cleaned: cleanedRows[y]) else { y += 1; continue }
+            guard stats[y].valid, stats[y].pillPeak >= 10.0 else { y += 1; continue }
             var end = y + 1
-            var minMean = stats[y].meanLuma, maxMean = stats[y].meanLuma
             while end < bodyRange.upperBound,
-                  isPillCandidate(stats[end], cleaned: cleanedRows[end]),
-                  abs(stats[end].meanLuma - stats[end - 1].meanLuma) <= 6.0,
-                  max(maxMean, stats[end].meanLuma) - min(minMean, stats[end].meanLuma) <= 16.0 {
-                minMean = min(minMean, stats[end].meanLuma)
-                maxMean = max(maxMean, stats[end].meanLuma)
+                  stats[end].valid, stats[end].pillPeak >= 10.0,
+                  abs(stats[end].meanLuma - stats[end - 1].meanLuma) <= 8.0 {
                 end += 1
             }
             let run = y..<end
-            if run.count >= 12, run.count <= maxRunLen,
-               hasConsistentPillColumn(canvas: canvas, stride: stride, run: run, stats: stats, zone: zone) {
-                fillVerifiedPillRun(canvas: canvas, stride: stride, run: run, stats: stats, zone: zone)
+            if run.count >= 10,
+               hasConsistentCapsuleColumn(canvas: canvas, stride: stride, run: run, stats: stats, zone: zone) {
+                fillCapsuleRun(canvas: canvas, stride: stride, run: run, stats: stats, zone: zone)
             }
             y = end
         }
     }
 
-    private static func isPillCandidate(_ row: RowRefStats, cleaned: Bool) -> Bool {
-        !cleaned && row.uniform && row.maxStripDiff >= 12.0 && row.maxStripDiff <= 215.0
-    }
-
-    private static func measureCanvasRow(
+    private static func measureFlanks(
         canvas: UnsafeMutablePointer<UInt8>, stride: Int, y: Int, zone: Zone
-    ) -> RowRefStats {
+    ) -> FlankStats {
         let rowBase = y * stride
         var minL: Float = 255, maxL: Float = 0
-        var sumR: Float = 0, sumG: Float = 0, sumB: Float = 0
-        for x in zone.refStartX..<zone.stripStartX {
+        var sr: Float = 0, sg: Float = 0, sb: Float = 0
+        let flankCols = Array(zone.refStartX..<zone.trackStartX) + Array(zone.outerStartX..<zone.width)
+        for x in flankCols {
             let p = rowBase + x * 4
             let r = Float(canvas[p]), g = Float(canvas[p + 1]), b = Float(canvas[p + 2])
             let l = luma(r, g, b)
             minL = min(minL, l); maxL = max(maxL, l)
-            sumR += r; sumG += g; sumB += b
+            sr += r; sg += g; sb += b
         }
-        guard (maxL - minL) <= 8.0 else { return RowRefStats(uniform: false) }
-        let inv = 1.0 / Float(zone.refWidth)
-        let mR = sumR * inv, mG = sumG * inv, mB = sumB * inv
+        guard (maxL - minL) <= 10.0 else { return FlankStats(valid: false) }
+        let inv = 1.0 / Float(max(1, flankCols.count))
+        let mR = sr * inv, mG = sg * inv, mB = sb * inv
         let mLuma = luma(mR, mG, mB)
-        var maxDiff: Float = 0
-        for x in zone.stripStartX..<zone.width {
+        var peak: Float = 0
+        for x in zone.trackStartX..<zone.outerStartX {
             let p = rowBase + x * 4
-            maxDiff = max(maxDiff, pixelDiff(canvas[p], canvas[p + 1], canvas[p + 2], mR, mG, mB, mLuma))
+            peak = max(peak, pixelDiff(canvas[p], canvas[p + 1], canvas[p + 2], mR, mG, mB, mLuma))
         }
-        return RowRefStats(uniform: true, meanR: mR, meanG: mG, meanB: mB, meanLuma: mLuma, maxStripDiff: maxDiff)
+        return FlankStats(valid: true, meanR: mR, meanG: mG, meanB: mB, meanLuma: mLuma, pillPeak: peak)
     }
 
-    private static func hasConsistentPillColumn(
+    private static func hasConsistentCapsuleColumn(
         canvas: UnsafeMutablePointer<UInt8>, stride: Int,
-        run: Range<Int>, stats: [RowRefStats], zone: Zone
+        run: Range<Int>, stats: [FlankStats], zone: Zone
     ) -> Bool {
-        let trim = run.count >= 16 ? 2 : 0
+        let trim = run.count >= 14 ? 2 : 0
         let core = (run.lowerBound + trim)..<(run.upperBound - trim)
-        let needed = max(1, Int((Float(core.count) * 0.8).rounded(.up)))
-        for s in 0..<zone.stripWidth {
+        let needed = max(1, Int((Float(core.count) * 0.75).rounded(.up)))
+        for x in zone.trackStartX..<zone.outerStartX {
             var hits = 0
-            let x = zone.stripStartX + s
             for y in core {
                 let p = y * stride + x * 4
                 let st = stats[y]
-                if pixelDiff(canvas[p], canvas[p + 1], canvas[p + 2], st.meanR, st.meanG, st.meanB, st.meanLuma) >= 12.0 {
+                if pixelDiff(canvas[p], canvas[p + 1], canvas[p + 2], st.meanR, st.meanG, st.meanB, st.meanLuma) >= 10.0 {
                     hits += 1
                 }
             }
@@ -285,9 +306,9 @@ enum ScrollIndicatorRemover {
         return false
     }
 
-    private static func fillVerifiedPillRun(
+    private static func fillCapsuleRun(
         canvas: UnsafeMutablePointer<UInt8>, stride: Int,
-        run: Range<Int>, stats: [RowRefStats], zone: Zone
+        run: Range<Int>, stats: [FlankStats], zone: Zone
     ) {
         for y in run {
             let st = stats[y]
@@ -295,9 +316,9 @@ enum ScrollIndicatorRemover {
             let gByte = UInt8(clamping: Int(st.meanG.rounded()))
             let bByte = UInt8(clamping: Int(st.meanB.rounded()))
             let rowBase = y * stride
-            for x in zone.stripStartX..<zone.width {
+            for x in zone.trackStartX..<zone.outerStartX {
                 let p = rowBase + x * 4
-                if pixelDiff(canvas[p], canvas[p + 1], canvas[p + 2], st.meanR, st.meanG, st.meanB, st.meanLuma) >= 10.0 {
+                if pixelDiff(canvas[p], canvas[p + 1], canvas[p + 2], st.meanR, st.meanG, st.meanB, st.meanLuma) >= 8.0 {
                     canvas[p] = rByte
                     canvas[p + 1] = gByte
                     canvas[p + 2] = bByte

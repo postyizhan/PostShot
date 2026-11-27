@@ -263,6 +263,44 @@ final class HeaderFooterAndScrollbarTests: XCTestCase {
         }
     }
 
+    func testRightAlignedChatAvatarNeverInjectsOrLeavesTruncatedScrollbar() throws {
+        // Mirrors real 1320px iPhone Pro Max geometry scaled 1:4 -> 330px wide:
+        // right-side avatar at x: 292..<321 (right margin 9px = 2.7%), scrollbar at x: 325..<328 (inset 2px).
+        let w = 330, h = 280
+        var page = [UInt8](repeating: 237, count: w * 460)
+        for y in 0..<460 where y % 14 < 5 {
+            for x in 20..<180 { page[y * w + x] = 55 }
+        }
+        // Right-side dark & mid-gray chat avatars at y: 90..<140 and y: 230..<280 (ending at x = 321).
+        for avatarStart in [90, 230] {
+            for y in avatarStart..<(avatarStart + 50) {
+                for x in 292..<321 {
+                    page[y * w + x] = ((x + y) % 5 == 0) ? 175 : 55
+                }
+            }
+        }
+
+        let adv = 90, ov = h - adv // 190px overlap (high overlap!)
+        var f0 = Array(page[0..<(w * h)])
+        var f1 = Array(page[(adv * w)..<((adv + h) * w)])
+        var f2 = Array(page[(2 * adv * w)..<((2 * adv + h) * w)])
+        // Tall 130px scrollbars that overlap each other across consecutive frames AND pass right
+        // next to the right-aligned avatars, plus a tail scrollbar at the bottom of f2!
+        for y in 110..<240 { for x in 325..<328 { f0[y * w + x] = 148 } }
+        for y in 130..<260 { for x in 325..<328 { f1[y * w + x] = 148 } }
+        for y in 145..<275 { for x in 325..<328 { f2[y * w + x] = 148 } }
+
+        let segs = [
+            ImageCompositor.Segment(image: makeGrayImage(width: w, height: h, pixels: f0), overlap: 0),
+            ImageCompositor.Segment(image: makeGrayImage(width: w, height: h, pixels: f1), overlap: ov - 1),
+            ImageCompositor.Segment(image: makeGrayImage(width: w, height: h, pixels: f2), overlap: ov),
+        ]
+        let cleanImg = try ImageCompositor.composite(segments: segs, width: w, removeScrollIndicator: true)
+        let cleanPx = grayPixels(cleanImg)
+        let leftover = countDarkPixels(cleanPx, width: w, xRange: 322..<w, yRange: 0..<cleanImg.height, threshold: 215)
+        XCTAssertEqual(leftover, 0, "Zero truncated middle or bottom scrollbar pixels may remain next to avatars")
+    }
+
     private func countDarkPixels(
         _ pixels: [UInt8], width: Int, xRange: Range<Int>, yRange: Range<Int>, threshold: UInt8
     ) -> Int {
