@@ -118,13 +118,24 @@ struct ContentView: View {
     // MARK: - Toolbar & Status Cards
 
     private var toolbarButtons: some View {
-        HStack(spacing: 8) {
-            LightCircleButton(systemImage: "questionmark", accessibilityLabel: "使用教程") {
+        HStack(spacing: 4) {
+            Button {
                 showTutorial = true
+            } label: {
+                Image(systemName: "questionmark.circle")
+                    .font(.system(size: 20, weight: .regular))
+                    .foregroundStyle(DesignTokens.accentBlue)
             }
-            LightCircleButton(systemImage: "gearshape", accessibilityLabel: "设置") {
+            .accessibilityLabel("使用教程")
+
+            Button {
                 showSettings = true
+            } label: {
+                Image(systemName: "gearshape")
+                    .font(.system(size: 20, weight: .regular))
+                    .foregroundStyle(DesignTokens.accentBlue)
             }
+            .accessibilityLabel("设置")
         }
     }
 
