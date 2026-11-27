@@ -206,7 +206,7 @@ struct ExportSheetView: View {
     private var saveButton: some View {
         if isSaved {
             Button { Task { await saveToPhotos() } } label: {
-                Text("已保存 ✓")
+                Label("已保存", systemImage: "checkmark")
                     .font(.system(size: 17, weight: .semibold)).foregroundStyle(.white)
                     .frame(maxWidth: .infinity).padding(.vertical, 15).padding(.horizontal, 20)
                     .background(DesignTokens.success, in: Capsule())
