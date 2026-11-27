@@ -26,9 +26,18 @@ struct PostShotApp: App {
             .onAppear {
                 let ka = keepAlive
                 ka.start()
-                bridgeServer.onBroadcastStarted = { [weak ka] in
+                bridgeServer.onBroadcastStarted = {
+                    if selectedTab != 2 {
+                        selectedTab = 2
+                    }
+                }
+                bridgeServer.onBroadcastReady = { [weak ka] in
                     ka?.playStartCue()
-                    selectedTab = 2
+                }
+                bridgeServer.onBroadcastFinished = {
+                    if selectedTab != 2 {
+                        selectedTab = 2
+                    }
                 }
                 bridgeServer.start()
             }

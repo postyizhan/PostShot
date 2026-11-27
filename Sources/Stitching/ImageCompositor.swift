@@ -26,10 +26,24 @@ enum ImageCompositor {
     }
 
     /// Composites segments top-to-bottom into one image of the given common width.
-    ///
-    /// `width` is the normalized common width; all images are drawn scaled to it and heights
-    /// scale proportionally. Overlap values are interpreted in this width space.
     static func composite(segments: [Segment], width: Int) throws -> CGImage {
+        try composite(
+            segments: segments,
+            width: width,
+            removeScrollIndicator: false,
+            protectedTopRows: 0,
+            protectedBottomRows: 0
+        )
+    }
+
+    /// Composites segments top-to-bottom and optionally removes right-edge vertical scrollbars.
+    static func composite(
+        segments: [Segment],
+        width: Int,
+        removeScrollIndicator: Bool,
+        protectedTopRows: Int = 0,
+        protectedBottomRows: Int = 0
+    ) throws -> CGImage {
         let layout = try computeLayout(segments: segments, width: width)
         guard width <= Int.max / 4, layout.totalHeight <= Int.max / (width * 4) else {
             throw CompositeError.contextCreationFailed
@@ -41,12 +55,40 @@ enum ImageCompositor {
             width: width,
             height: layout.totalHeight,
             bitsPerComponent: 8,
-            bytesPerRow: 0,
+            bytesPerRow: width * 4,
             space: colorSpace,
             bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
         ) else { throw CompositeError.contextCreationFailed }
         ctx.interpolationQuality = segments.allSatisfy({ $0.image.width == width }) ? .none : .high
 
+        drawSegments(segments, layout: layout, width: width, into: ctx)
+
+        if removeScrollIndicator {
+            ScrollIndicatorRemover.clean(
+                context: ctx,
+                segments: segments,
+                scaledHeights: layout.scaledHeights,
+                overlaps: layout.overlaps,
+                totalHeight: layout.totalHeight,
+                colorSpace: colorSpace,
+                protectedTopRows: protectedTopRows,
+                protectedBottomRows: protectedBottomRows
+            )
+        }
+
+        guard let result = ctx.makeImage() else { throw CompositeError.drawFailed }
+        return result
+    }
+
+    private struct Layout {
+        let scaledHeights: [Int]
+        let overlaps: [Int]
+        let totalHeight: Int
+    }
+
+    private static func drawSegments(
+        _ segments: [Segment], layout: Layout, width: Int, into ctx: CGContext
+    ) {
         // CG origin is bottom-left; lay segments from the top (highest y) downward. For i > 0,
         // clip out the top half of the overlap (`cut = overlap / 2`) so the seam lands cleanly in
         // the interior of the shared region rather than along segment i's top edge.
@@ -67,15 +109,6 @@ enum ImageCompositor {
                 ctx.draw(seg.image, in: rect)
             }
         }
-
-        guard let result = ctx.makeImage() else { throw CompositeError.drawFailed }
-        return result
-    }
-
-    private struct Layout {
-        let scaledHeights: [Int]
-        let overlaps: [Int]
-        let totalHeight: Int
     }
 
     private static func computeLayout(segments: [Segment], width: Int) throws -> Layout {

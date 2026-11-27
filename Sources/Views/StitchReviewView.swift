@@ -1,33 +1,37 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import SwiftUI
 
-/// Shared "review and stitch" surface: thumbnail strip (reorder/delete), manual crop, stitch
-/// action with progress, full-screen preview, and seam recovery card. Driven by `StitchViewModel`.
+/// Shared "review and stitch" surface: thumbnail strip (reorder/delete), header/footer/scrollbar
+/// options, manual crop, stitch action with progress, preview, and seam recovery card.
 struct StitchReviewView: View {
     @ObservedObject var model: StitchViewModel
 
     var body: some View {
-        VStack(spacing: 16) {
-            ThumbnailStrip(
-                images: $model.images,
-                highlightedSeam: model.failedSeam,
-                isDisabled: model.isStitching
-            )
-            if let notice = model.stitchNotice {
-                Label(notice, systemImage: "sparkles")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal)
+        VStack(spacing: 12) {
+            ScrollView {
+                VStack(spacing: 14) {
+                    ThumbnailStrip(
+                        images: $model.images,
+                        highlightedSeam: model.failedSeam,
+                        isDisabled: model.isStitching
+                    )
+                    if let notice = model.stitchNotice {
+                        Label(notice, systemImage: "sparkles")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal)
+                    }
+                    if let seam = model.failedSeam {
+                        seamRecoveryCard(seam)
+                    }
+                    stitchOptionsControls
+                    cropControls
+                }
             }
-            if let seam = model.failedSeam {
-                seamRecoveryCard(seam)
-            }
-            cropControls
-            Spacer(minLength: 0)
             controls
         }
-        .padding(.vertical)
+        .padding(.vertical, 8)
         .fullScreenCover(item: $model.result) { result in
             PreviewView(image: result.image)
         }
@@ -86,6 +90,28 @@ struct StitchReviewView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
         .padding(.horizontal)
+    }
+
+    private var stitchOptionsControls: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 10) {
+                Text("顶部眉头")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Picker("顶部眉头", selection: $model.headerMode) {
+                    Text("无眉头").tag(HeaderKeepMode.none)
+                    Text("仅标题栏").tag(HeaderKeepMode.navBarOnly)
+                    Text("完整顶部").tag(HeaderKeepMode.full)
+                }
+                .pickerStyle(.segmented)
+            }
+            Toggle("保留底部栏", isOn: $model.keepFooter)
+                .font(.caption)
+            Toggle("去除右侧滚动条", isOn: $model.removeScrollIndicator)
+                .font(.caption)
+        }
+        .padding(.horizontal)
+        .disabled(model.isStitching)
     }
 
     private var cropControls: some View {

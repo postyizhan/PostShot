@@ -2,6 +2,12 @@
 import CoreGraphics
 import Foundation
 
+enum HeaderKeepMode: String, CaseIterable, Equatable, Sendable {
+    case none
+    case navBarOnly
+    case full
+}
+
 struct StitchSeam: Equatable {
     let topIndex: Int
     let bottomIndex: Int
@@ -30,6 +36,9 @@ final class StitchEngine: @unchecked Sendable {
         var detectorConfig: OverlapDetector.Config = .init()
         var topCropFraction: Float = 0
         var bottomCropFraction: Float = 0
+        var headerMode: HeaderKeepMode = .none
+        var keepFooter: Bool = false
+        var removeScrollIndicator: Bool = true
         /// Maximum consecutive non-connecting frames (e.g. Control Center) skipped automatically.
         var maxSkippedOutliers: Int = 3
         var backfill: FrameBackfillSource? = nil
@@ -78,34 +87,42 @@ final class StitchEngine: @unchecked Sendable {
         progress: ProgressHandler = { _ in }
     ) -> Result<StitchReport, StitchError> {
         guard !rawImages.isEmpty else { return .failure(.noImages) }
-        guard case .success(let images) = cropAll(rawImages, options: options) else {
-            return cropAll(rawImages, options: options).map {
-                StitchReport(image: $0[0], skippedIndices: [], backfilledCount: 0)
-            }
+        let images: [CGImage]
+        switch cropAll(rawImages, options: options) {
+        case .failure(let error):
+            return .failure(error)
+        case .success(let cropped):
+            images = cropped
         }
 
         let profile = StitchInputValidator.validate(images)
         guard profile.isValid else { return .failure(.invalidInput(profile: profile)) }
 
         let resolved = StitchGraphResolver.resolve(
-            images: images, options: options,
+            images: images, rawImages: rawImages, options: options,
             canonicalSize: profile.canonicalSize, progress: progress
         )
-        guard case .success(let chain) = resolved else {
-            return resolved.map { StitchReport(image: $0.segments[0].image, skippedIndices: [], backfilledCount: 0) }
-        }
-        do {
-            let output = try ImageCompositor.composite(
-                segments: chain.segments, width: profile.canonicalSize.width
-            )
-            progress(1)
-            return .success(StitchReport(
-                image: output,
-                skippedIndices: chain.skippedIndices,
-                backfilledCount: chain.backfilledCount
-            ))
-        } catch {
-            return .failure(.compositeFailed(error))
+        switch resolved {
+        case .failure(let error):
+            return .failure(error)
+        case .success(let chain):
+            do {
+                let output = try ImageCompositor.composite(
+                    segments: chain.segments,
+                    width: profile.canonicalSize.width,
+                    removeScrollIndicator: options.removeScrollIndicator,
+                    protectedTopRows: chain.preservedTopRows,
+                    protectedBottomRows: chain.preservedBottomRows
+                )
+                progress(1)
+                return .success(StitchReport(
+                    image: output,
+                    skippedIndices: chain.skippedIndices,
+                    backfilledCount: chain.backfilledCount
+                ))
+            } catch {
+                return .failure(.compositeFailed(error))
+            }
         }
     }
 

@@ -27,6 +27,9 @@ final class StitchViewModel: ObservableObject {
 
     @Published var topCropFraction: Float = 0
     @Published var bottomCropFraction: Float = 0
+    @Published var headerMode: HeaderKeepMode = .none
+    @Published var keepFooter: Bool = false
+    @Published var removeScrollIndicator: Bool = true
 
     @Published var isShowingError = false
     @Published private(set) var errorMessage: String?
@@ -108,16 +111,7 @@ final class StitchViewModel: ObservableObject {
     /// Loads captured frames off the main actor while preserving adjacency.
     func loadAsync(pngFrames: [Data]) async {
         let outcome = await Task.detached(priority: .userInitiated) {
-            var loaded: [SelectedImage] = []
-            var failedIndices: [Int] = []
-            for (index, png) in pngFrames.enumerated() {
-                do {
-                    loaded.append(try ImageDecoder.decode(png))
-                } catch {
-                    failedIndices.append(index)
-                }
-            }
-            return (loaded, failedIndices)
+            Self.decodePNGFrames(pngFrames)
         }.value
         isRecordingSource = true
         recordingStore = nil
@@ -127,6 +121,14 @@ final class StitchViewModel: ObservableObject {
 
     /// Synchronous convenience wrapper for tests or small pre-loaded batches.
     func load(pngFrames: [Data]) {
+        let outcome = Self.decodePNGFrames(pngFrames)
+        isRecordingSource = true
+        recordingStore = nil
+        stitchNotice = nil
+        applyLoadedFrames(outcome.0, failedIndices: outcome.1, prefix: "采集帧")
+    }
+
+    nonisolated private static func decodePNGFrames(_ pngFrames: [Data]) -> ([SelectedImage], [Int]) {
         var loaded: [SelectedImage] = []
         var failedIndices: [Int] = []
         for (index, png) in pngFrames.enumerated() {
@@ -136,10 +138,7 @@ final class StitchViewModel: ObservableObject {
                 failedIndices.append(index)
             }
         }
-        isRecordingSource = true
-        recordingStore = nil
-        stitchNotice = nil
-        applyLoadedFrames(loaded, failedIndices: failedIndices, prefix: "采集帧")
+        return (loaded, failedIndices)
     }
 
     private func applyLoadedFrames(_ loaded: [SelectedImage], failedIndices: [Int], prefix: String) {
@@ -263,6 +262,9 @@ final class StitchViewModel: ObservableObject {
         var options = StitchEngine.Options()
         options.topCropFraction = topCropFraction
         options.bottomCropFraction = bottomCropFraction
+        options.headerMode = headerMode
+        options.keepFooter = keepFooter
+        options.removeScrollIndicator = removeScrollIndicator
         if let store = recordingStore {
             let indices = images.compactMap(\.poolIndex)
             if indices.count == images.count {

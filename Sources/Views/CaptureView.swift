@@ -22,6 +22,7 @@ struct CaptureView: View {
                     header
                     BroadcastPickerButton(extensionBundleID: extensionBundleID)
                         .frame(width: 200, height: 80)
+                    startSettingsCard
                     statusCard
                     if server.frameCount > 0 {
                         stitchButton
@@ -48,6 +49,33 @@ struct CaptureView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }
+    }
+
+    private var startSettingsCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("录制启动设置").font(.subheadline.bold())
+            Toggle("切出本软件后自动开录", isOn: $server.waitForAppSwitch)
+                .font(.subheadline)
+            VStack(alignment: .leading, spacing: 6) {
+                Text("开录缓冲延迟")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Picker("开录缓冲延迟", selection: $server.extraDelaySeconds) {
+                    Text("立即(0s)").tag(0)
+                    Text("+1s").tag(1)
+                    Text("+2s").tag(2)
+                    Text("+3s").tag(3)
+                    Text("+5s").tag(5)
+                }
+                .pickerStyle(.segmented)
+            }
+            Text("注：iOS 系统直播固定先倒数 3 秒；开启上方选项后，会自动等你切入目标 App 并度过缓冲时间后再响提示音开始采帧。")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(.quaternary, in: RoundedRectangle(cornerRadius: 12))
     }
 
     private var statusCard: some View {
