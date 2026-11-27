@@ -150,7 +150,7 @@ struct ContentView: View {
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
-            HStack(spacing: 10) {
+            VStack(spacing: 8) {
                 Button("前往系统设置") {
                     if let url = URL(string: UIApplication.openSettingsURLString) {
                         UIApplication.shared.open(url)
