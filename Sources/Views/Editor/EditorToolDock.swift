@@ -278,13 +278,7 @@ private struct DrawSubBar: View {
                     ColorSwatchDot(color: color, isSelected: markup.brushColor == color) { markup.brushColor = color }
                 }
             }
-            Button { cycleBrushWidth() } label: {
-                let dotSize = min(16, max(6, markup.brushWidth + 3))
-                Circle().fill(Color.primary).frame(width: dotSize, height: dotSize)
-                    .frame(width: 32, height: 32).background(Color.primary.opacity(0.08), in: Circle())
-                    .contentShape(Circle())
-            }
-            .buttonStyle(.plain).accessibilityLabel("切换画笔粗细")
+            BrushWidthChips(brushWidth: $markup.brushWidth)
             Button { markup.strokes.removeAll() } label: {
                 Image(systemName: "trash").font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(markup.strokes.isEmpty ? Color.secondary.opacity(0.45) : Color.primary)
@@ -295,11 +289,6 @@ private struct DrawSubBar: View {
         }
     }
 
-    private func cycleBrushWidth() {
-        if markup.brushWidth < 5 { markup.brushWidth = 6 }
-        else if markup.brushWidth < 9 { markup.brushWidth = 10 }
-        else { markup.brushWidth = 3 }
-    }
 }
 
 private struct BeautifySubBar: View {
@@ -355,5 +344,48 @@ private struct ColorSwatchDot: View {
                 .frame(width: 44, height: 44).contentShape(Circle())
         }
         .buttonStyle(.plain)
+    }
+}
+
+/// 三档画笔粗细选择器，替代原先不可发现的可点击圆点。
+private struct BrushWidthChips: View {
+    @Binding var brushWidth: CGFloat
+
+    private struct Tier: Identifiable {
+        let id: String
+        let title: String
+        let value: CGFloat
+    }
+
+    private let tiers: [Tier] = [
+        Tier(id: "thin",   title: "细", value: 3),
+        Tier(id: "medium", title: "中", value: 6),
+        Tier(id: "thick",  title: "粗", value: 10),
+    ]
+
+    private var activeTier: Tier {
+        if brushWidth <= 4 { return tiers[0] }
+        if brushWidth <= 8 { return tiers[1] }
+        return tiers[2]
+    }
+
+    var body: some View {
+        HStack(spacing: 2) {
+            ForEach(tiers) { tier in
+                let isSelected = activeTier.id == tier.id
+                Button { brushWidth = tier.value } label: {
+                    Text(tier.title)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(isSelected ? Color.white : Color.primary)
+                        .padding(.horizontal, 10).padding(.vertical, 5)
+                        .background(isSelected ? DesignTokens.accentBlue : Color.clear, in: Capsule())
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(3)
+        .background(Color.primary.opacity(0.08), in: Capsule())
+        .accessibilityLabel("画笔粗细")
     }
 }
