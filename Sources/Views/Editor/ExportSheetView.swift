@@ -99,8 +99,8 @@ struct ExportSheetView: View {
                 Spacer(minLength: 0)
             }
             if hasUnsavedMarkup {
-                Label("标注与美化合成将于后续版本支持，本次导出原拼接图", systemImage: "info.circle")
-                    .font(.caption).foregroundStyle(.secondary)
+                Label("标注与美化合成将于后续版本支持，本次导出原拼接图", systemImage: "exclamationmark.triangle")
+                    .font(.caption.weight(.medium)).foregroundStyle(.orange)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
