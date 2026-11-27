@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import SwiftUI
 
-/// Neutral Liquid Glass centered bottom bar for the Preview state (`[导出与分享]  [编辑]`).
+/// Neutral Liquid Glass centered bottom bar for the Preview state (`[编辑]  [导出与分享]`).
 struct PreviewBottomBar: View {
     var canExport: Bool
     var canEdit: Bool
@@ -11,14 +11,6 @@ struct PreviewBottomBar: View {
     var body: some View {
         LiquidGlassGroup(spacing: 14) {
             HStack(spacing: 14) {
-                AdaptiveGlassCircleButton(
-                    systemImage: "square.and.arrow.up",
-                    accessibilityLabel: "导出与分享",
-                    size: 50,
-                    action: onShare
-                )
-                .disabled(!canExport)
-
                 Button(action: onEnterEdit) {
                     HStack(spacing: 7) {
                         Image(systemName: "slider.horizontal.3")
@@ -35,6 +27,23 @@ struct PreviewBottomBar: View {
                 .buttonStyle(.plain)
                 .disabled(!canEdit)
                 .opacity(canEdit ? 1 : 0.45)
+
+                Button(action: onShare) {
+                    HStack(spacing: 7) {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 16, weight: .semibold))
+                        Text("导出")
+                            .font(.subheadline.weight(.semibold))
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 22)
+                    .frame(height: 50)
+                    .background(DesignTokens.accentBlue, in: Capsule())
+                    .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .disabled(!canExport)
+                .opacity(canExport ? 1 : 0.45)
             }
         }
     }
