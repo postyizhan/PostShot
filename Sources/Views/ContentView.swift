@@ -31,7 +31,24 @@ struct ContentView: View {
                 .background(Color(.systemGroupedBackground).ignoresSafeArea())
                 .navigationTitle("驿站截图")
                 .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) { toolbarButtons }
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button {
+                            showSettings = true
+                        } label: {
+                            Image(systemName: "gearshape")
+                                .foregroundStyle(DesignTokens.accentBlue)
+                        }
+                        .accessibilityLabel("设置")
+                    }
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button {
+                            showTutorial = true
+                        } label: {
+                            Image(systemName: "questionmark.circle")
+                                .foregroundStyle(DesignTokens.accentBlue)
+                        }
+                        .accessibilityLabel("使用教程")
+                    }
                 }
                 .navigationDestination(isPresented: $showManualEditor) {
                     StitchEditorView(model: model, allowReselectPicker: true) {
@@ -116,29 +133,7 @@ struct ContentView: View {
         }
     }
 
-    // MARK: - Toolbar & Status Cards
-
-    private var toolbarButtons: some View {
-        HStack(spacing: 4) {
-            Button {
-                showTutorial = true
-            } label: {
-                Image(systemName: "questionmark.circle")
-                    .font(.system(size: 20, weight: .regular))
-                    .foregroundStyle(DesignTokens.accentBlue)
-            }
-            .accessibilityLabel("使用教程")
-
-            Button {
-                showSettings = true
-            } label: {
-                Image(systemName: "gearshape")
-                    .font(.system(size: 20, weight: .regular))
-                    .foregroundStyle(DesignTokens.accentBlue)
-            }
-            .accessibilityLabel("设置")
-        }
-    }
+    // MARK: - Status Cards
 
     private var permissionCard: some View {
         VStack(alignment: .leading, spacing: 12) {
