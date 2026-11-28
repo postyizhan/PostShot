@@ -164,8 +164,8 @@ struct StitchEditorView: View {
     }
 
     private func resultPreviewStage(image: UIImage) -> some View {
-        let topPad: CGFloat = isChromeHidden ? 16 : (mode == .edit ? 112 : 64)
-        let bottomPad: CGFloat = isChromeHidden ? 24 : (mode == .edit ? 148 : 84)
+        let topPad: CGFloat = mode == .edit ? 112 : 64
+        let bottomPad: CGFloat = mode == .edit ? 148 : 84
         return ZoomableScrollView(
             isDrawingActive: isDrawingToolActive, isDoubleTapZoomEnabled: !isDrawingToolActive,
             viewportTracker: viewportTracker,
