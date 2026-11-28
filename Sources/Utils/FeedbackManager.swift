@@ -11,9 +11,8 @@ import AudioToolbox
 @MainActor
 final class FeedbackManager {
 
-    private let selectionGen   = UISelectionFeedbackGenerator()
+    private let selectionGen    = UISelectionFeedbackGenerator()
     private let notificationGen = UINotificationFeedbackGenerator()
-    private let impactGen      = UIImpactFeedbackGenerator(style: .light)
 
     var soundEnabled: Bool
     var hapticsEnabled: Bool
@@ -28,25 +27,10 @@ final class FeedbackManager {
 
     // MARK: - Public API
 
-    /// Light selection tap — suitable for button presses or strip reorder.
-    func tap() {
-        if hapticsEnabled { selectionGen.selectionChanged() }
-    }
-
-    /// Incremental step — suitable for picker value changes.
-    func step() {
-        if hapticsEnabled { selectionGen.selectionChanged() }
-    }
-
     /// Success feedback: plays a soft double-chime and a notification haptic.
     func success() {
         if hapticsEnabled { notificationGen.notificationOccurred(.success) }
         if soundEnabled   { playSound(.success) }
-    }
-
-    /// Warning feedback.
-    func warning() {
-        if hapticsEnabled { notificationGen.notificationOccurred(.warning) }
     }
 
     /// Error feedback.
@@ -60,19 +44,19 @@ final class FeedbackManager {
         case success = "ps_success"
     }
 
-    private var soundIDs: [SoundKey: SystemSoundID] = [:]
+    private static var soundIDs: [SoundKey: SystemSoundID] = [:]
 
     private func playSound(_ key: SoundKey) {
-        if let sid = soundIDs[key] {
+        if let sid = Self.soundIDs[key] {
             AudioServicesPlaySystemSound(sid)
             return
         }
-        Task { [weak self] in
+        Task {
             let sid = await Task.detached(priority: .utility) {
                 Self.loadSystemSoundID(for: key)
             }.value
             guard sid != 0 else { return }
-            self?.soundIDs[key] = sid
+            Self.soundIDs[key] = sid
             AudioServicesPlaySystemSound(sid)
         }
     }
