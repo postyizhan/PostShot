@@ -5,64 +5,76 @@ import SwiftUI
 /// Gallery thumbnail card representing a discoverable screenshot session on the Home tab.
 struct SessionGridCard: View {
     let session: ScreenshotGrouping.ScreenshotSession
-    var height: CGFloat = 224
     let action: () -> Void
+
     @State private var thumbnail: UIImage?
+    @Environment(\.displayScale) private var displayScale
 
     var body: some View {
         Button(action: action) {
-            ZStack(alignment: .bottom) {
-                thumbnailLayer
-                LinearGradient(
-                    colors: [.clear, .black.opacity(0.48)],
-                    startPoint: .center,
-                    endPoint: .bottom
-                )
-                HStack(alignment: .bottom, spacing: 6) {
-                    Text(timeSummary)
-                        .font(.caption2.weight(.medium))
-                        .foregroundStyle(.white.opacity(0.92))
-                        .lineLimit(1)
-                    Spacer(minLength: 4)
-                    Text("\(session.count)张")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(.primary)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(.ultraThinMaterial, in: Capsule())
+            Color(.tertiarySystemGroupedBackground)
+                .aspectRatio(0.72, contentMode: .fit)
+                .overlay {
+                    if thumbnail == nil {
+                        Image(systemName: "photo")
+                            .foregroundStyle(.tertiary)
+                    }
                 }
-                .padding(9)
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: height)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
-            )
+                .overlay(alignment: .top) {
+                    if let thumbnail {
+                        Image(uiImage: thumbnail)
+                            .resizable()
+                            .scaledToFill()
+                    }
+                }
+                .clipped()
+                .overlay(alignment: .bottom) {
+                    LinearGradient(
+                        colors: [.clear, .black.opacity(0.50)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .frame(height: 84)
+                }
+                .overlay(alignment: .bottom) {
+                    bottomMetadata
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
+                )
+                .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
         .buttonStyle(.plain)
-        .task(id: session.id) {
+        .task(id: "\(session.id)-\(displayScale)") {
             guard let firstID = session.items.first?.id else { return }
+            let scale = max(1, displayScale)
             thumbnail = await SessionThumbnailLoader.loadThumbnail(
                 assetID: firstID,
-                targetSize: CGSize(width: 360, height: 480)
+                targetSize: CGSize(width: ceil(220 * scale), height: ceil(300 * scale))
             )
         }
     }
 
-    @ViewBuilder
-    private var thumbnailLayer: some View {
-        if let thumbnail {
-            Image(uiImage: thumbnail)
-                .resizable()
-                .scaledToFill()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else {
-            Rectangle()
-                .fill(Color(.tertiarySystemGroupedBackground))
-                .overlay(Image(systemName: "photo").foregroundStyle(.tertiary))
+    private var bottomMetadata: some View {
+        HStack(alignment: .bottom, spacing: 6) {
+            Text(timeSummary)
+                .font(.caption2.weight(.medium))
+                .foregroundStyle(.white.opacity(0.92))
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+            Spacer(minLength: 4)
+            Text("\(session.count)张")
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(.ultraThinMaterial, in: Capsule())
         }
+        .padding(9)
     }
 
     private var timeSummary: String {
@@ -92,9 +104,9 @@ enum SessionThumbnailLoader {
             }
 
             let opts = PHImageRequestOptions()
-            opts.deliveryMode = .fastFormat
-            opts.resizeMode = .fast
-            opts.isNetworkAccessAllowed = false
+            opts.deliveryMode = .highQualityFormat
+            opts.resizeMode = .exact
+            opts.isNetworkAccessAllowed = true
             opts.isSynchronous = false
             PHImageManager.default().requestImage(
                 for: asset,
@@ -105,9 +117,10 @@ enum SessionThumbnailLoader {
                 let isDegraded = (info?[PHImageResultIsDegradedKey] as? Bool) ?? false
                 let isCancelled = (info?[PHImageCancelledKey] as? Bool) ?? false
                 let hasError = info?[PHImageErrorKey] != nil
-                if !isDegraded || isCancelled || hasError || img == nil {
-                    finish(img)
+                if isDegraded && !isCancelled && !hasError {
+                    return
                 }
+                finish(img)
             }
         }
     }

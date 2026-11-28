@@ -87,7 +87,7 @@ struct ContentView: View {
             }
             .padding(.horizontal, 16)
             .padding(.top, 8)
-            .padding(.bottom, 24)
+            .padding(.bottom, 28)
         }
         .refreshable { await autoModel.discover() }
     }
@@ -125,7 +125,8 @@ struct ContentView: View {
             .opacity(model.isStitching ? 0.45 : 1)
             Spacer()
         }
-        .padding(.bottom, 10)
+        .padding(.top, 4)
+        .padding(.bottom, 12)
     }
 
     // MARK: - Status Banners
@@ -165,14 +166,18 @@ struct ContentView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("继续编辑 \(model.images.count) 张截图")
                     .font(.subheadline.weight(.semibold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
                 Text("恢复调整顺序、裁边与拼接")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .lineLimit(1)
             }
             Spacer(minLength: 8)
             Button("清空") { showClearConfirm = true }
                 .font(.subheadline.weight(.medium))
                 .foregroundStyle(.secondary)
+                .fixedSize(horizontal: true, vertical: false)
                 .disabled(model.isStitching)
                 .confirmationDialog("清空已选截图？", isPresented: $showClearConfirm, titleVisibility: .visible) {
                     Button("清空截图", role: .destructive) { model.clear() }
@@ -180,6 +185,7 @@ struct ContentView: View {
                 }
             Button("继续") { showManualEditor = true }
                 .font(.subheadline.weight(.semibold))
+                .fixedSize(horizontal: true, vertical: false)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 7)
                 .background(DesignTokens.ink, in: Capsule())
@@ -287,7 +293,7 @@ struct ContentView: View {
     }
 
     private func sessionGridCard(_ session: ScreenshotGrouping.ScreenshotSession) -> some View {
-        SessionGridCard(session: session, height: 224) {
+        SessionGridCard(session: session) {
             Task {
                 if let prepared = await autoModel.makeStitchModel(for: session) {
                     preparedAutoModel = prepared
