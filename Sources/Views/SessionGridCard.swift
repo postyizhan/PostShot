@@ -88,21 +88,27 @@ struct SessionGridCard: View {
 
 /// Thread-safe async loader for Photos asset thumbnails used by Home discovery grid.
 enum SessionThumbnailLoader {
+    private final class OnceContinuation<T: Sendable>: @unchecked Sendable {
+        private let lock = NSLock()
+        private var continuation: CheckedContinuation<T, Never>?
+
+        init(_ continuation: CheckedContinuation<T, Never>) {
+            self.continuation = continuation
+        }
+
+        func resume(_ value: T) {
+            lock.lock()
+            let cont = continuation
+            continuation = nil
+            lock.unlock()
+            cont?.resume(returning: value)
+        }
+    }
+
     static func loadThumbnail(assetID: String, targetSize: CGSize) async -> UIImage? {
         guard let asset = ScreenshotLibrary.asset(for: assetID) else { return nil }
         return await withCheckedContinuation { continuation in
-            let lock = NSLock()
-            var didResume = false
-            let finish: (UIImage?) -> Void = { image in
-                lock.lock()
-                let shouldResume = !didResume
-                didResume = true
-                lock.unlock()
-                if shouldResume {
-                    continuation.resume(returning: image)
-                }
-            }
-
+            let once = OnceContinuation(continuation)
             let opts = PHImageRequestOptions()
             opts.deliveryMode = .highQualityFormat
             opts.resizeMode = .exact
@@ -120,7 +126,7 @@ enum SessionThumbnailLoader {
                 if isDegraded && !isCancelled && !hasError {
                     return
                 }
-                finish(img)
+                once.resume(img)
             }
         }
     }

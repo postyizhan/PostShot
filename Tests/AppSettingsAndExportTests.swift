@@ -7,36 +7,33 @@ final class AppSettingsAndExportTests: XCTestCase {
 
     // MARK: - AppSettings defaults
 
+    @MainActor
     func testDefaultValues() async throws {
         let suiteName = "com.postshot.test.settings.\(UUID().uuidString)"
         let ud = UserDefaults(suiteName: suiteName)!
-        let s = await MainActor.run { AppSettings(defaults: ud) }
-        await MainActor.run {
-            XCTAssertFalse(s.hasCompletedOnboarding)
-            XCTAssertFalse(s.deleteOriginalsAfterExport)
-            XCTAssertFalse(s.saveStitchedOnShare)
-            XCTAssertEqual(s.defaultExportFormat, .png)
-            XCTAssertTrue(s.soundEnabled)
-            XCTAssertTrue(s.hapticsEnabled)
-        }
+        let s = AppSettings(defaults: ud)
+        XCTAssertFalse(s.hasCompletedOnboarding)
+        XCTAssertFalse(s.deleteOriginalsAfterExport)
+        XCTAssertFalse(s.saveStitchedOnShare)
+        XCTAssertEqual(s.defaultExportFormat, .png)
+        XCTAssertTrue(s.soundEnabled)
+        XCTAssertTrue(s.hapticsEnabled)
         ud.removePersistentDomain(forName: suiteName)
     }
 
+    @MainActor
     func testPersistence() async throws {
         let suiteName = "com.postshot.test.settings2.\(UUID().uuidString)"
         let ud = UserDefaults(suiteName: suiteName)!
-        await MainActor.run {
-            let s = AppSettings(defaults: ud)
-            s.hasCompletedOnboarding = true
-            s.defaultExportFormat = .heic
-            s.soundEnabled = false
-        }
-        await MainActor.run {
-            let s2 = AppSettings(defaults: ud)
-            XCTAssertTrue(s2.hasCompletedOnboarding)
-            XCTAssertEqual(s2.defaultExportFormat, .heic)
-            XCTAssertFalse(s2.soundEnabled)
-        }
+        let s = AppSettings(defaults: ud)
+        s.hasCompletedOnboarding = true
+        s.defaultExportFormat = .heic
+        s.soundEnabled = false
+
+        let s2 = AppSettings(defaults: ud)
+        XCTAssertTrue(s2.hasCompletedOnboarding)
+        XCTAssertEqual(s2.defaultExportFormat, .heic)
+        XCTAssertFalse(s2.soundEnabled)
         ud.removePersistentDomain(forName: suiteName)
     }
 
@@ -64,95 +61,90 @@ final class AppSettingsAndExportTests: XCTestCase {
         if case .jpeg(let q) = ExportFormat.jpeg.imageFormat { XCTAssertGreaterThan(q, 0) } else { XCTFail() }
     }
 
+    @MainActor
     func testNewSettingsDefaultValues() async throws {
         let suiteName = "com.postshot.test.settings.defaults.\(UUID().uuidString)"
         let ud = UserDefaults(suiteName: suiteName)!
         defer { ud.removePersistentDomain(forName: suiteName) }
 
-        await MainActor.run {
-            let s = AppSettings(defaults: ud)
-            XCTAssertEqual(s.exportQuality, 0.85, accuracy: 0.0001)
-            XCTAssertEqual(s.exportDPI, .original)
-            XCTAssertEqual(s.targetAlbumName, "")
-            XCTAssertEqual(s.targetAlbumDisplayName, "所有照片")
-            XCTAssertEqual(s.originalCleanupPolicy, .keep)
-            XCTAssertFalse(s.autoStopOnScrollIdle)
-            XCTAssertEqual(s.scrollIdleStopSeconds, 3)
-            XCTAssertTrue(s.removeScrollIndicatorByDefault)
-        }
+        let s = AppSettings(defaults: ud)
+        XCTAssertEqual(s.exportQuality, 0.85, accuracy: 0.0001)
+        XCTAssertEqual(s.exportDPI, .original)
+        XCTAssertEqual(s.targetAlbumName, "")
+        XCTAssertEqual(s.targetAlbumDisplayName, "所有照片")
+        XCTAssertEqual(s.originalCleanupPolicy, .keep)
+        XCTAssertFalse(s.autoStopOnScrollIdle)
+        XCTAssertEqual(s.scrollIdleStopSeconds, 3)
+        XCTAssertTrue(s.removeScrollIndicatorByDefault)
     }
 
+    @MainActor
     func testNewSettingsPersistenceAndClamping() async throws {
         let suiteName = "com.postshot.test.settings.persist.\(UUID().uuidString)"
         let ud = UserDefaults(suiteName: suiteName)!
         defer { ud.removePersistentDomain(forName: suiteName) }
 
-        await MainActor.run {
-            let s = AppSettings(defaults: ud)
-            s.exportQuality = 0.62
-            s.exportDPI = .dpi300
-            s.targetAlbumName = "长截图"
-            s.originalCleanupPolicy = .immediateCacheOnly
-            s.autoStopOnScrollIdle = true
-            s.scrollIdleStopSeconds = 5
-            s.removeScrollIndicatorByDefault = false
-        }
-        await MainActor.run {
-            let s2 = AppSettings(defaults: ud)
-            XCTAssertEqual(s2.exportQuality, 0.62, accuracy: 0.0001)
-            XCTAssertEqual(s2.exportDPI, .dpi300)
-            XCTAssertEqual(s2.targetAlbumName, "长截图")
-            XCTAssertEqual(s2.targetAlbumDisplayName, "长截图")
-            XCTAssertEqual(s2.originalCleanupPolicy, .immediateCacheOnly)
-            XCTAssertTrue(s2.deleteOriginalsAfterExport)
-            XCTAssertTrue(s2.autoStopOnScrollIdle)
-            XCTAssertEqual(s2.scrollIdleStopSeconds, 5)
-            XCTAssertFalse(s2.removeScrollIndicatorByDefault)
+        let s = AppSettings(defaults: ud)
+        s.exportQuality = 0.62
+        s.exportDPI = .dpi300
+        s.targetAlbumName = "长截图"
+        s.originalCleanupPolicy = .immediateCacheOnly
+        s.autoStopOnScrollIdle = true
+        s.scrollIdleStopSeconds = 5
+        s.removeScrollIndicatorByDefault = false
 
-            s2.exportQuality = 0.01
-            XCTAssertEqual(s2.exportQuality, 0.1, accuracy: 0.0001)
-            s2.exportQuality = 2.5
-            XCTAssertEqual(s2.exportQuality, 1.0, accuracy: 0.0001)
-            s2.scrollIdleStopSeconds = 99
-            XCTAssertEqual(s2.scrollIdleStopSeconds, 3)
-        }
+        let s2 = AppSettings(defaults: ud)
+        XCTAssertEqual(s2.exportQuality, 0.62, accuracy: 0.0001)
+        XCTAssertEqual(s2.exportDPI, .dpi300)
+        XCTAssertEqual(s2.targetAlbumName, "长截图")
+        XCTAssertEqual(s2.targetAlbumDisplayName, "长截图")
+        XCTAssertEqual(s2.originalCleanupPolicy, .immediateCacheOnly)
+        XCTAssertTrue(s2.deleteOriginalsAfterExport)
+        XCTAssertTrue(s2.autoStopOnScrollIdle)
+        XCTAssertEqual(s2.scrollIdleStopSeconds, 5)
+        XCTAssertFalse(s2.removeScrollIndicatorByDefault)
+
+        s2.exportQuality = 0.01
+        XCTAssertEqual(s2.exportQuality, 0.1, accuracy: 0.0001)
+        s2.exportQuality = 2.5
+        XCTAssertEqual(s2.exportQuality, 1.0, accuracy: 0.0001)
+        s2.scrollIdleStopSeconds = 99
+        XCTAssertEqual(s2.scrollIdleStopSeconds, 3)
     }
 
+    @MainActor
     func testCleanupPolicyBidirectionalSync() async throws {
         let suiteName = "com.postshot.test.settings.sync.\(UUID().uuidString)"
         let ud = UserDefaults(suiteName: suiteName)!
         defer { ud.removePersistentDomain(forName: suiteName) }
 
-        await MainActor.run {
-            let s = AppSettings(defaults: ud)
-            s.deleteOriginalsAfterExport = true
-            XCTAssertEqual(s.originalCleanupPolicy, .recentlyDeleted)
+        let s = AppSettings(defaults: ud)
+        s.deleteOriginalsAfterExport = true
+        XCTAssertEqual(s.originalCleanupPolicy, .recentlyDeleted)
 
-            s.deleteOriginalsAfterExport = false
-            XCTAssertEqual(s.originalCleanupPolicy, .keep)
+        s.deleteOriginalsAfterExport = false
+        XCTAssertEqual(s.originalCleanupPolicy, .keep)
 
-            s.originalCleanupPolicy = .immediateCacheOnly
-            XCTAssertTrue(s.deleteOriginalsAfterExport)
+        s.originalCleanupPolicy = .immediateCacheOnly
+        XCTAssertTrue(s.deleteOriginalsAfterExport)
 
-            s.deleteOriginalsAfterExport = true
-            XCTAssertEqual(s.originalCleanupPolicy, .immediateCacheOnly)
+        s.deleteOriginalsAfterExport = true
+        XCTAssertEqual(s.originalCleanupPolicy, .immediateCacheOnly)
 
-            s.originalCleanupPolicy = .keep
-            XCTAssertFalse(s.deleteOriginalsAfterExport)
-        }
+        s.originalCleanupPolicy = .keep
+        XCTAssertFalse(s.deleteOriginalsAfterExport)
     }
 
+    @MainActor
     func testLegacyDeleteFlagInitializesCleanupPolicy() async throws {
         let suiteName = "com.postshot.test.settings.legacy.\(UUID().uuidString)"
         let ud = UserDefaults(suiteName: suiteName)!
         defer { ud.removePersistentDomain(forName: suiteName) }
         ud.set(true, forKey: "settings.deleteOriginalsAfterExport")
 
-        await MainActor.run {
-            let s = AppSettings(defaults: ud)
-            XCTAssertEqual(s.originalCleanupPolicy, .recentlyDeleted)
-            XCTAssertTrue(s.deleteOriginalsAfterExport)
-        }
+        let s = AppSettings(defaults: ud)
+        XCTAssertEqual(s.originalCleanupPolicy, .recentlyDeleted)
+        XCTAssertTrue(s.deleteOriginalsAfterExport)
     }
 
     func testExportFormatQualityClampingAndMetadata() {
