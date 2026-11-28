@@ -18,14 +18,11 @@ struct PostShotApp: App {
                 ContentView(selectedTab: $selectedTab)
                     .tabItem { Label("拼图", systemImage: "photo.on.rectangle.angled") }
                     .tag(0)
-                AutoStitchView(selectedTab: $selectedTab)
-                    .tabItem { Label("自动", systemImage: "wand.and.stars") }
-                    .tag(1)
                 CaptureView(server: bridgeServer)
                     .tabItem { Label("录制", systemImage: "record.circle") }
-                    .tag(2)
+                    .tag(1)
             }
-            .tint(DesignTokens.accentBlue)
+            .tint(DesignTokens.ink)
             .environmentObject(settings)
             .environmentObject(bridgeServer)
             .onAppear(perform: appDidAppear)
@@ -43,13 +40,13 @@ struct PostShotApp: App {
     private func appDidAppear() {
         keepAlive.start()
         bridgeServer.onBroadcastStarted = {
-            if selectedTab != 2 { selectedTab = 2 }
+            if selectedTab != 1 { selectedTab = 1 }
         }
         bridgeServer.onBroadcastReady = { [weak keepAlive] in
             keepAlive?.playStartCue()
         }
         bridgeServer.onBroadcastFinished = {
-            if selectedTab != 2 { selectedTab = 2 }
+            if selectedTab != 1 { selectedTab = 1 }
         }
         bridgeServer.start()
 

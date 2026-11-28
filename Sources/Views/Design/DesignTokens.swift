@@ -2,25 +2,30 @@
 import SwiftUI
 import UIKit
 
-/// Shared Apple-aligned visual constants for PostShot.
+/// Shared Apple-aligned monochrome visual constants for PostShot.
 /// Keeps iOS 16+ compatibility without requiring asset catalog colors.
 enum DesignTokens {
-    /// Apple system-aligned blue adapting between light (#0071E3) and dark (#2997FF).
-    static let accentBlue = Color(UIColor {
+    /// Adaptive primary monochrome ink (black in Light, white in Dark).
+    static let ink = Color(UIColor.label)
+
+    /// Pressed monochrome ink shade for tactile feedback.
+    static let inkPressed = Color(UIColor {
         $0.userInterfaceStyle == .dark
-            ? UIColor(red: CGFloat(0x29) / 255.0, green: CGFloat(0x97) / 255.0, blue: 1, alpha: 1)
-            : UIColor(red: 0, green: CGFloat(0x71) / 255.0, blue: CGFloat(0xE3) / 255.0, alpha: 1)
+            ? UIColor(white: 0.84, alpha: 1)
+            : UIColor(white: 0.22, alpha: 1)
     })
+
+    /// Contrasting foreground placed on filled `ink` surfaces (white in Light, black in Dark).
+    static let onInk = Color(UIColor.systemBackground)
+
+    /// Subtle monochrome fill for secondary pills and resting surfaces.
+    static let inkSubtle = Color(UIColor.secondarySystemFill)
 
     /// Primary brand tint.
-    static let primary = accentBlue
+    static let primary = ink
 
-    /// Deeper primary shade for pressed or highlighted states.
-    static let primaryDeep = Color(UIColor {
-        $0.userInterfaceStyle == .dark
-            ? UIColor(red: CGFloat(0x1A) / 255.0, green: CGFloat(0x8A) / 255.0, blue: 1, alpha: 1)
-            : UIColor(red: 0, green: CGFloat(0x66) / 255.0, blue: CGFloat(0xCC) / 255.0, alpha: 1)
-    })
+    /// Native iOS toggle switch green.
+    static let toggleTint = Color(UIColor.systemGreen)
 
     /// Accent color used sparingly for warnings, seams, and callouts.
     static let accent = Color.orange
@@ -34,8 +39,8 @@ enum DesignTokens {
     /// Deep charcoal canvas backdrop for preview & seam review modes.
     static let editorBackground = Color(red: 0.04, green: 0.05, blue: 0.07)
 
-    /// Subtle ambient radial glow behind stitched canvas previews.
-    static let editorGlow = Color(red: 0.12, green: 0.24, blue: 0.42).opacity(0.38)
+    /// Subtle neutral ambient radial glow behind stitched canvas previews.
+    static let editorGlow = Color.white.opacity(0.08)
 
     static let cardCornerRadius: CGFloat = 20
     static let capsuleSpacing: CGFloat = 8

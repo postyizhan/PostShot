@@ -3,7 +3,7 @@ import Photos
 import SwiftUI
 import UIKit
 
-/// Unified settings sheet accessible from every tab's navigation bar.
+/// Pure-typography Apple-native settings sheet accessible from every tab.
 struct SettingsView: View {
     @EnvironmentObject private var settings: AppSettings
     @EnvironmentObject private var bridgeServer: FrameBridgeServer
@@ -16,7 +16,6 @@ struct SettingsView: View {
     @State private var tutorialMode: TutorialMode?
 
     private static let delayOptions = [0, 1, 2, 3, 5]
-    private static let idleOptions = [2, 3, 5, 8]
 
     var body: some View {
         NavigationStack {
@@ -53,17 +52,16 @@ struct SettingsView: View {
                 refreshPhotoStatus()
             }
         }
+        .tint(DesignTokens.ink)
     }
 
     // MARK: - 1. Permissions
 
     private var permissionsSection: some View {
         Section("权限与访问") {
-            LabeledContent {
+            LabeledContent("相册权限") {
                 Text(photoStatusText)
                     .foregroundStyle(photoStatusColor)
-            } label: {
-                SettingsRowLabel(title: "相册权限", systemImage: "photo.fill", color: .blue)
             }
 
             Button {
@@ -71,7 +69,7 @@ struct SettingsView: View {
                 openURL(url)
             } label: {
                 HStack {
-                    SettingsRowLabel(title: "前往系统设置", systemImage: "gearshape.fill", color: .gray)
+                    Text("前往系统设置")
                     Spacer()
                     Image(systemName: "arrow.up.forward.app")
                         .font(.caption.weight(.semibold))
@@ -86,27 +84,27 @@ struct SettingsView: View {
 
     private var exportDefaultsSection: some View {
         Section("导出默认设置") {
-            Picker(selection: $settings.defaultExportFormat) {
+            Picker("默认格式", selection: $settings.defaultExportFormat) {
                 ForEach(ExportFormat.allCases) { format in
                     Text(format.displayName).tag(format)
                 }
-            } label: {
-                SettingsRowLabel(title: "默认格式", systemImage: "doc.richtext.fill", color: .indigo)
+            }
+            .tint(.secondary)
+
+            if settings.defaultExportFormat.supportsQuality {
+                exportQualityRow
             }
 
-            exportQualityRow
-
-            Picker(selection: $settings.exportDPI) {
+            Picker("导出分辨率", selection: $settings.exportDPI) {
                 ForEach(ExportDPI.allCases) { dpi in
                     Text(dpi.displayName).tag(dpi)
                 }
-            } label: {
-                SettingsRowLabel(title: "导出分辨率", systemImage: "dial.medium.fill", color: .teal)
             }
+            .tint(.secondary)
 
             Button { showAlbumPicker = true } label: {
                 HStack {
-                    SettingsRowLabel(title: "默认保存相册", systemImage: "rectangle.stack.fill", color: .cyan)
+                    Text("默认保存相册")
                     Spacer()
                     Text(settings.targetAlbumDisplayName)
                         .foregroundStyle(.secondary)
@@ -117,30 +115,23 @@ struct SettingsView: View {
             }
             .foregroundStyle(.primary)
 
-            Toggle(isOn: $settings.removeScrollIndicatorByDefault) {
-                SettingsRowLabel(
-                    title: "自动去除右侧滚动条",
-                    systemImage: "arrow.up.and.down.text.horizontal",
-                    color: .teal
-                )
-            }
-            .tint(DesignTokens.accentBlue)
+            Toggle("自动去除右侧滚动条", isOn: $settings.removeScrollIndicatorByDefault)
+                .tint(DesignTokens.toggleTint)
         }
     }
 
     private var exportQualityRow: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                SettingsRowLabel(title: "图片质量", systemImage: "slider.horizontal.3", color: .purple)
+                Text("图片质量")
                 Spacer()
-                Text(qualityValueText)
+                Text("\(Int((settings.exportQuality * 100).rounded()))%")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
             }
             Slider(value: $settings.exportQuality, in: 0.1...1.0, step: 0.05)
-                .disabled(!settings.defaultExportFormat.supportsQuality)
-                .tint(DesignTokens.accentBlue)
+                .tint(DesignTokens.ink)
         }
         .padding(.vertical, 2)
     }
@@ -149,18 +140,15 @@ struct SettingsView: View {
 
     private var cleanupAndShareSection: some View {
         Section {
-            Picker(selection: $settings.originalCleanupPolicy) {
+            Picker("原图清理策略", selection: $settings.originalCleanupPolicy) {
                 ForEach(OriginalCleanupPolicy.allCases) { policy in
                     Text(policy.displayName).tag(policy)
                 }
-            } label: {
-                SettingsRowLabel(title: "原图清理策略", systemImage: "trash.fill", color: .orange)
             }
+            .tint(.secondary)
 
-            Toggle(isOn: $settings.saveStitchedOnShare) {
-                SettingsRowLabel(title: "分享后同时保存到相册", systemImage: "square.and.arrow.up.fill", color: .green)
-            }
-            .tint(DesignTokens.accentBlue)
+            Toggle("分享后同时保存到相册", isOn: $settings.saveStitchedOnShare)
+                .tint(DesignTokens.toggleTint)
         } header: {
             Text("分享与清理策略")
         } footer: {
@@ -171,46 +159,16 @@ struct SettingsView: View {
     // MARK: - 4. Recording
 
     private var recordingSection: some View {
-        Section {
-            Toggle(isOn: $bridgeServer.waitForAppSwitch) {
-                SettingsRowLabel(title: "切出本软件后自动开录", systemImage: "arrow.triangle.2.circlepath", color: .red)
-            }
-            .tint(DesignTokens.accentBlue)
+        Section("滚动录屏设置") {
+            Toggle("切出本软件后自动开录", isOn: $bridgeServer.waitForAppSwitch)
+                .tint(DesignTokens.toggleTint)
 
-            Picker(selection: $bridgeServer.extraDelaySeconds) {
+            Picker("开录缓冲延迟", selection: $bridgeServer.extraDelaySeconds) {
                 ForEach(Self.delayOptions, id: \.self) { sec in
                     Text(sec == 0 ? "无延迟" : "\(sec) 秒").tag(sec)
                 }
-            } label: {
-                SettingsRowLabel(title: "开录缓冲延迟", systemImage: "timer", color: .pink)
             }
-
-            Toggle(isOn: $settings.autoStopOnScrollIdle) {
-                SettingsRowLabel(title: "停止滚动后自动结束", systemImage: "hand.raised.fill", color: .orange)
-            }
-            .tint(DesignTokens.accentBlue)
-
-            if settings.autoStopOnScrollIdle {
-                idleStopDurationRow
-            }
-        } header: {
-            Text("滚动录屏设置")
-        }
-    }
-
-    private var idleStopDurationRow: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Picker(selection: $settings.scrollIdleStopSeconds) {
-                ForEach(Self.idleOptions, id: \.self) { sec in
-                    Text("\(sec) 秒").tag(sec)
-                }
-            } label: {
-                SettingsRowLabel(title: "停滑等待时长", systemImage: "hourglass", color: .yellow)
-            }
-            Text("UI 已就绪 · 停滑自动停录检测将在后续版本接入")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .padding(.leading, 38)
+            .tint(.secondary)
         }
     }
 
@@ -218,15 +176,11 @@ struct SettingsView: View {
 
     private var feedbackSection: some View {
         Section("交互与反馈") {
-            Toggle(isOn: $settings.soundEnabled) {
-                SettingsRowLabel(title: "界面轻音效", systemImage: "speaker.wave.2.fill", color: .blue)
-            }
-            .tint(DesignTokens.accentBlue)
+            Toggle("界面轻音效", isOn: $settings.soundEnabled)
+                .tint(DesignTokens.toggleTint)
 
-            Toggle(isOn: $settings.hapticsEnabled) {
-                SettingsRowLabel(title: "触觉反馈", systemImage: "waveform", color: .mint)
-            }
-            .tint(DesignTokens.accentBlue)
+            Toggle("触觉反馈", isOn: $settings.hapticsEnabled)
+                .tint(DesignTokens.toggleTint)
         }
     }
 
@@ -234,15 +188,13 @@ struct SettingsView: View {
 
     private var guidanceSection: some View {
         Section("引导与教程") {
-            Button { showOnboarding = true } label: {
-                SettingsRowLabel(title: "重新进入新手引导", systemImage: "sparkles", color: .blue)
-            }
-            .foregroundStyle(.primary)
+            Button("重新查看新手引导") { showOnboarding = true }
+                .foregroundStyle(.primary)
 
             ForEach(TutorialMode.allCases) { mode in
                 Button { tutorialMode = mode } label: {
                     HStack {
-                        SettingsRowLabel(title: "\(mode.title)教程", systemImage: mode.icon, color: mode.tint)
+                        Text("\(mode.title)教程")
                         Spacer()
                         Image(systemName: "chevron.right")
                             .font(.caption.weight(.semibold))
@@ -258,23 +210,17 @@ struct SettingsView: View {
 
     private var diagnosticsAndAboutSection: some View {
         Section("诊断与关于") {
-            NavigationLink {
+            NavigationLink("录制连接诊断") {
                 RecordingDiagnosticsView()
-            } label: {
-                SettingsRowLabel(title: "录制连接诊断", systemImage: "stethoscope", color: .gray)
             }
 
-            LabeledContent {
+            LabeledContent("版本") {
                 Text(appVersion)
                     .foregroundStyle(.secondary)
-            } label: {
-                SettingsRowLabel(title: "版本", systemImage: "info.circle.fill", color: .blue)
             }
 
-            NavigationLink {
+            NavigationLink("开源许可证") {
                 LicenseDetailView()
-            } label: {
-                SettingsRowLabel(title: "开源许可证", systemImage: "doc.text.fill", color: .secondary)
             }
         }
     }
@@ -283,11 +229,6 @@ struct SettingsView: View {
 
     private func refreshPhotoStatus() {
         photoStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
-    }
-
-    private var qualityValueText: String {
-        guard settings.defaultExportFormat.supportsQuality else { return "无损 100%" }
-        return "\(Int((settings.exportQuality * 100).rounded()))%"
     }
 
     private var photoStatusText: String {
@@ -302,7 +243,7 @@ struct SettingsView: View {
     private var photoStatusColor: Color {
         switch photoStatus {
         case .authorized:           return DesignTokens.success
-        case .limited:              return DesignTokens.accentBlue
+        case .limited:              return .primary
         case .denied, .restricted:  return .red
         default:                    return .secondary
         }
@@ -316,19 +257,6 @@ struct SettingsView: View {
 }
 
 // MARK: - Helper Subviews
-
-private struct SettingsRowLabel: View {
-    let title: String
-    let systemImage: String
-    let color: Color
-
-    var body: some View {
-        HStack(spacing: 12) {
-            SettingsIconBadge(systemImage: systemImage, color: color)
-            Text(title)
-        }
-    }
-}
 
 private struct RecordingDiagnosticsView: View {
     @EnvironmentObject private var bridgeServer: FrameBridgeServer

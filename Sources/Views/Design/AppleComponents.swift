@@ -158,7 +158,7 @@ struct LightCircleButton: View {
 
     init(
         systemImage: String, accessibilityLabel: String,
-        tint: Color = DesignTokens.accentBlue, action: @escaping () -> Void
+        tint: Color = .primary, action: @escaping () -> Void
     ) {
         self.systemImage = systemImage
         self.accessibilityLabel = accessibilityLabel
@@ -183,7 +183,7 @@ struct LightCircleButton: View {
 
 // MARK: - Capsule Button Styles
 
-/// Full-width primary capsule CTA styled with Apple blue and spring press feedback.
+/// Full-width primary capsule CTA styled with adaptive monochrome ink and spring press feedback.
 struct ApplePrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         PrimaryButtonBody(configuration: configuration)
@@ -197,10 +197,10 @@ struct ApplePrimaryButtonStyle: ButtonStyle {
         var body: some View {
             configuration.label
                 .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(DesignTokens.onInk)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 15).padding(.horizontal, 20)
-                .background(configuration.isPressed ? DesignTokens.primaryDeep : DesignTokens.accentBlue, in: Capsule())
+                .background(configuration.isPressed ? DesignTokens.inkPressed : DesignTokens.ink, in: Capsule())
                 .contentShape(Capsule())
                 .scaleEffect(configuration.isPressed ? 0.97 : 1)
                 .opacity(isEnabled ? 1 : 0.45)
@@ -223,7 +223,7 @@ struct AppleSecondaryButtonStyle: ButtonStyle {
         var body: some View {
             configuration.label
                 .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(DesignTokens.accentBlue)
+                .foregroundStyle(.primary)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 15).padding(.horizontal, 20)
                 .background(Color(.secondarySystemGroupedBackground), in: Capsule())
@@ -250,7 +250,7 @@ struct AppleGhostButtonStyle: ButtonStyle {
         var body: some View {
             configuration.label
                 .font(.system(size: 17, weight: .medium))
-                .foregroundStyle(DesignTokens.accentBlue)
+                .foregroundStyle(.primary)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 13).padding(.horizontal, 20)
                 .contentShape(Capsule())
@@ -260,22 +260,7 @@ struct AppleGhostButtonStyle: ButtonStyle {
     }
 }
 
-// MARK: - Badges, Toasts & Empty States
-
-/// System-Settings-style 28x28 rounded square icon badge.
-struct SettingsIconBadge: View {
-    let systemImage: String
-    let color: Color
-
-    var body: some View {
-        Image(systemName: systemImage)
-            .font(.system(size: 14, weight: .semibold))
-            .foregroundStyle(.white)
-            .frame(width: 28, height: 28)
-            .background(color, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
-            .accessibilityHidden(true)
-    }
-}
+// MARK: - Toasts & Empty States
 
 /// Floating frosted capsule toast for transient confirmation or status feedback.
 struct AppleToastBanner: View {
@@ -300,7 +285,7 @@ struct AppleEmptyStateView: View {
     let systemImage: String
     let title: String
     let subtitle: String
-    var tint: Color = DesignTokens.accentBlue
+    var tint: Color = .primary
 
     var body: some View {
         VStack(spacing: 14) {
@@ -308,7 +293,7 @@ struct AppleEmptyStateView: View {
                 .font(.system(size: 32, weight: .medium))
                 .foregroundStyle(tint)
                 .frame(width: 68, height: 68)
-                .background(tint.opacity(0.12), in: Circle())
+                .background(tint.opacity(0.07), in: Circle())
                 .accessibilityHidden(true)
 
             VStack(spacing: 6) {
@@ -353,13 +338,13 @@ struct PorcelainCardModifier: ViewModifier {
 
 /// Compact pill-shaped status or metadata label modifier.
 struct CapsuleLabelStyle: ViewModifier {
-    var tint: Color = DesignTokens.primary
+    var tint: Color = .primary
 
     func body(content: Content) -> some View {
         content
             .font(.caption.weight(.medium))
             .padding(.horizontal, 12).padding(.vertical, 6)
-            .background(tint.opacity(0.12), in: Capsule())
+            .background(tint.opacity(0.09), in: Capsule())
             .foregroundStyle(tint)
     }
 }

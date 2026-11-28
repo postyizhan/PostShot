@@ -51,6 +51,7 @@ struct SourceFramesSheet: View {
                 }
             }
         }
+        .tint(DesignTokens.ink)
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
     }
@@ -90,7 +91,7 @@ struct SourceFramesSheet: View {
                     .clipShape(shape)
                     .overlay(
                         shape.strokeBorder(
-                            isSelected ? DesignTokens.accentBlue : Color.primary.opacity(0.12),
+                            isSelected ? DesignTokens.ink : Color.primary.opacity(0.12),
                             lineWidth: isSelected ? 2.5 : 0.8
                         )
                     )
@@ -108,9 +109,9 @@ struct SourceFramesSheet: View {
     private func indexBadge(index: Int, isSelected: Bool) -> some View {
         Text("#\(index + 1)")
             .font(.system(size: 11, weight: .bold).monospacedDigit())
-            .foregroundStyle(.white)
+            .foregroundStyle(isSelected ? DesignTokens.onInk : .white)
             .padding(.horizontal, 7).padding(.vertical, 3)
-            .background(isSelected ? DesignTokens.accentBlue : Color.black.opacity(0.65), in: Capsule())
+            .background(isSelected ? DesignTokens.ink : Color.black.opacity(0.65), in: Capsule())
             .padding(6)
     }
 

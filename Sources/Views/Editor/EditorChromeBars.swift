@@ -35,10 +35,10 @@ struct PreviewBottomBar: View {
                         Text("导出")
                             .font(.subheadline.weight(.semibold))
                     }
-                    .foregroundStyle(.white)
+                    .foregroundStyle(DesignTokens.onInk)
                     .padding(.horizontal, 22)
                     .frame(height: 50)
-                    .background(DesignTokens.accentBlue, in: Capsule())
+                    .background(DesignTokens.ink, in: Capsule())
                     .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
@@ -95,12 +95,12 @@ struct EditTopBar: View {
         Button(action: onDone) {
             Text("完成")
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(hasEdits ? Color.white : Color.secondary.opacity(0.55))
+                .foregroundStyle(hasEdits ? DesignTokens.onInk : Color.secondary.opacity(0.55))
                 .padding(.horizontal, 18)
                 .frame(height: 44)
                 .background {
                     if hasEdits {
-                        Capsule().fill(DesignTokens.accentBlue)
+                        Capsule().fill(DesignTokens.ink)
                     } else {
                         Capsule().fill(Color.clear).liquidGlass(in: Capsule())
                     }
@@ -162,10 +162,10 @@ struct EditSubSelectorBar: View {
                                     Text(tool.title)
                                         .font(.caption.weight(.semibold))
                                 }
-                                .foregroundStyle(isSelected ? DesignTokens.accentBlue : .primary)
+                                .foregroundStyle(isSelected ? Color.primary : Color.secondary)
                                 .padding(.horizontal, 12)
                                 .frame(height: 30)
-                                .background(Capsule().fill(isSelected ? DesignTokens.accentBlue.opacity(0.14) : Color.clear))
+                                .background(Capsule().fill(isSelected ? Color.primary.opacity(0.10) : Color.clear))
                                 .contentShape(Capsule())
                             }
                             .buttonStyle(.plain)

@@ -31,6 +31,7 @@ struct AlbumPickerSheet: View {
             }
             .onAppear(perform: loadAlbums)
         }
+        .tint(DesignTokens.ink)
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
     }
@@ -100,7 +101,7 @@ struct AlbumPickerSheet: View {
                 if selectedAlbumName == value {
                     Image(systemName: "checkmark")
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(DesignTokens.accentBlue)
+                        .foregroundStyle(.primary)
                 }
             }
             .contentShape(Rectangle())

@@ -35,6 +35,7 @@ struct OnboardingView: View {
                 ))
         }
         .background(Color(.systemGroupedBackground).ignoresSafeArea())
+        .tint(DesignTokens.ink)
         .sheet(item: $tutorialMode) { GuideTutorialSheet(mode: $0) }
         .onAppear(perform: refreshPhotoStatus)
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
@@ -54,7 +55,7 @@ struct OnboardingView: View {
                 onRequestAccess: requestPhotoAccess,
                 onOpenSettings: openSystemSettings,
                 onNext: { moveStep(to: 2) },
-                onRecordFallback: { preferredTab = 2; moveStep(to: 2) }
+                onRecordFallback: { preferredTab = 1; moveStep(to: 2) }
             )
         case 2:
             OnboardingHabitsStep(
@@ -126,7 +127,7 @@ private struct OnboardingTopBar: View {
             HStack(spacing: 6) {
                 ForEach(0..<totalSteps, id: \.self) { index in
                     Capsule()
-                        .fill(index <= step ? DesignTokens.accentBlue : Color.primary.opacity(0.14))
+                        .fill(index <= step ? DesignTokens.ink : Color.primary.opacity(0.14))
                         .frame(width: index == step ? 22 : 7, height: 6)
                 }
             }
@@ -188,9 +189,9 @@ private struct OnboardingPermissionStep: View {
             headerBlock
             Spacer(minLength: 18)
             VStack(spacing: 10) {
-                OnboardingIconCard(icon: "photo.stack", tint: DesignTokens.accentBlue,
+                OnboardingIconCard(icon: "photo.stack", tint: DesignTokens.ink,
                                    title: "选取与保存截图", subtitle: "全部拼接均在本地完成，图片不会上传")
-                OnboardingIconCard(icon: "record.circle", tint: .orange,
+                OnboardingIconCard(icon: "record.circle", tint: .red,
                                    title: "拒绝也可录屏拼接", subtitle: "滚动录屏模式无需读取系统相册即可抽帧拼合")
             }
             Spacer(minLength: 14)
@@ -206,9 +207,9 @@ private struct OnboardingPermissionStep: View {
         VStack(alignment: .leading, spacing: 10) {
             Image(systemName: "photo.on.rectangle.angled")
                 .font(.system(size: 28, weight: .semibold))
-                .foregroundStyle(DesignTokens.accentBlue)
+                .foregroundStyle(DesignTokens.ink)
                 .frame(width: 56, height: 56)
-                .background(DesignTokens.accentBlue.opacity(0.12), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .background(DesignTokens.ink.opacity(0.08), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             Text("需要访问你的相册").font(.title.bold())
             Text("相册拼图与自动发现需要读取系统截图；若暂不授权，你仍可使用「滚动录屏」模式完成长截图。")
                 .font(.subheadline).foregroundStyle(.secondary).lineSpacing(3)
@@ -224,7 +225,7 @@ private struct OnboardingPermissionStep: View {
                     .font(.caption.weight(.semibold)).foregroundStyle(DesignTokens.success)
             } else if photoStatus == .denied || photoStatus == .restricted {
                 Button("去系统设置", action: onOpenSettings)
-                    .font(.caption.weight(.semibold)).foregroundStyle(DesignTokens.accentBlue)
+                    .font(.caption.weight(.semibold)).foregroundStyle(.primary)
             }
         }
         .padding(14)
@@ -241,7 +242,7 @@ private struct OnboardingPermissionStep: View {
     private var statusMeta: (text: String, icon: String, color: Color) {
         switch photoStatus {
         case .authorized:          return ("已授权", "checkmark.circle.fill", DesignTokens.success)
-        case .limited:             return ("部分授权", "checkmark.circle.fill", DesignTokens.accentBlue)
+        case .limited:             return ("部分授权", "checkmark.circle.fill", .primary)
         case .denied, .restricted: return ("已拒绝", "xmark.circle.fill", .red)
         default:                   return ("未授权", "questionmark.circle", .secondary)
         }
@@ -305,7 +306,7 @@ private struct OnboardingHabitsStep: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
         }
-        .tint(DesignTokens.accentBlue).padding(16).appleCard(cornerRadius: 16)
+        .tint(DesignTokens.toggleTint).padding(16).appleCard(cornerRadius: 16)
     }
 }
 
@@ -319,7 +320,7 @@ private struct CleanupPolicyCard: View {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 20))
-                    .foregroundStyle(isSelected ? DesignTokens.accentBlue : .secondary)
+                    .foregroundStyle(isSelected ? DesignTokens.ink : .secondary)
                     .padding(.top, 1)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(policy.displayName).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
@@ -329,7 +330,7 @@ private struct CleanupPolicyCard: View {
             }
             .padding(14).appleCard(cornerRadius: 16)
             .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .strokeBorder(isSelected ? DesignTokens.accentBlue : .clear, lineWidth: 1.5))
+                .strokeBorder(isSelected ? DesignTokens.ink : .clear, lineWidth: 1.5))
         }
         .buttonStyle(.plain)
     }

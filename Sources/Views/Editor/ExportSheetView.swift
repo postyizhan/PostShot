@@ -55,6 +55,7 @@ struct ExportSheetView: View {
                 }
             }
         }
+        .tint(DesignTokens.ink)
         .overlay(alignment: .top) { toastOverlay }
         .sheet(isPresented: $showAlbumPicker) {
             AlbumPickerSheet(selectedAlbumName: $settings.targetAlbumName)
@@ -91,7 +92,7 @@ struct ExportSheetView: View {
                         } else if let bytes = estimatedByteCount {
                             Text(ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file))
                                 .font(.caption.weight(.semibold).monospacedDigit())
-                                .foregroundStyle(DesignTokens.accentBlue)
+                                .foregroundStyle(.primary)
                                 .opacity(isEstimatingSize ? 0.55 : 1)
                         }
                     }
@@ -123,8 +124,10 @@ struct ExportSheetView: View {
     private var optionsCard: some View {
         VStack(spacing: 0) {
             formatRow
-            Divider().padding(.leading, 14)
-            qualityRow
+            if selectedFormat.supportsQuality {
+                Divider().padding(.leading, 14)
+                qualityRow
+            }
             Divider().padding(.leading, 14)
             dpiRow
             Divider().padding(.leading, 14)
@@ -153,7 +156,7 @@ struct ExportSheetView: View {
                     .font(.subheadline.monospacedDigit()).foregroundStyle(.secondary)
             }
             Slider(value: $quality, in: 0.1...1.0, step: 0.05)
-                .tint(DesignTokens.accentBlue)
+                .tint(DesignTokens.ink)
                 .disabled(!selectedFormat.supportsQuality)
                 .opacity(selectedFormat.supportsQuality ? 1 : 0.45)
         }
@@ -171,6 +174,7 @@ struct ExportSheetView: View {
                 ForEach(ExportDPI.allCases) { Text($0.displayName).tag($0) }
             }
             .pickerStyle(.menu)
+            .tint(.secondary)
         }
         .padding(14)
     }
@@ -215,7 +219,7 @@ struct ExportSheetView: View {
         } else {
             Button { Task { await saveToPhotos() } } label: {
                 HStack(spacing: 8) {
-                    if isSaving { ProgressView().tint(.white).controlSize(.small) } else { Image(systemName: "square.and.arrow.down") }
+                    if isSaving { ProgressView().tint(DesignTokens.onInk).controlSize(.small) } else { Image(systemName: "square.and.arrow.down") }
                     Text(isSaving ? "正在保存…" : "保存到相册")
                 }
             }

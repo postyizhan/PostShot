@@ -2,8 +2,8 @@
 import SwiftUI
 import UIKit
 
-/// Screen-recording capture screen: receives sparse PNG keyframes over the loopback TCP bridge
-/// while `AudioKeepAlive` prevents iOS from suspending the host app in the background.
+/// Pure screen-recording studio tab: single unambiguous broadcast trigger,
+/// live capture summary row, and collected frame grid.
 struct CaptureView: View {
     private var extensionBundleID: String {
         "\(Bundle.main.bundleIdentifier ?? "com.postshot.app").broadcast"
@@ -14,9 +14,7 @@ struct CaptureView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var showReview = false
-    @State private var showDiagnostics = false
     @State private var showSettings = false
-    @State private var showTutorial = false
     @State private var previewIndex: Int?
     @State private var pulseActive = false
 
@@ -26,24 +24,12 @@ struct CaptureView: View {
         NavigationStack {
             studioScrollContent
                 .background(Color(.systemGroupedBackground).ignoresSafeArea())
-                .navigationTitle("全屏录制")
-                .navigationBarTitleDisplayMode(.inline)
+                .navigationTitle("录制")
                 .toolbar {
-                    ToolbarItem(placement: .navigationBarLeading) {
-                        Button { showDiagnostics = true } label: {
-                            Image(systemName: "waveform.path.ecg").foregroundStyle(DesignTokens.accentBlue)
-                        }
-                        .accessibilityLabel("录制诊断")
-                    }
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button { showTutorial = true } label: {
-                            Image(systemName: "questionmark.circle").foregroundStyle(DesignTokens.accentBlue)
-                        }
-                        .accessibilityLabel("使用教程")
-                    }
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Button { showSettings = true } label: {
-                            Image(systemName: "gearshape").foregroundStyle(DesignTokens.accentBlue)
+                            Image(systemName: "gearshape")
+                                .foregroundStyle(.primary)
                         }
                         .accessibilityLabel("设置")
                     }
@@ -51,9 +37,9 @@ struct CaptureView: View {
                 .navigationDestination(isPresented: $showReview) {
                     CaptureReviewView(store: server.frameStore).environmentObject(settings)
                 }
-                .sheet(isPresented: $showSettings) { SettingsView().environmentObject(settings) }
-                .sheet(isPresented: $showTutorial) { GuideTutorialSheet(mode: .record) }
-                .sheet(isPresented: $showDiagnostics) { diagnosticsSheet }
+                .sheet(isPresented: $showSettings) {
+                    SettingsView().environmentObject(settings)
+                }
                 .sheet(item: previewSheetBinding) { item in
                     SingleImagePreviewView(
                         initialIndex: item.index,
@@ -68,9 +54,8 @@ struct CaptureView: View {
     private var studioScrollContent: some View {
         ScrollView {
             VStack(spacing: 16) {
-                recordHeader
-                broadcastPickerCard
-                recordingSettingsCard
+                recordTriggerCard
+                capturePolicyRow
                 if server.isFinished { finishedBanner }
                 if server.frameCount > 0 {
                     stitchButton
@@ -89,17 +74,17 @@ struct CaptureView: View {
         )
     }
 
-    // MARK: - Recording Studio Header
+    // MARK: - Single Recording Trigger
 
-    private var recordHeader: some View {
+    private var recordTriggerCard: some View {
         let isCapturing = server.frameCount > 0
-        let ringColor: Color = isCapturing ? .red : DesignTokens.accentBlue
+        let ringColor: Color = isCapturing ? .red : .primary
 
-        return VStack(spacing: 10) {
+        return VStack(spacing: 14) {
             ZStack {
                 Circle()
-                    .fill(ringColor.opacity(isCapturing ? 0.14 : 0.10))
-                    .frame(width: 92, height: 92)
+                    .fill(ringColor.opacity(isCapturing ? 0.14 : 0.06))
+                    .frame(width: 108, height: 108)
                     .scaleEffect(pulseActive ? 1.12 : 1.0)
                     .animation(
                         pulseActive
@@ -107,120 +92,71 @@ struct CaptureView: View {
                             : .default,
                         value: pulseActive
                     )
+                    .allowsHitTesting(false)
 
                 Circle()
-                    .strokeBorder(ringColor.opacity(isCapturing ? 0.45 : 0.22), lineWidth: 2)
-                    .frame(width: 74, height: 74)
+                    .strokeBorder(ringColor.opacity(isCapturing ? 0.45 : 0.14), lineWidth: 1.5)
+                    .frame(width: 88, height: 88)
+                    .allowsHitTesting(false)
 
-                Image(systemName: isCapturing ? "record.circle.fill" : "record.circle")
-                    .font(.system(size: 40, weight: .semibold))
-                    .foregroundStyle(ringColor)
+                BroadcastPickerButton(
+                    extensionBundleID: extensionBundleID,
+                    isCapturing: isCapturing
+                )
+                .frame(width: 88, height: 88)
             }
+            .padding(.top, 4)
 
-            Text(isCapturing ? "录制采集中 · \(server.frameCount) 帧" : "全屏滚动录制")
-                .font(.title3.weight(.semibold))
+            VStack(spacing: 8) {
+                Text(isCapturing ? "正在采集 · \(server.frameCount) 帧" : "滚动录屏")
+                    .font(.title3.weight(.semibold))
 
-            Text(server.status)
-                .capsuleLabelStyle(tint: isCapturing ? .red : DesignTokens.accentBlue)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 8)
-    }
+                Text(server.status)
+                    .capsuleLabelStyle(tint: isCapturing ? .red : .secondary)
+                    .multilineTextAlignment(.center)
 
-    // MARK: - Broadcast Picker Card
-
-    private var broadcastPickerCard: some View {
-        VStack(spacing: 14) {
-            ZStack {
-                Circle()
-                    .fill(DesignTokens.accentBlue.opacity(0.10))
-                    .frame(width: 84, height: 84)
-                BroadcastPickerButton(extensionBundleID: extensionBundleID)
-                    .frame(width: 200, height: 80)
-            }
-
-            HStack(spacing: 6) {
-                stepBadge("1. 开启录制")
-                Image(systemName: "chevron.right")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.tertiary)
-                stepBadge("2. 切换滚动")
-                Image(systemName: "chevron.right")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.tertiary)
-                stepBadge("3. 停录拼接")
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .padding(18)
-        .appleCard()
-    }
-
-    private func stepBadge(_ text: String) -> some View {
-        Text(text)
-            .font(.caption.weight(.medium))
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 9)
-            .padding(.vertical, 5)
-            .background(Color(.tertiarySystemGroupedBackground), in: Capsule())
-    }
-
-    // MARK: - Recording Settings Card
-
-    private var recordingSettingsCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("录制设置")
-                .font(.subheadline.weight(.semibold))
-
-            Toggle("切出本软件后自动开录", isOn: $server.waitForAppSwitch)
-                .font(.subheadline)
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text("缓冲延迟")
+                Text("开启录制 · 切出页面滚动 · 停录拼接")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Picker("缓冲延迟", selection: $server.extraDelaySeconds) {
-                    Text("立即").tag(0)
-                    Text("+1s").tag(1)
-                    Text("+2s").tag(2)
-                    Text("+3s").tag(3)
-                    Text("+5s").tag(5)
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
+                    .padding(.top, 2)
             }
-
-            Divider()
-
-            Toggle("停止滚动后自动结束", isOn: $settings.autoStopOnScrollIdle)
-                .font(.subheadline)
-
-            if settings.autoStopOnScrollIdle {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("静止等待时长")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Picker("静止等待时长", selection: $settings.scrollIdleStopSeconds) {
-                        Text("2秒").tag(2)
-                        Text("3秒").tag(3)
-                        Text("5秒").tag(5)
-                        Text("8秒").tag(8)
-                    }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                }
-                .transition(.opacity.combined(with: .move(edge: .top)))
-            }
-
-            Text("UI 已就绪 · 停滑自动停录检测将在后续版本接入")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 22)
+        .padding(.horizontal, 18)
         .appleCard()
-        .appleAnimation(AppleMotion.snappy, value: settings.autoStopOnScrollIdle)
+    }
+
+    // MARK: - Compact Policy Summary Row
+
+    private var capturePolicyRow: some View {
+        Button { showSettings = true } label: {
+            HStack(spacing: 12) {
+                Text("录屏行为")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.primary)
+                Spacer(minLength: 8)
+                Text(capturePolicySummary)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .appleCard(cornerRadius: 16)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var capturePolicySummary: String {
+        let modeText = server.waitForAppSwitch ? "切出自动开录" : "立即开录"
+        if server.extraDelaySeconds > 0 {
+            return "\(modeText) · +\(server.extraDelaySeconds)s"
+        }
+        return modeText
     }
 
     // MARK: - Finished Banner & Frame Grid
@@ -230,24 +166,20 @@ struct CaptureView: View {
             Image(systemName: "checkmark.circle.fill")
                 .font(.title3)
                 .foregroundStyle(DesignTokens.success)
-            Text("录制结束，共 \(server.frameCount) 帧")
+            Text("录制完成，共 \(server.frameCount) 帧")
                 .font(.subheadline.weight(.medium))
             Spacer()
-            Button("清空重录") {
+            Button("重录") {
                 server.reset()
             }
             .font(.caption.weight(.semibold))
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
-            .background(DesignTokens.success.opacity(0.14), in: Capsule())
-            .foregroundStyle(DesignTokens.success)
+            .background(DesignTokens.inkSubtle, in: Capsule())
+            .foregroundStyle(.primary)
         }
         .padding(14)
-        .background(DesignTokens.success.opacity(0.10), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .strokeBorder(DesignTokens.success.opacity(0.22), lineWidth: 1)
-        )
+        .appleCard(cornerRadius: 16)
     }
 
     private var stitchButton: some View {
@@ -288,28 +220,6 @@ struct CaptureView: View {
                 .buttonStyle(.plain)
             }
         }
-    }
-
-    // MARK: - Diagnostics Sheet
-
-    private var diagnosticsSheet: some View {
-        NavigationStack {
-            List {
-                Section("连接状态") {
-                    LabeledContent("状态", value: server.status)
-                    LabeledContent("已采帧", value: "\(server.frameCount)")
-                    LabeledContent("最后消息", value: server.lastControl)
-                }
-            }
-            .navigationTitle("录制诊断")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("完成") { showDiagnostics = false }
-                }
-            }
-        }
-        .presentationDetents([.medium])
     }
 
     private func blankCGImage() -> CGImage {

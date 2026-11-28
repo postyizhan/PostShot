@@ -42,7 +42,7 @@ struct SegmentInspectCanvasView: View {
             VStack(spacing: 12) {
                 ProgressView(value: model.progress)
                     .progressViewStyle(.linear)
-                    .tint(DesignTokens.accentBlue)
+                    .tint(DesignTokens.ink)
                     .frame(width: 180)
                 Text(isReplacing ? "正在替换图片…" : "正在重新拼接…")
                     .font(.subheadline.weight(.medium))
@@ -92,19 +92,19 @@ struct SegmentInspectCanvasView: View {
         let badgeText = span.sourceIndex.map { "#\($0 + 1)" } ?? "补齐"
         return ZStack(alignment: .topLeading) {
             Rectangle()
-                .fill(isSelected ? DesignTokens.accentBlue.opacity(0.15) : Color.clear)
+                .fill(isSelected ? DesignTokens.ink.opacity(0.12) : Color.clear)
             if span.id > 0 {
                 seamHairline(width: width, highlighted: isSelected)
             }
             if isSelected {
                 RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .strokeBorder(DesignTokens.accentBlue, lineWidth: 2)
+                    .strokeBorder(DesignTokens.ink, lineWidth: 2)
                 Text(badgeText)
                     .font(.caption2.weight(.bold).monospacedDigit())
-                    .foregroundStyle(.white)
+                    .foregroundStyle(DesignTokens.onInk)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
-                    .background(DesignTokens.accentBlue, in: Capsule())
+                    .background(DesignTokens.ink, in: Capsule())
                     .padding(8)
             }
         }
@@ -123,7 +123,7 @@ struct SegmentInspectCanvasView: View {
             path.addLine(to: CGPoint(x: width, y: 0))
         }
         .stroke(
-            highlighted ? DesignTokens.accentBlue : Color.primary.opacity(0.24),
+            highlighted ? DesignTokens.ink : Color.primary.opacity(0.24),
             style: StrokeStyle(lineWidth: 1, dash: [5, 4])
         )
         .frame(height: 1)
@@ -147,10 +147,10 @@ struct SegmentInspectCanvasView: View {
         return HStack(spacing: 10) {
             Text("第 \(sourceIndex + 1) 张")
                 .font(.caption.weight(.bold).monospacedDigit())
-                .foregroundStyle(.white)
+                .foregroundStyle(DesignTokens.onInk)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 5)
-                .background(DesignTokens.accentBlue, in: Capsule())
+                .background(DesignTokens.ink, in: Capsule())
 
             Button { onPreviewSingle(sourceIndex) } label: {
                 Label("预览", systemImage: "magnifyingglass")

@@ -150,7 +150,7 @@ struct StitchEditorView: View {
                 SeamFailureRecoveryView(seam: seam, model: model) { framesSnapshot = model.images.map(\.id); showFramesSheet = true }
             } else if model.isStitching || (model.result != nil && displayResultImage == nil) {
                 VStack(spacing: 14) {
-                    ProgressView(value: model.progress).progressViewStyle(.linear).tint(DesignTokens.accentBlue).frame(width: 200)
+                    ProgressView(value: model.progress).progressViewStyle(.linear).tint(DesignTokens.ink).frame(width: 200)
                     Text("正在拼接… \(Int((model.progress * 100).rounded()))%").font(.subheadline.weight(.medium)).monospacedDigit()
                 }
                 .padding(.horizontal, 24).padding(.vertical, 22).porcelainCardStyle(cornerRadius: 20)
@@ -179,7 +179,7 @@ struct StitchEditorView: View {
         .overlay(alignment: .top) {
             if mode == .preview, let notice = model.stitchNotice, !isChromeHidden {
                 HStack(spacing: 6) {
-                    Image(systemName: "info.circle.fill").font(.caption.weight(.semibold)).foregroundStyle(DesignTokens.accentBlue)
+                    Image(systemName: "info.circle.fill").font(.caption.weight(.semibold)).foregroundStyle(.primary)
                     Text(notice).font(.caption.weight(.medium)).foregroundStyle(.primary).lineLimit(2)
                 }
                 .padding(.horizontal, 12).padding(.vertical, 6).liquidGlass(in: Capsule()).padding(.top, 64).allowsHitTesting(false)

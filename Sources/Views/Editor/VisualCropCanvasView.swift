@@ -98,7 +98,7 @@ struct VisualCropCanvasView: View {
         effectiveFraction: Float, onBeginDrag: @escaping () -> Void, onUpdateFraction: @escaping (Float) -> Void
     ) -> some View {
         VStack(spacing: 10) {
-            Text("拖动蓝线调整裁切").font(.caption.weight(.medium)).foregroundStyle(.secondary)
+            Text("拖动裁切线调整范围").font(.caption.weight(.medium)).foregroundStyle(.secondary)
             cropCard(item: item, edge: edge, effectiveFraction: effectiveFraction,
                      onBeginDrag: onBeginDrag, onUpdateFraction: onUpdateFraction)
                 .frame(maxHeight: .infinity)
@@ -182,11 +182,11 @@ private struct CropModeGlassPill<Value: Hashable>: View {
                 } label: {
                     Text(segment.title)
                         .font(.subheadline.weight(isSelected ? .semibold : .medium))
-                        .foregroundStyle(isSelected ? Color.white : Color.primary)
+                        .foregroundStyle(isSelected ? DesignTokens.onInk : Color.primary)
                         .padding(.horizontal, 14).padding(.vertical, 8)
                         .background {
                             if isSelected {
-                                Capsule().fill(DesignTokens.accentBlue)
+                                Capsule().fill(DesignTokens.ink)
                                     .matchedGeometryEffect(id: "cropModeActivePill", in: pillNamespace)
                             }
                         }
@@ -259,9 +259,9 @@ private struct SingleEdgeCropOverlay: View {
 
     private var handleBar: some View {
         ZStack {
-            Rectangle().fill(DesignTokens.accentBlue).frame(height: 1.5)
-            Capsule().fill(DesignTokens.accentBlue).frame(width: 44, height: 6)
-                .overlay(Capsule().strokeBorder(Color.white.opacity(0.85), lineWidth: 1))
+            Rectangle().fill(DesignTokens.ink).frame(height: 1.5)
+            Capsule().fill(DesignTokens.ink).frame(width: 44, height: 6)
+                .overlay(Capsule().strokeBorder(DesignTokens.onInk.opacity(0.85), lineWidth: 1))
                 .shadow(color: Color.black.opacity(0.25), radius: 3, y: 1)
         }
         .frame(height: 28).contentShape(Rectangle())
@@ -273,7 +273,7 @@ private struct SingleEdgeCropOverlay: View {
             .font(.caption.weight(.semibold).monospacedDigit()).foregroundStyle(.white)
             .padding(.horizontal, 12).padding(.vertical, 6)
             .background(Color.black.opacity(0.76), in: Capsule())
-            .overlay(Capsule().strokeBorder(DesignTokens.accentBlue.opacity(0.7), lineWidth: 1))
+            .overlay(Capsule().strokeBorder(Color.white.opacity(0.28), lineWidth: 1))
             .allowsHitTesting(false)
     }
 

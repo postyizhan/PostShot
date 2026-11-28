@@ -156,9 +156,9 @@ private struct RedactSubBar: View {
             if markup.redactMode == .auto {
                 Text("\(markup.autoRedactTargets.count)项")
                     .font(.caption.weight(.semibold).monospacedDigit())
-                    .foregroundStyle(DesignTokens.accentBlue)
+                    .foregroundStyle(.primary)
                     .padding(.horizontal, 10).padding(.vertical, 5)
-                    .background(DesignTokens.accentBlue.opacity(0.14), in: Capsule())
+                    .background(Color.primary.opacity(0.10), in: Capsule())
                     .lineLimit(1)
             } else {
                 Text(markup.manualRedactStyle.title)
@@ -215,9 +215,9 @@ private struct RedactModeToggle: View {
         return Button { selection = mode } label: {
             Text(title)
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(isSelected ? Color.white : Color.primary)
+                .foregroundStyle(isSelected ? DesignTokens.onInk : Color.primary)
                 .padding(.horizontal, 10).padding(.vertical, 5)
-                .background(isSelected ? DesignTokens.accentBlue : Color.clear, in: Capsule())
+                .background(isSelected ? DesignTokens.ink : Color.clear, in: Capsule())
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)
@@ -233,9 +233,9 @@ private struct TextSubBar: View {
         HStack(spacing: 6) {
             Button(action: onAddTextSticker) {
                 Text("+ 文字")
-                    .font(.caption.weight(.semibold)).foregroundStyle(.white)
+                    .font(.caption.weight(.semibold)).foregroundStyle(DesignTokens.onInk)
                     .padding(.horizontal, 11).padding(.vertical, 6)
-                    .background(DesignTokens.accentBlue, in: Capsule()).lineLimit(1)
+                    .background(DesignTokens.ink, in: Capsule()).lineLimit(1)
             }
             .buttonStyle(.plain)
             HStack(spacing: 2) {
@@ -246,9 +246,9 @@ private struct TextSubBar: View {
             Button { markup.textHasBackground.toggle() } label: {
                 Image(systemName: markup.textHasBackground ? "text.bubble.fill" : "text.bubble")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(markup.textHasBackground ? Color.white : Color.primary)
+                    .foregroundStyle(markup.textHasBackground ? DesignTokens.onInk : Color.primary)
                     .frame(width: 32, height: 32)
-                    .background(markup.textHasBackground ? DesignTokens.accentBlue : Color.primary.opacity(0.08), in: Circle())
+                    .background(markup.textHasBackground ? DesignTokens.ink : Color.primary.opacity(0.08), in: Circle())
                     .contentShape(Circle())
             }
             .buttonStyle(.plain).accessibilityLabel("文字底色气泡")
@@ -269,9 +269,9 @@ private struct DrawSubBar: View {
                 }
             } label: {
                 Image(systemName: markup.brushStyle.systemImage)
-                    .font(.system(size: 14, weight: .semibold)).foregroundStyle(DesignTokens.accentBlue)
+                    .font(.system(size: 14, weight: .semibold)).foregroundStyle(.primary)
                     .frame(width: 32, height: 32)
-                    .background(DesignTokens.accentBlue.opacity(0.14), in: Circle()).contentShape(Circle())
+                    .background(Color.primary.opacity(0.10), in: Circle()).contentShape(Circle())
             }
             .accessibilityLabel("画笔样式")
             HStack(spacing: 2) {
@@ -326,9 +326,9 @@ private struct DockFilterChip: View {
     var body: some View {
         Button(action: action) {
             Text(title).font(.caption.weight(.semibold))
-                .foregroundStyle(isSelected ? Color.white : Color.primary)
+                .foregroundStyle(isSelected ? DesignTokens.onInk : Color.primary)
                 .padding(.horizontal, 12).padding(.vertical, 7)
-                .background(isSelected ? DesignTokens.accentBlue : Color.primary.opacity(0.08), in: Capsule())
+                .background(isSelected ? DesignTokens.ink : Color.primary.opacity(0.08), in: Capsule())
                 .contentShape(Capsule()).lineLimit(1)
         }
         .buttonStyle(.plain)
@@ -344,7 +344,7 @@ private struct ColorSwatchDot: View {
         Button(action: action) {
             Circle().fill(color).frame(width: 22, height: 22)
                 .overlay(Circle().strokeBorder(Color.primary.opacity(0.18), lineWidth: 1))
-                .overlay(Circle().strokeBorder(isSelected ? DesignTokens.accentBlue : .clear, lineWidth: 2.5).padding(-3))
+                .overlay(Circle().strokeBorder(isSelected ? DesignTokens.ink : .clear, lineWidth: 2.5).padding(-3))
                 .frame(width: 44, height: 44).contentShape(Circle())
         }
         .buttonStyle(.plain)
@@ -380,9 +380,9 @@ private struct BrushWidthChips: View {
                 Button { brushWidth = tier.value } label: {
                     Text(tier.title)
                         .font(.caption.weight(.semibold))
-                        .foregroundStyle(isSelected ? Color.white : Color.primary)
+                        .foregroundStyle(isSelected ? DesignTokens.onInk : Color.primary)
                         .padding(.horizontal, 10).padding(.vertical, 5)
-                        .background(isSelected ? DesignTokens.accentBlue : Color.clear, in: Capsule())
+                        .background(isSelected ? DesignTokens.ink : Color.clear, in: Capsule())
                         .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)

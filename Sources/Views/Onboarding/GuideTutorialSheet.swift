@@ -35,9 +35,9 @@ enum TutorialMode: String, CaseIterable, Identifiable {
 
     var tint: Color {
         switch self {
-        case .manual: return DesignTokens.accentBlue
-        case .auto:   return Color.indigo
-        case .record: return Color.red
+        case .manual: return DesignTokens.ink
+        case .auto:   return .primary
+        case .record: return .red
         }
     }
 }
@@ -81,6 +81,7 @@ struct GuideTutorialSheet: View {
                 }
             }
         }
+        .tint(DesignTokens.ink)
     }
 
     private var bottomControls: some View {
@@ -233,7 +234,7 @@ private struct TutorialPage {
             badgeIcon: "1.circle",
             previewTag: "按拍摄时间与比例自动分组",
             title: "自动发现连续截图",
-            body: "打开「自动」标签后，App 会扫描最近截图并把同一连续滚动操作聚合成候选群组。"
+            body: "打开「拼图」主页后，App 会扫描最近截图并把同一连续滚动操作聚合成候选群组。"
         ),
         TutorialPage(
             icon: "arrow.triangle.branch",

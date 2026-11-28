@@ -44,7 +44,7 @@ struct OnboardingIllustrationView: View {
 
     private var ambientGlow: some View {
         Ellipse()
-            .fill(DesignTokens.accentBlue.opacity(colorScheme == .dark ? 0.16 : 0.10))
+            .fill(DesignTokens.ink.opacity(colorScheme == .dark ? 0.12 : 0.06))
             .frame(width: 240, height: 180)
             .blur(radius: 36)
     }
@@ -53,11 +53,11 @@ struct OnboardingIllustrationView: View {
         IllustrationCardShell {
             HStack(spacing: 10) {
                 Circle()
-                    .fill(DesignTokens.accentBlue.opacity(0.18))
+                    .fill(DesignTokens.ink.opacity(0.10))
                     .frame(width: 30, height: 30)
                     .overlay(
                         Circle()
-                            .strokeBorder(DesignTokens.accentBlue.opacity(0.35), lineWidth: 1)
+                            .strokeBorder(DesignTokens.ink.opacity(0.22), lineWidth: 1)
                     )
                 VStack(alignment: .leading, spacing: 6) {
                     SkeletonLine(widthFactor: 0.62, accent: false)
@@ -78,7 +78,7 @@ struct OnboardingIllustrationView: View {
                     .fill(
                         LinearGradient(
                             colors: [
-                                DesignTokens.accentBlue.opacity(0.24),
+                                DesignTokens.ink.opacity(0.16),
                                 Color(.tertiarySystemFill),
                             ],
                             startPoint: .topLeading,
@@ -99,12 +99,12 @@ struct OnboardingIllustrationView: View {
                     SkeletonLine(widthFactor: 0.60, accent: false)
                 }
                 Circle()
-                    .fill(DesignTokens.accentBlue.opacity(0.16))
+                    .fill(DesignTokens.ink.opacity(0.12))
                     .frame(width: 34, height: 34)
                     .overlay(
                         Image(systemName: "checkmark")
                             .font(.system(size: 13, weight: .bold))
-                            .foregroundStyle(DesignTokens.accentBlue)
+                            .foregroundStyle(DesignTokens.ink)
                     )
             }
         }
@@ -163,16 +163,16 @@ private struct StitchSeamConnector: View {
     var body: some View {
         ZStack {
             Capsule()
-                .fill(DesignTokens.accentBlue.opacity(active ? 0.35 : 0))
+                .fill(DesignTokens.ink.opacity(active ? 0.25 : 0))
                 .frame(width: 8, height: 14)
                 .blur(radius: 4)
             Capsule()
                 .fill(
                     LinearGradient(
                         colors: [
-                            DesignTokens.accentBlue.opacity(0.4),
-                            DesignTokens.accentBlue,
-                            DesignTokens.accentBlue.opacity(0.4),
+                            DesignTokens.ink.opacity(0.3),
+                            DesignTokens.ink,
+                            DesignTokens.ink.opacity(0.3),
                         ],
                         startPoint: .top,
                         endPoint: .bottom
