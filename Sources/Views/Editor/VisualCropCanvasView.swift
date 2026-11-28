@@ -24,6 +24,7 @@ struct VisualCropCanvasView: View {
 
     @State private var displayThumbs: [UUID: UIImage] = [:]
     @State private var isDraggingCrop = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(
         model: StitchViewModel,
@@ -59,16 +60,30 @@ struct VisualCropCanvasView: View {
                     onPreviewSingle: onPreviewSingle
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .transition(reduceMotion ? .opacity : .scale(scale: 0.90).combined(with: .opacity))
             } else {
-                cropContent
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .padding(.top, 112).padding(.bottom, 146)
-                if !model.images.isEmpty {
-                    contextualModePill.padding(.horizontal, 20).padding(.bottom, 80)
-                }
+                cropStageContainer
+                    .transition(reduceMotion ? .opacity : .scale(scale: 1.04).combined(with: .opacity))
             }
         }
+        .appleAnimation(AppleMotion.smooth, value: cropTab)
         .task(id: model.images.map(\.id)) { await buildDisplayThumbnails() }
+    }
+
+    private var cropStageContainer: some View {
+        ZStack(alignment: .bottom) {
+            cropContent
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(.top, 112).padding(.bottom, 146)
+            if !model.images.isEmpty {
+                contextualModePill
+                    .id(cropTab)
+                    .transition(.opacity)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 80)
+                    .appleAnimation(AppleMotion.snappy, value: cropTab)
+            }
+        }
     }
 
     @ViewBuilder
@@ -80,6 +95,9 @@ struct VisualCropCanvasView: View {
                     let start = effectiveTopCrop
                     if model.headerMode != .none { model.topCropFraction = start; model.headerMode = .none }
                 }, onUpdateFraction: { model.topCropFraction = $0 })
+                .id(CropAdjustTab.top)
+                .offset(y: reduceMotion ? 0 : 6)
+                .transition(cropFocusTransition(edge: .top))
             } else { emptyState }
         case .bottom:
             if let last = model.images.last {
@@ -87,10 +105,18 @@ struct VisualCropCanvasView: View {
                     let start = effectiveBottomCrop
                     if model.keepFooter { model.bottomCropFraction = start; model.keepFooter = false }
                 }, onUpdateFraction: { model.bottomCropFraction = $0 })
+                .id(CropAdjustTab.bottom)
+                .offset(y: reduceMotion ? 0 : -6)
+                .transition(cropFocusTransition(edge: .bottom))
             } else { emptyState }
         case .segments:
             EmptyView()
         }
+    }
+
+    private func cropFocusTransition(edge: SingleEdgeCropOverlay.Edge) -> AnyTransition {
+        guard !reduceMotion else { return .opacity }
+        return .offset(y: edge == .top ? -22 : 22).combined(with: .opacity)
     }
 
     private func cropEdgeView(

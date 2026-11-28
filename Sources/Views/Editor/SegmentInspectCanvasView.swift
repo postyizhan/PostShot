@@ -12,6 +12,7 @@ struct SegmentInspectCanvasView: View {
     @State private var selectedSpanID: Int?
     @State private var replacePickerItem: PhotosPickerItem?
     @State private var isReplacing = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var selectedSpan: SegmentSpan? {
         guard let selectedSpanID, let spans = model.result?.segmentSpans else { return nil }
@@ -25,6 +26,7 @@ struct SegmentInspectCanvasView: View {
             actionBar
                 .padding(.horizontal, 20)
                 .padding(.bottom, 80)
+                .appleAnimation(AppleMotion.snappy, value: selectedSpanID)
         }
         .onChange(of: model.result?.id) { _ in selectedSpanID = nil }
         .onChange(of: replacePickerItem) { item in
@@ -100,6 +102,7 @@ struct SegmentInspectCanvasView: View {
             if isSelected {
                 RoundedRectangle(cornerRadius: 4, style: .continuous)
                     .strokeBorder(DesignTokens.ink, lineWidth: 2)
+                    .transition(.opacity)
                 Text(badgeText)
                     .font(.caption2.weight(.bold).monospacedDigit())
                     .foregroundStyle(DesignTokens.onInk)
@@ -107,12 +110,14 @@ struct SegmentInspectCanvasView: View {
                     .padding(.vertical, 3)
                     .background(DesignTokens.ink, in: Capsule())
                     .padding(8)
+                    .transition(reduceMotion ? .opacity : .scale(scale: 0.85).combined(with: .opacity))
             }
         }
         .frame(width: width, height: height, alignment: .topLeading)
+        .scaleEffect(isSelected && !reduceMotion ? 1.008 : 1.0)
         .contentShape(Rectangle())
         .onTapGesture {
-            withAnimation(AppleMotion.snappy) {
+            withAnimation(AppleMotion.animation(AppleMotion.snappy, reduceMotion: reduceMotion)) {
                 selectedSpanID = isSelected ? nil : span.id
             }
         }
@@ -132,14 +137,19 @@ struct SegmentInspectCanvasView: View {
 
     @ViewBuilder
     private var actionBar: some View {
+        let barTransition: AnyTransition = reduceMotion ? .opacity : .opacity.combined(with: .move(edge: .bottom))
         if let span = selectedSpan {
             if let srcIdx = span.sourceIndex, model.images.indices.contains(srcIdx) {
                 selectedSegmentPill(sourceIndex: srcIdx)
+                    .id("seg-\(srcIdx)")
+                    .transition(barTransition)
             } else {
                 hintPill("录屏自动补齐帧（不可单独编辑）")
+                    .transition(barTransition)
             }
         } else if model.result?.segmentSpans.isEmpty == false {
             hintPill("轻点长图分段可预览、替换或删除")
+                .transition(barTransition)
         }
     }
 
