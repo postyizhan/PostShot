@@ -122,8 +122,6 @@ struct ExportSheetView: View {
             formatRow
             if selectedFormat.supportsQuality { Divider().padding(.leading, 14); qualityRow }
             Divider().padding(.leading, 14)
-            dpiRow
-            Divider().padding(.leading, 14)
             albumRow
         }
         .appleCard()
@@ -150,22 +148,6 @@ struct ExportSheetView: View {
             }
             Slider(value: $quality, in: 0.1...1.0, step: 0.05)
                 .tint(DesignTokens.ink)
-        }
-        .padding(14)
-    }
-
-    private var dpiRow: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("分辨率 (DPI)").font(.subheadline.weight(.medium))
-                Text("元数据写入即将接入").font(.caption).foregroundStyle(.secondary)
-            }
-            Spacer()
-            Picker("分辨率", selection: $settings.exportDPI) {
-                ForEach(ExportDPI.allCases) { Text($0.displayName).tag($0) }
-            }
-            .pickerStyle(.menu)
-            .tint(.secondary)
         }
         .padding(14)
     }

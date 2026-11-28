@@ -95,13 +95,6 @@ struct SettingsView: View {
                 exportQualityRow
             }
 
-            Picker("导出分辨率", selection: $settings.exportDPI) {
-                ForEach(ExportDPI.allCases) { dpi in
-                    Text(dpi.displayName).tag(dpi)
-                }
-            }
-            .tint(.secondary)
-
             Button { showAlbumPicker = true } label: {
                 HStack {
                     Text("默认保存相册")
