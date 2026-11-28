@@ -125,13 +125,18 @@ private struct TutorialPageSlide: View {
     let accent: Color
 
     var body: some View {
-        VStack(spacing: 24) {
-            Spacer(minLength: 12)
-            visualCard
-            textBlock
-            Spacer(minLength: 28)
+        GeometryReader { geo in
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 20) {
+                    Spacer(minLength: 8)
+                    visualCard
+                    textBlock
+                    Spacer(minLength: 32)
+                }
+                .frame(maxWidth: .infinity, minHeight: geo.size.height)
+                .padding(.horizontal, 24)
+            }
         }
-        .padding(.horizontal, 24)
     }
 
     private var visualCard: some View {

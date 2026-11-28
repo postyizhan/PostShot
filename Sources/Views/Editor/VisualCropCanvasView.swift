@@ -183,7 +183,9 @@ private struct CropModeGlassPill<Value: Hashable>: View {
                     Text(segment.title)
                         .font(.subheadline.weight(isSelected ? .semibold : .medium))
                         .foregroundStyle(isSelected ? DesignTokens.onInk : Color.primary)
-                        .padding(.horizontal, 14).padding(.vertical, 8)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+                        .padding(.horizontal, 12).padding(.vertical, 8)
                         .background {
                             if isSelected {
                                 Capsule().fill(DesignTokens.ink)

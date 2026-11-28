@@ -17,6 +17,8 @@ struct PreviewBottomBar: View {
                             .font(.system(size: 16, weight: .semibold))
                         Text("编辑")
                             .font(.subheadline.weight(.semibold))
+                            .lineLimit(1)
+                            .fixedSize(horizontal: true, vertical: false)
                     }
                     .foregroundStyle(.primary)
                     .padding(.horizontal, 22)
@@ -34,6 +36,8 @@ struct PreviewBottomBar: View {
                             .font(.system(size: 16, weight: .semibold))
                         Text("导出")
                             .font(.subheadline.weight(.semibold))
+                            .lineLimit(1)
+                            .fixedSize(horizontal: true, vertical: false)
                     }
                     .foregroundStyle(DesignTokens.onInk)
                     .padding(.horizontal, 22)
@@ -64,12 +68,14 @@ struct EditTopBar: View {
                 Text("取消")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.primary)
+                    .lineLimit(1)
                     .padding(.horizontal, 16)
                     .frame(height: 44)
                     .liquidGlass(in: Capsule(), interactive: true)
                     .contentShape(Capsule())
             }
             .buttonStyle(.plain)
+            .fixedSize(horizontal: true, vertical: false)
 
             Spacer(minLength: 6)
 
@@ -81,6 +87,8 @@ struct EditTopBar: View {
                     .padding(.vertical, 5)
                     .liquidGlass(in: Capsule())
                     .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                    .layoutPriority(-1)
                     .allowsHitTesting(false)
             }
 
@@ -96,6 +104,7 @@ struct EditTopBar: View {
             Text("完成")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(hasEdits ? DesignTokens.onInk : Color.secondary.opacity(0.55))
+                .lineLimit(1)
                 .padding(.horizontal, 18)
                 .frame(height: 44)
                 .background {
@@ -108,6 +117,7 @@ struct EditTopBar: View {
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)
+        .fixedSize(horizontal: true, vertical: false)
         .disabled(!hasEdits)
         .appleAnimation(AppleMotion.snappy, value: hasEdits)
     }
@@ -132,6 +142,8 @@ struct EditSubSelectorBar: View {
                     } label: {
                         Text(tab.title)
                             .font(.caption.weight(.semibold))
+                            .lineLimit(1)
+                            .fixedSize(horizontal: true, vertical: false)
                             .foregroundStyle(isSelected ? Color.primary : Color.secondary)
                             .padding(.horizontal, 14)
                             .frame(height: 30)
@@ -161,9 +173,11 @@ struct EditSubSelectorBar: View {
                                         .font(.system(size: 13, weight: .semibold))
                                     Text(tool.title)
                                         .font(.caption.weight(.semibold))
+                                        .lineLimit(1)
+                                        .fixedSize(horizontal: true, vertical: false)
                                 }
                                 .foregroundStyle(isSelected ? Color.primary : Color.secondary)
-                                .padding(.horizontal, 12)
+                                .padding(.horizontal, 10)
                                 .frame(height: 30)
                                 .background(Capsule().fill(isSelected ? Color.primary.opacity(0.10) : Color.clear))
                                 .contentShape(Capsule())

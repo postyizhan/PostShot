@@ -173,6 +173,8 @@ struct CaptureView: View {
                 server.reset()
             }
             .font(.caption.weight(.semibold))
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
             .background(DesignTokens.inkSubtle, in: Capsule())
@@ -198,11 +200,13 @@ struct CaptureView: View {
                 Button {
                     previewIndex = index
                 } label: {
-                    Image(uiImage: item.thumbnail)
-                        .resizable()
-                        .scaledToFill()
+                    Color(.tertiarySystemGroupedBackground)
                         .frame(height: 144)
-                        .frame(maxWidth: .infinity)
+                        .overlay {
+                            Image(uiImage: item.thumbnail)
+                                .resizable()
+                                .scaledToFill()
+                        }
                         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                         .overlay(alignment: .topLeading) {
                             Text("\(index + 1)")

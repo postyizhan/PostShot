@@ -50,12 +50,9 @@ struct OnboardingView: View {
             OnboardingWelcomeStep(onStart: { moveStep(to: 1) }, onExplore: { finish(tab: nil) })
         case 1:
             OnboardingPermissionStep(
-                photoStatus: photoStatus,
-                justAuthorized: justAuthorized,
-                onRequestAccess: requestPhotoAccess,
-                onOpenSettings: openSystemSettings,
-                onNext: { moveStep(to: 2) },
-                onRecordFallback: { preferredTab = 1; moveStep(to: 2) }
+                photoStatus: photoStatus, justAuthorized: justAuthorized,
+                onRequestAccess: requestPhotoAccess, onOpenSettings: openSystemSettings,
+                onNext: { moveStep(to: 2) }, onRecordFallback: { preferredTab = 1; moveStep(to: 2) }
             )
         case 2:
             OnboardingHabitsStep(
@@ -64,10 +61,7 @@ struct OnboardingView: View {
                 onNext: { moveStep(to: 3) }
             )
         default:
-            OnboardingLearnStep(
-                onSelectTutorial: { tutorialMode = $0 },
-                onFinish: { finish(tab: preferredTab) }
-            )
+            OnboardingLearnStep(onSelectTutorial: { tutorialMode = $0 }, onFinish: { finish(tab: preferredTab) })
         }
     }
 
@@ -83,10 +77,9 @@ struct OnboardingView: View {
         PHPhotoLibrary.requestAuthorization(for: .readWrite) { status in
             DispatchQueue.main.async {
                 photoStatus = status
-                if status == .authorized || status == .limited {
-                    withAnimation(AppleMotion.animation(AppleMotion.snappy, reduceMotion: reduceMotion)) {
-                        justAuthorized = true
-                    }
+                guard status == .authorized || status == .limited else { return }
+                withAnimation(AppleMotion.animation(AppleMotion.snappy, reduceMotion: reduceMotion)) {
+                    justAuthorized = true
                 }
             }
         }
@@ -141,6 +134,26 @@ private struct OnboardingTopBar: View {
     }
 }
 
+private struct OnboardingStepShell<Content: View, Footer: View>: View {
+    @ViewBuilder let content: () -> Content
+    @ViewBuilder let footer: () -> Footer
+
+    var body: some View {
+        GeometryReader { geo in
+            ScrollView(showsIndicators: false) {
+                content()
+                    .frame(maxWidth: .infinity, minHeight: geo.size.height, alignment: .top)
+                    .padding(.horizontal, 24)
+            }
+        }
+        .safeAreaInset(edge: .bottom) {
+            footer()
+                .padding(.horizontal, 24).padding(.top, 8).padding(.bottom, 20)
+                .background(Color(.systemGroupedBackground))
+        }
+    }
+}
+
 // MARK: - Step 0: Welcome
 
 private struct OnboardingWelcomeStep: View {
@@ -148,26 +161,24 @@ private struct OnboardingWelcomeStep: View {
     let onExplore: () -> Void
 
     var body: some View {
-        VStack(spacing: 0) {
-            Spacer(minLength: 16)
-            OnboardingIllustrationView()
-            Spacer(minLength: 20)
-            VStack(spacing: 10) {
-                Text("驿站截图")
-                    .font(.system(size: 34, weight: .bold, design: .rounded))
-                Text("把多张截图拼成一张长图 · 开源免费 · 无广告")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
+        OnboardingStepShell {
+            VStack(spacing: 0) {
+                Spacer(minLength: 16)
+                OnboardingIllustrationView()
+                Spacer(minLength: 20)
+                VStack(spacing: 10) {
+                    Text("驿站截图").font(.system(size: 34, weight: .bold, design: .rounded))
+                    Text("把多张截图拼成一张长图 · 开源免费 · 无广告")
+                        .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                }
+                Spacer(minLength: 20)
             }
-            Spacer(minLength: 24)
+        } footer: {
             VStack(spacing: 8) {
                 Button("开始使用", action: onStart).buttonStyle(ApplePrimaryButtonStyle())
                 Button("我自己先探索", action: onExplore).buttonStyle(AppleGhostButtonStyle())
             }
         }
-        .padding(.horizontal, 24)
-        .padding(.bottom, 20)
     }
 }
 
@@ -184,23 +195,24 @@ private struct OnboardingPermissionStep: View {
     private var isAuthorized: Bool { photoStatus == .authorized || photoStatus == .limited }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Spacer(minLength: 12)
-            headerBlock
-            Spacer(minLength: 18)
-            VStack(spacing: 10) {
-                OnboardingIconCard(icon: "photo.stack", tint: DesignTokens.ink,
-                                   title: "选取与保存截图", subtitle: "全部拼接均在本地完成，图片不会上传")
-                OnboardingIconCard(icon: "record.circle", tint: .red,
-                                   title: "拒绝也可录屏拼接", subtitle: "滚动录屏模式无需读取系统相册即可抽帧拼合")
+        OnboardingStepShell {
+            VStack(alignment: .leading, spacing: 0) {
+                Spacer(minLength: 12)
+                headerBlock
+                Spacer(minLength: 18)
+                VStack(spacing: 10) {
+                    OnboardingIconCard(icon: "photo.stack", tint: DesignTokens.ink,
+                                       title: "选取与保存截图", subtitle: "全部拼接均在本地完成，图片不会上传")
+                    OnboardingIconCard(icon: "record.circle", tint: .red,
+                                       title: "拒绝也可录屏拼接", subtitle: "滚动录屏模式无需读取系统相册即可抽帧拼合")
+                }
+                Spacer(minLength: 14)
+                statusCard
+                Spacer(minLength: 14)
             }
-            Spacer(minLength: 14)
-            statusCard
-            Spacer(minLength: 18)
+        } footer: {
             footerButtons
         }
-        .padding(.horizontal, 24)
-        .padding(.bottom, 20)
     }
 
     private var headerBlock: some View {
@@ -218,7 +230,8 @@ private struct OnboardingPermissionStep: View {
 
     private var statusCard: some View {
         HStack(spacing: 10) {
-            statusBadge
+            Label("相册状态：\(statusMeta.text)", systemImage: statusMeta.icon)
+                .font(.subheadline.weight(.medium)).foregroundStyle(statusMeta.color)
             Spacer()
             if justAuthorized && isAuthorized {
                 Label("已就绪", systemImage: "checkmark.circle.fill")
@@ -228,15 +241,7 @@ private struct OnboardingPermissionStep: View {
                     .font(.caption.weight(.semibold)).foregroundStyle(.primary)
             }
         }
-        .padding(14)
-        .appleCard(cornerRadius: 14)
-    }
-
-    @ViewBuilder
-    private var statusBadge: some View {
-        let meta = statusMeta
-        Label("相册状态：\(meta.text)", systemImage: meta.icon)
-            .font(.subheadline.weight(.medium)).foregroundStyle(meta.color)
+        .padding(14).appleCard(cornerRadius: 14)
     }
 
     private var statusMeta: (text: String, icon: String, color: Color) {
@@ -269,7 +274,7 @@ private struct OnboardingHabitsStep: View {
     let onNext: () -> Void
 
     var body: some View {
-        ScrollView(showsIndicators: false) {
+        OnboardingStepShell {
             VStack(alignment: .leading, spacing: 16) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("清理与保存习惯").font(.title.bold())
@@ -288,13 +293,9 @@ private struct OnboardingHabitsStep: View {
                 Text("以上偏好随时可在「设置」中更改")
                     .font(.caption).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .center)
             }
-            .padding(.horizontal, 24).padding(.top, 12).padding(.bottom, 16)
-        }
-        .safeAreaInset(edge: .bottom) {
-            Button("下一步", action: onNext)
-                .buttonStyle(ApplePrimaryButtonStyle())
-                .padding(.horizontal, 24).padding(.top, 8).padding(.bottom, 20)
-                .background(Color(.systemGroupedBackground))
+            .padding(.top, 12).padding(.bottom, 16)
+        } footer: {
+            Button("下一步", action: onNext).buttonStyle(ApplePrimaryButtonStyle())
         }
     }
 
@@ -319,9 +320,7 @@ private struct CleanupPolicyCard: View {
         Button(action: action) {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 20))
-                    .foregroundStyle(isSelected ? DesignTokens.ink : .secondary)
-                    .padding(.top, 1)
+                    .font(.system(size: 20)).foregroundStyle(isSelected ? DesignTokens.ink : .secondary).padding(.top, 1)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(policy.displayName).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
                     Text(policy.subtitle).font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.leading)
@@ -343,28 +342,30 @@ private struct OnboardingLearnStep: View {
     let onFinish: () -> Void
 
     var body: some View {
-        VStack(spacing: 0) {
-            Spacer(minLength: 16)
-            VStack(spacing: 8) {
-                Text("想学习一下如何使用吗？").font(.title2.bold()).multilineTextAlignment(.center)
-                Text("按你的习惯挑一种方式了解，也可随时在设置中重温")
-                    .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
-            }
-            .padding(.horizontal, 12)
-            Spacer(minLength: 24)
-            VStack(spacing: 12) {
-                ForEach(TutorialMode.allCases) { mode in
-                    Button { onSelectTutorial(mode) } label: {
-                        OnboardingIconCard(icon: mode.icon, tint: mode.tint,
-                                           title: mode.title, subtitle: mode.subtitle, showChevron: true)
-                    }
-                    .buttonStyle(.plain)
+        OnboardingStepShell {
+            VStack(spacing: 0) {
+                Spacer(minLength: 16)
+                VStack(spacing: 8) {
+                    Text("想学习一下如何使用吗？").font(.title2.bold()).multilineTextAlignment(.center)
+                    Text("按你的习惯挑一种方式了解，也可随时在设置中重温")
+                        .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
                 }
+                .padding(.horizontal, 12)
+                Spacer(minLength: 24)
+                VStack(spacing: 12) {
+                    ForEach(TutorialMode.allCases) { mode in
+                        Button { onSelectTutorial(mode) } label: {
+                            OnboardingIconCard(icon: mode.icon, tint: mode.tint,
+                                               title: mode.title, subtitle: mode.subtitle, showChevron: true)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                Spacer(minLength: 16)
             }
-            Spacer(minLength: 24)
+        } footer: {
             Button("进入驿站截图", action: onFinish).buttonStyle(ApplePrimaryButtonStyle())
         }
-        .padding(.horizontal, 24).padding(.bottom, 20)
     }
 }
 
@@ -377,9 +378,7 @@ private struct OnboardingIconCard: View {
 
     var body: some View {
         HStack(spacing: 14) {
-            Image(systemName: icon)
-                .font(.system(size: 19, weight: .semibold))
-                .foregroundStyle(tint)
+            Image(systemName: icon).font(.system(size: 19, weight: .semibold)).foregroundStyle(tint)
                 .frame(width: 42, height: 42)
                 .background(tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             VStack(alignment: .leading, spacing: 2) {

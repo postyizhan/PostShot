@@ -74,9 +74,11 @@ struct EditorPrimaryTabPill: View {
                         }
                         Text(tab.title)
                             .font(.caption2.weight(.semibold))
+                            .lineLimit(1)
                     }
                     .foregroundStyle(isSelected ? Color.primary : Color.secondary)
-                    .frame(width: 68, height: 48)
+                    .frame(minWidth: 58, maxWidth: 72)
+                    .frame(height: 48)
                     .background(Capsule().fill(isSelected ? Color.primary.opacity(0.10) : Color.clear))
                     .contentShape(Capsule())
                 }
@@ -97,15 +99,9 @@ struct EditorMarkupDock: View {
 
     var body: some View {
         if let activeTool {
-            HStack(spacing: 8) {
-                contextualSubBar(for: activeTool)
-            }
-            .frame(minHeight: 44)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 4)
-            .liquidGlass(in: Capsule(), interactive: true)
-            .padding(.horizontal, 12)
-            .appleAnimation(AppleMotion.snappy, value: activeTool)
+            DockAdaptiveGlassContainer { contextualSubBar(for: activeTool) }
+                .padding(.horizontal, 12)
+                .appleAnimation(AppleMotion.snappy, value: activeTool)
         }
     }
 
@@ -124,14 +120,27 @@ struct EditorBeautifyDock: View {
     @Binding var markup: EditorMarkupState
 
     var body: some View {
-        HStack(spacing: 8) {
-            BeautifySubBar(markup: $markup)
+        DockAdaptiveGlassContainer { BeautifySubBar(markup: $markup) }
+            .padding(.horizontal, 12)
+    }
+}
+
+private struct DockAdaptiveGlassContainer<Content: View>: View {
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            rowContent
+            ScrollView(.horizontal, showsIndicators: false) { rowContent }
         }
         .frame(minHeight: 44)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 4)
         .liquidGlass(in: Capsule(), interactive: true)
-        .padding(.horizontal, 12)
+    }
+
+    private var rowContent: some View {
+        HStack(spacing: 8) { content() }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 4)
     }
 }
 
@@ -142,7 +151,7 @@ private struct RedactSubBar: View {
     private let autoTargets = ["头像", "昵称", "手机号", "金额"]
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 6) {
             RedactModeToggle(selection: $markup.redactMode)
             Menu { redactMenuContent } label: {
                 Image(systemName: "slider.horizontal.3")
@@ -213,8 +222,7 @@ private struct RedactModeToggle: View {
     private func modeButton(_ mode: RedactMode, title: String) -> some View {
         let isSelected = selection == mode
         return Button { selection = mode } label: {
-            Text(title)
-                .font(.caption.weight(.semibold))
+            Text(title).font(.caption.weight(.semibold)).lineLimit(1)
                 .foregroundStyle(isSelected ? DesignTokens.onInk : Color.primary)
                 .padding(.horizontal, 10).padding(.vertical, 5)
                 .background(isSelected ? DesignTokens.ink : Color.clear, in: Capsule())
@@ -342,10 +350,10 @@ private struct ColorSwatchDot: View {
 
     var body: some View {
         Button(action: action) {
-            Circle().fill(color).frame(width: 22, height: 22)
+            Circle().fill(color).frame(width: 20, height: 20)
                 .overlay(Circle().strokeBorder(Color.primary.opacity(0.18), lineWidth: 1))
                 .overlay(Circle().strokeBorder(isSelected ? DesignTokens.ink : .clear, lineWidth: 2.5).padding(-3))
-                .frame(width: 44, height: 44).contentShape(Circle())
+                .frame(width: 30, height: 36).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
@@ -355,16 +363,11 @@ private struct ColorSwatchDot: View {
 private struct BrushWidthChips: View {
     @Binding var brushWidth: CGFloat
 
-    private struct Tier: Identifiable {
-        let id: String
-        let title: String
-        let value: CGFloat
-    }
-
+    private struct Tier: Identifiable { let id, title: String; let value: CGFloat }
     private let tiers: [Tier] = [
-        Tier(id: "thin",   title: "细", value: 3),
+        Tier(id: "thin", title: "细", value: 3),
         Tier(id: "medium", title: "中", value: 6),
-        Tier(id: "thick",  title: "粗", value: 10),
+        Tier(id: "thick", title: "粗", value: 10),
     ]
 
     private var activeTier: Tier {
@@ -374,14 +377,13 @@ private struct BrushWidthChips: View {
     }
 
     var body: some View {
-        HStack(spacing: 2) {
+        HStack(spacing: 1) {
             ForEach(tiers) { tier in
                 let isSelected = activeTier.id == tier.id
                 Button { brushWidth = tier.value } label: {
-                    Text(tier.title)
-                        .font(.caption.weight(.semibold))
+                    Text(tier.title).font(.caption.weight(.semibold)).lineLimit(1)
                         .foregroundStyle(isSelected ? DesignTokens.onInk : Color.primary)
-                        .padding(.horizontal, 10).padding(.vertical, 5)
+                        .padding(.horizontal, 8).padding(.vertical, 5)
                         .background(isSelected ? DesignTokens.ink : Color.clear, in: Capsule())
                         .contentShape(Capsule())
                 }
@@ -390,6 +392,7 @@ private struct BrushWidthChips: View {
         }
         .padding(3)
         .background(Color.primary.opacity(0.08), in: Capsule())
+        .fixedSize()
         .accessibilityLabel("画笔粗细")
     }
 }

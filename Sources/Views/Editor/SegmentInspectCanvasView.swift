@@ -144,10 +144,22 @@ struct SegmentInspectCanvasView: View {
 
     private func selectedSegmentPill(sourceIndex: Int) -> some View {
         let canDelete = model.images.count > 2 && !model.isStitching && !isReplacing
-        return HStack(spacing: 10) {
+        return ViewThatFits(in: .horizontal) {
+            selectedSegmentRow(sourceIndex: sourceIndex, canDelete: canDelete)
+            ScrollView(.horizontal, showsIndicators: false) {
+                selectedSegmentRow(sourceIndex: sourceIndex, canDelete: canDelete)
+            }
+        }
+        .liquidGlass(in: Capsule(), interactive: true)
+    }
+
+    private func selectedSegmentRow(sourceIndex: Int, canDelete: Bool) -> some View {
+        HStack(spacing: 6) {
             Text("第 \(sourceIndex + 1) 张")
                 .font(.caption.weight(.bold).monospacedDigit())
                 .foregroundStyle(DesignTokens.onInk)
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 5)
                 .background(DesignTokens.ink, in: Capsule())
@@ -156,7 +168,9 @@ struct SegmentInspectCanvasView: View {
                 Label("预览", systemImage: "magnifyingglass")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.primary)
-                    .padding(.horizontal, 8)
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .padding(.horizontal, 6)
                     .padding(.vertical, 6)
             }
             .buttonStyle(.plain)
@@ -165,7 +179,9 @@ struct SegmentInspectCanvasView: View {
                 Label("替换", systemImage: "arrow.triangle.2.circlepath")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.primary)
-                    .padding(.horizontal, 8)
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .padding(.horizontal, 6)
                     .padding(.vertical, 6)
             }
             .disabled(model.isStitching || isReplacing)
@@ -177,7 +193,9 @@ struct SegmentInspectCanvasView: View {
                 Label("删除", systemImage: "trash")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(canDelete ? Color.red : Color.secondary.opacity(0.45))
-                    .padding(.horizontal, 8)
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .padding(.horizontal, 6)
                     .padding(.vertical, 6)
             }
             .buttonStyle(.plain)
@@ -185,7 +203,6 @@ struct SegmentInspectCanvasView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
-        .liquidGlass(in: Capsule(), interactive: true)
     }
 
     private func hintPill(_ text: String) -> some View {
