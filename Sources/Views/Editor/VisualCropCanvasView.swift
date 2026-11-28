@@ -125,11 +125,11 @@ struct VisualCropCanvasView: View {
         item: SelectedImage, edge: SingleEdgeCropOverlay.Edge, effectiveFraction: Float,
         onBeginDrag: @escaping () -> Void, onUpdateFraction: @escaping (Float) -> Void
     ) -> some View {
-        let shape = RoundedRectangle(cornerRadius: 20, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: 4, style: .continuous)
         return Image(uiImage: displayThumbs[item.id] ?? UIImage(cgImage: item.cgImage))
             .resizable().aspectRatio(contentMode: .fit)
             .overlay { CropMaskLayer(edge: edge, effectiveFraction: effectiveFraction, isDragging: isDraggingCrop) }
-            .clipShape(shape).porcelainCardStyle(cornerRadius: 20)
+            .clipShape(shape).porcelainCardStyle(cornerRadius: 4)
             .overlay {
                 SingleEdgeCropOverlay(edge: edge, effectiveFraction: effectiveFraction, isDragging: $isDraggingCrop,
                                       onBeginDrag: onBeginDrag, onUpdateFraction: onUpdateFraction)
@@ -261,7 +261,7 @@ private struct SingleEdgeCropOverlay: View {
 
     private var handleBar: some View {
         ZStack {
-            Rectangle().fill(DesignTokens.ink).frame(height: 1.5)
+            Rectangle().fill(DesignTokens.ink).frame(height: 1.5).padding(.horizontal, 2)
             Capsule().fill(DesignTokens.ink).frame(width: 44, height: 6)
                 .overlay(Capsule().strokeBorder(DesignTokens.onInk.opacity(0.85), lineWidth: 1))
                 .shadow(color: Color.black.opacity(0.25), radius: 3, y: 1)
