@@ -179,7 +179,7 @@ struct StitchEditorView: View {
             onSingleTap: mode == .preview ? { withAnimation(AppleMotion.gentle) { isChromeHidden.toggle() } } : nil
         ) {
             beautifiedResultImage(image)
-                .padding(.horizontal, max(16, markup.beautifyPadding))
+                .padding(.horizontal, 16)
                 .padding(.top, topPad).padding(.bottom, bottomPad)
         }
         .ignoresSafeArea()
@@ -312,14 +312,14 @@ private extension StitchEditorView {
         editSnapshot = nil
         lastComposedOutputCrop = nil
         withAnimation(AppleMotion.snappy) { mode = .preview }
-        if needsRecomposite, model.images.count >= 2, !model.isStitching {
+        if needsRecomposite, model.images.count >= 2, (model.cachedChain != nil || !model.isStitching) {
             model.recompositeOutput()
         }
     }
 
     func recompositeIfOutputCropDirty() {
         guard let last = lastComposedOutputCrop, last != currentOutputCrop,
-              model.images.count >= 2, !model.isStitching else { return }
+              model.images.count >= 2, (model.cachedChain != nil || !model.isStitching) else { return }
         lastComposedOutputCrop = currentOutputCrop
         model.recompositeOutput()
     }
@@ -347,9 +347,10 @@ private extension StitchEditorView {
 
     func handleDeleteImage(at idx: Int) {
         guard model.images.indices.contains(idx) else { return }
+        model.cancelInFlightStitch()
         model.images.remove(at: idx); selectedIndex = min(selectedIndex, max(0, model.images.count - 1))
         if model.images.isEmpty { previewSingleIndex = nil }
-        if model.images.count >= 2 && !model.isStitching { model.stitch() }
+        if model.images.count >= 2 { model.stitch() }
     }
 
     func commitSticker() {

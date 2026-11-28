@@ -65,6 +65,7 @@ final class StitchViewModel: ObservableObject {
     private var isRecordingSource = false
     private var recordingStore: CaptureFrameStore?
     private var stitchGeneration = 0
+    private var isFullStitchInFlight = false
     private var loadTask: Task<Void, Never>?
     private var cropTask: Task<Void, Never>?
 
@@ -75,8 +76,8 @@ final class StitchViewModel: ObservableObject {
     // MARK: - Selection
 
     func clear() {
-        loadTask?.cancel(); cropTask?.cancel()
-        stitchGeneration &+= 1; isStitching = false
+        loadTask?.cancel()
+        cancelInFlightStitch()
         pickerItems = []; images = []; result = nil; cachedChain = nil
         alignmentTopCrop = 0; alignmentBottomCrop = 0
         topCropFraction = 0; bottomCropFraction = 0
@@ -87,6 +88,7 @@ final class StitchViewModel: ObservableObject {
 
     /// Seeds already-decoded canonical images, preserving their validated order.
     func load(decodedImages: [SelectedImage]) {
+        cancelInFlightStitch()
         isRecordingSource = false; recordingStore = nil; stitchNotice = nil
         images = decodedImages; result = nil; errorMessage = nil; isShowingError = false
     }
@@ -115,37 +117,11 @@ final class StitchViewModel: ObservableObject {
         applyLoadedFrames(outcome.0, failedIndices: outcome.1, prefix: "采集帧")
     }
 
-    /// Loads captured frames off the main actor while preserving adjacency.
-    func loadAsync(pngFrames: [Data]) async {
-        let outcome = await Task.detached(priority: .userInitiated) { Self.decodePNGFrames(pngFrames) }.value
-        isRecordingSource = true; recordingStore = nil; stitchNotice = nil
-        applyLoadedFrames(outcome.0, failedIndices: outcome.1, prefix: "采集帧")
-    }
-
-    /// Synchronous convenience wrapper for tests or small pre-loaded batches.
-    func load(pngFrames: [Data]) {
-        let outcome = Self.decodePNGFrames(pngFrames)
-        isRecordingSource = true; recordingStore = nil; stitchNotice = nil
-        applyLoadedFrames(outcome.0, failedIndices: outcome.1, prefix: "采集帧")
-    }
-
-    nonisolated private static func decodePNGFrames(_ pngFrames: [Data]) -> ([SelectedImage], [Int]) {
-        var loaded: [SelectedImage] = [], failedIndices: [Int] = []
-        for (index, png) in pngFrames.enumerated() {
-            do { loaded.append(try ImageDecoder.decode(png)) } catch { failedIndices.append(index) }
-        }
-        return (loaded, failedIndices)
-    }
-
     private func applyLoadedFrames(_ loaded: [SelectedImage], failedIndices: [Int], prefix: String) {
+        cancelInFlightStitch()
         result = nil
         guard failedIndices.isEmpty else { images = []; present(error: failedLoadMessage(prefix: prefix, indices: failedIndices)); return }
         errorMessage = nil; isShowingError = false; images = loaded
-    }
-
-    func suggestFixedBarCrop() {
-        guard images.count >= 2 else { return }
-        applySuggestedCrop(FixedBarDetector.detectFractions(images.map(\.cgImage), minimumTopFraction: minimumTopCrop))
     }
 
     func suggestFixedBarCropAsync() async {
@@ -177,8 +153,9 @@ final class StitchViewModel: ObservableObject {
         } ?? true)
         cropTask?.cancel()
         cropTask = Task {
+            let expectedGen = stitchGeneration
             if shouldRefresh { await suggestFixedBarCropAsync() }
-            guard !Task.isCancelled, images.count >= 2 else { return }
+            guard !Task.isCancelled, stitchGeneration == expectedGen, images.count >= 2 else { return }
             stitch()
         }
     }
@@ -219,7 +196,7 @@ final class StitchViewModel: ObservableObject {
         stitchGeneration &+= 1
         let expectedGen = stitchGeneration
         result = nil; failedSeam = nil; errorMessage = nil; isShowingError = false
-        isStitching = true; progress = 0
+        isStitching = true; isFullStitchInFlight = true; progress = 0
 
         var options = StitchEngine.Options()
         options.topCropFraction = alignmentTopCrop; options.bottomCropFraction = alignmentBottomCrop
@@ -242,14 +219,17 @@ final class StitchViewModel: ObservableObject {
         } completion: { [weak self] outcome in
             Task { @MainActor in
                 guard let self, self.stitchGeneration == expectedGen else { return }
-                self.isStitching = false; self.handleStitchOutcome(outcome)
+                self.isStitching = false; self.isFullStitchInFlight = false; self.handleStitchOutcome(outcome)
             }
         }
     }
 
     func recompositeOutput() {
-        guard images.count >= 2, !isStitching else { return }
-        guard let chain = cachedChain else { stitch(); return }
+        guard images.count >= 2, !isFullStitchInFlight else { return }
+        guard let chain = cachedChain else {
+            guard !isStitching else { return }
+            stitch(); return
+        }
         stitchGeneration &+= 1
         let expectedGen = stitchGeneration
         errorMessage = nil; isShowingError = false; isStitching = true
@@ -303,8 +283,10 @@ final class StitchViewModel: ObservableObject {
     }
 
     func cancelInFlightStitch() {
+        cropTask?.cancel()
         stitchGeneration &+= 1
         isStitching = false
+        isFullStitchInFlight = false
     }
 
     private func handleStitchOutcome(_ outcome: Result<StitchReport, StitchEngine.StitchError>) {
@@ -350,15 +332,18 @@ final class StitchViewModel: ObservableObject {
     @discardableResult
     func replaceFrame(at index: Int, with item: PhotosPickerItem) async -> Bool {
         guard images.indices.contains(index), !isStitching else { return false }
+        let expectedGen = stitchGeneration
         do {
             guard let decoded = try await decodePickerItem(item) else {
+                guard stitchGeneration == expectedGen else { return false }
                 present(error: "无法读取所选图片。"); return false
             }
-            guard images.indices.contains(index) else { return false }
+            guard stitchGeneration == expectedGen, !isStitching, images.indices.contains(index) else { return false }
             images[index] = decoded; stitchNotice = nil
             if images.count >= 2 { stitch() }
             return true
         } catch {
+            guard stitchGeneration == expectedGen else { return false }
             present(error: "替换图片失败：\(error.localizedDescription)"); return false
         }
     }
