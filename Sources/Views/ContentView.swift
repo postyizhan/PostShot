@@ -69,6 +69,7 @@ struct ContentView: View {
         .onChange(of: model.images) { newImages in
             if !newImages.isEmpty && !showManualEditor { showManualEditor = true }
         }
+        .onChange(of: showAutoEditor) { if !$0 { preparedAutoModel = nil } }
         .task { refreshPhotoStatusAndDiscoverIfAuthorized() }
         .onChange(of: settings.hasCompletedOnboarding) { completed in
             if completed { refreshPhotoStatusAndDiscoverIfAuthorized() }

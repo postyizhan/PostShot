@@ -21,7 +21,7 @@ final class AutoStitchViewModel: ObservableObject {
     @Published private(set) var errorMessage: String?
 
     func discover() async {
-        state = .loading
+        if case .loaded = state { } else { state = .loading }
         do {
             let metas = try await ScreenshotLibrary.fetchScreenshotMetas()
             let sessions = ScreenshotGrouping.group(metas)
@@ -46,33 +46,7 @@ final class AutoStitchViewModel: ObservableObject {
 
         do {
             let prepared = try await Task.detached(priority: .userInitiated) {
-                let original = try results.map { result -> SelectedImage in
-                    guard let data = result.data else { throw ImageLoadError.decodeFailed }
-                    return try ImageDecoder.decode(
-                        data,
-                        orientation: result.orientation,
-                        assetIdentifier: result.sourceID
-                    )
-                }
-                let sourceImages = original.map(\.cgImage)
-                let initialCrop = FixedBarDetector.detectFractions(sourceImages)
-                let recoveredOrder = ScreenshotSequenceOrderer.order(
-                    images: sourceImages,
-                    topCropFraction: initialCrop.top,
-                    bottomCropFraction: initialCrop.bottom
-                )
-                let ordered = recoveredOrder.map { order in order.map { original[$0] } } ?? original
-                let excluded: [Int]
-                if let order = recoveredOrder, order.count < original.count {
-                    let kept = Set(order)
-                    excluded = original.indices.filter { !kept.contains($0) }
-                } else {
-                    excluded = []
-                }
-                let finalCrop = excluded.isEmpty
-                    ? initialCrop
-                    : FixedBarDetector.detectFractions(ordered.map(\.cgImage))
-                return (ordered, finalCrop, excluded)
+                try Self.prepareFrames(from: results)
             }.value
             let model = StitchViewModel(autoSuggestCrop: true)
             model.load(decodedImages: prepared.0)
@@ -84,6 +58,38 @@ final class AutoStitchViewModel: ObservableObject {
             present(error: "这组截图解码失败，请重试或改用手动选图拼接。")
             return nil
         }
+    }
+
+    nonisolated private static func prepareFrames(
+        from results: [ScreenshotImageLoader.Result]
+    ) throws -> ([SelectedImage], (top: Float, bottom: Float), [Int]) {
+        let original = try results.map { result -> SelectedImage in
+            guard let data = result.data else { throw ImageLoadError.decodeFailed }
+            return try ImageDecoder.decode(
+                data,
+                orientation: result.orientation,
+                assetIdentifier: result.sourceID
+            )
+        }
+        let sourceImages = original.map(\.cgImage)
+        let initialCrop = FixedBarDetector.detectFractions(sourceImages)
+        let recoveredOrder = ScreenshotSequenceOrderer.order(
+            images: sourceImages,
+            topCropFraction: initialCrop.top,
+            bottomCropFraction: initialCrop.bottom
+        )
+        let ordered = recoveredOrder.map { order in order.map { original[$0] } } ?? original
+        let excluded: [Int]
+        if let order = recoveredOrder, order.count < original.count {
+            let kept = Set(order)
+            excluded = original.indices.filter { !kept.contains($0) }
+        } else {
+            excluded = []
+        }
+        let finalCrop = excluded.isEmpty
+            ? initialCrop
+            : FixedBarDetector.detectFractions(ordered.map(\.cgImage))
+        return (ordered, finalCrop, excluded)
     }
 
     private func presentLoadFailure(indices: [Int]) {
