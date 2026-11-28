@@ -8,10 +8,29 @@ enum HeaderKeepMode: String, CaseIterable, Equatable, Sendable {
     case full
 }
 
+enum ScrollDirection: Equatable, Sendable {
+    case topToBottom
+    case bottomToTop
+}
+
+enum OrderAdjustment: Equatable, Sendable {
+    case none
+    case reversed
+    case reordered
+}
+
 struct StitchSeam: Equatable {
     let topIndex: Int
     let bottomIndex: Int
     let result: OverlapResult
+    let isReverseConflict: Bool
+
+    init(topIndex: Int, bottomIndex: Int, result: OverlapResult, isReverseConflict: Bool = false) {
+        self.topIndex = topIndex
+        self.bottomIndex = bottomIndex
+        self.result = result
+        self.isReverseConflict = isReverseConflict
+    }
 }
 
 /// Supplies dense intermediate frames recorded between adjacent primary frames so `StitchEngine`
@@ -25,12 +44,27 @@ struct FrameBackfillSource: @unchecked Sendable {
 
 struct StitchReport {
     let image: CGImage
-    /// 0-based indices into the input `images` array skipped as non-connecting outliers.
+    /// 0-based indices into the resolved top-to-bottom sequence skipped as outliers or backtracks.
     let skippedIndices: [Int]
     /// Number of intermediate frames automatically pulled from `FrameBackfillSource`.
     let backfilledCount: Int
-    /// Normalized vertical spans occupied by each stitched segment.
+    /// Normalized vertical spans occupied by each stitched segment (indexed in the resolved top-to-bottom order).
     let segmentSpans: [SegmentSpan]
+    /// Whether the sequence was automatically reversed or reordered to top-to-bottom order.
+    let orderAdjustment: OrderAdjustment
+    /// Full permutation mapping each position in the resolved top-to-bottom order back to the input index.
+    let resolvedOrder: [Int]
+    /// Number of frames skipped specifically because of minor mid-scroll backtracks.
+    let backtrackSkippedCount: Int
+
+    init(
+        image: CGImage, skippedIndices: [Int], backfilledCount: Int, segmentSpans: [SegmentSpan],
+        orderAdjustment: OrderAdjustment = .none, resolvedOrder: [Int] = [], backtrackSkippedCount: Int = 0
+    ) {
+        self.image = image; self.skippedIndices = skippedIndices; self.backfilledCount = backfilledCount
+        self.segmentSpans = segmentSpans; self.orderAdjustment = orderAdjustment
+        self.resolvedOrder = resolvedOrder; self.backtrackSkippedCount = backtrackSkippedCount
+    }
 }
 
 final class StitchEngine: @unchecked Sendable {
@@ -44,6 +78,8 @@ final class StitchEngine: @unchecked Sendable {
         /// Maximum consecutive non-connecting frames (e.g. Control Center) skipped automatically.
         var maxSkippedOutliers: Int = 3
         var backfill: FrameBackfillSource? = nil
+        var autoDetectScrollDirection: Bool = true
+        var allowAutoReorder: Bool = false
     }
 
     enum StitchError: Error {
@@ -91,12 +127,9 @@ final class StitchEngine: @unchecked Sendable {
         guard !rawImages.isEmpty else { return .failure(.noImages) }
         let images: [CGImage]
         switch cropAll(rawImages, options: options) {
-        case .failure(let error):
-            return .failure(error)
-        case .success(let cropped):
-            images = cropped
+        case .failure(let error): return .failure(error)
+        case .success(let cropped): images = cropped
         }
-
         let profile = StitchInputValidator.validate(images)
         guard profile.isValid else { return .failure(.invalidInput(profile: profile)) }
 
@@ -105,31 +138,29 @@ final class StitchEngine: @unchecked Sendable {
             canonicalSize: profile.canonicalSize, progress: progress
         )
         switch resolved {
-        case .failure(let error):
-            return .failure(error)
-        case .success(let chain):
-            do {
-                let output = try ImageCompositor.composite(
-                    segments: chain.segments,
-                    width: profile.canonicalSize.width,
-                    removeScrollIndicator: options.removeScrollIndicator,
-                    protectedTopRows: chain.preservedTopRows,
-                    protectedBottomRows: chain.preservedBottomRows
-                )
-                let spans = try ImageCompositor.computeSegmentSpans(
-                    segments: chain.segments,
-                    width: profile.canonicalSize.width
-                )
-                progress(1)
-                return .success(StitchReport(
-                    image: output,
-                    skippedIndices: chain.skippedIndices,
-                    backfilledCount: chain.backfilledCount,
-                    segmentSpans: spans
-                ))
-            } catch {
-                return .failure(.compositeFailed(error))
-            }
+        case .failure(let error): return .failure(error)
+        case .success(let chain): return compositeChain(chain, width: profile.canonicalSize.width, options: options, progress: progress)
+        }
+    }
+
+    private func compositeChain(
+        _ chain: StitchGraphResolver.ResolvedChain, width: Int, options: Options, progress: ProgressHandler
+    ) -> Result<StitchReport, StitchError> {
+        do {
+            let output = try ImageCompositor.composite(
+                segments: chain.segments, width: width,
+                removeScrollIndicator: options.removeScrollIndicator,
+                protectedTopRows: chain.preservedTopRows, protectedBottomRows: chain.preservedBottomRows
+            )
+            let spans = try ImageCompositor.computeSegmentSpans(segments: chain.segments, width: width)
+            progress(1)
+            return .success(StitchReport(
+                image: output, skippedIndices: chain.skippedIndices, backfilledCount: chain.backfilledCount,
+                segmentSpans: spans, orderAdjustment: chain.orderAdjustment,
+                resolvedOrder: chain.resolvedOrder, backtrackSkippedCount: chain.backtrackSkippedCount
+            ))
+        } catch {
+            return .failure(.compositeFailed(error))
         }
     }
 

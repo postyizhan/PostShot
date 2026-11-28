@@ -255,9 +255,9 @@ private struct TutorialPage {
         TutorialPage(
             icon: "hand.draw",
             badgeIcon: "2.circle",
-            previewTag: "慢速匀速向下滑动效果最佳",
+            previewTag: "单向匀速向下或向上滑动均可",
             title: "匀速滑动采集画面",
-            body: "听到提示音或顶部指示变红后，在目标页面匀速向下滚动，扩展会实时抽帧传回。"
+            body: "听到提示音或顶部指示变红后，在目标页面单向匀速向下或向上滚动（如翻看聊天记录），避免反复来回滑动，扩展会实时抽帧传回。"
         ),
         TutorialPage(
             icon: "checkmark.rectangle.stack",

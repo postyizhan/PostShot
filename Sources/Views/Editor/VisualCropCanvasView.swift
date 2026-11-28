@@ -348,6 +348,9 @@ struct SeamFailureRecoveryView: View {
         return ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 if model.images.count == 2 { recoveryButton("对调重拼") { model.swapPairAndRetry() } }
+                if model.images.count > 2, seam.isReverseConflict {
+                    recoveryButton("倒序重拼", isPrimary: true) { model.reverseAllAndRetry() }
+                }
                 if model.images.count > 2 {
                     recoveryButton("删第 \(top) 张") { model.removeFrameAndRetry(at: seam.topIndex) }
                     recoveryButton("删第 \(bottom) 张") { model.removeFrameAndRetry(at: seam.bottomIndex) }
@@ -357,6 +360,9 @@ struct SeamFailureRecoveryView: View {
                 }
                 if seam.topIndex >= 1, seam.bottomIndex < model.images.count - 1 {
                     recoveryButton("只拼前 \(top) 张") { model.trimTrailingFramesAndRetry(keepingUpTo: seam.topIndex) }
+                }
+                if model.images.count > 2, !seam.isReverseConflict {
+                    recoveryButton("倒序重拼", isPrimary: false) { model.reverseAllAndRetry() }
                 }
                 recoveryButton("管理素材", isPrimary: false, action: onOpenFrames)
             }

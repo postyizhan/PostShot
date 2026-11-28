@@ -235,13 +235,12 @@ final class StitchViewModel: ObservableObject {
         options.headerMode = headerMode
         options.keepFooter = keepFooter
         options.removeScrollIndicator = removeScrollIndicator
+        options.autoDetectScrollDirection = true
+        options.allowAutoReorder = !isRecordingSource
         if let store = recordingStore {
             let indices = images.compactMap(\.poolIndex)
             if indices.count == images.count {
-                options.backfill = FrameBackfillSource(
-                    poolIndices: indices,
-                    loadFrame: { store.loadCGImage(at: $0) }
-                )
+                options.backfill = FrameBackfillSource(poolIndices: indices, loadFrame: { store.loadCGImage(at: $0) })
             }
         }
         let cgImages = images.map(\.cgImage)
@@ -265,11 +264,13 @@ final class StitchViewModel: ObservableObject {
         case .success(let report):
             stitchNotice = formatNotice(report: report)
             let ids = Array(Set(images.compactMap(\.assetIdentifier)))
-            result = StitchResult(
-                image: report.image,
-                sourceAssetIdentifiers: ids,
-                segmentSpans: report.segmentSpans
-            )
+            // Set result before mutating images so StitchEditorView.handleImagesChanged doesn't trigger a redundant re-stitch.
+            result = StitchResult(image: report.image, sourceAssetIdentifiers: ids, segmentSpans: report.segmentSpans)
+            if report.orderAdjustment != .none,
+               report.resolvedOrder.count == images.count,
+               Set(report.resolvedOrder).count == images.count {
+                images = report.resolvedOrder.map { images[$0] }
+            }
         case .failure(let error):
             result = nil
             if case .unsafeSeam(let seam) = error {
@@ -279,18 +280,6 @@ final class StitchViewModel: ObservableObject {
                 present(error: describe(error))
             }
         }
-    }
-
-    private func formatNotice(report: StitchReport) -> String? {
-        var parts: [String] = []
-        if !report.skippedIndices.isEmpty {
-            let labels = report.skippedIndices.map { String($0 + 1) }.joined(separator: "、")
-            parts.append("已自动跳过第 \(labels) 张不衔接画面")
-        }
-        if report.backfilledCount > 0 {
-            parts.append("从录制帧池自动补齐 \(report.backfilledCount) 帧")
-        }
-        return parts.isEmpty ? nil : parts.joined(separator: "，")
     }
 
     // MARK: - Segment Editing & Seam Recovery
@@ -349,37 +338,17 @@ final class StitchViewModel: ObservableObject {
         images.swapAt(0, 1); refreshAutoCropAndStitchIfReady()
     }
 
+    func reverseOrder() {
+        guard images.count >= 2, !isStitching else { return }
+        images.reverse()
+    }
+
+    func reverseAllAndRetry() {
+        guard images.count >= 2, !isStitching else { return }
+        images.reverse(); refreshAutoCropAndStitchIfReady()
+    }
+
     // MARK: - Errors
 
     private func present(error: String) { errorMessage = error; isShowingError = true }
-
-    private func failedLoadMessage(prefix: String, indices: [Int]) -> String {
-        let labels = indices.map { String($0 + 1) }.joined(separator: "、")
-        return "第 \(labels) 张\(prefix)解码失败。为避免改变相邻关系，已取消本次加载。"
-    }
-
-    private func describe(_ error: StitchEngine.StitchError) -> String {
-        switch error {
-        case .noImages: return "请至少选择 2 张图片。"
-        case .invalidInput(let profile):
-            if let first = profile.diagnostics.first {
-                let idx = first.sourceIndex + 1
-                switch first.reason {
-                case .empty, .nonPositiveDimensions, .impossiblePixelCount:
-                    return "第\(idx)张图片尺寸无效（或裁剪比例过大），无法拼接。"
-                case .dimensionMismatch:
-                    return "第\(idx)张图片尺寸与首张不一致（\(first.actual) vs \(profile.canonicalSize)），无法安全拼接。"
-                }
-            }
-            return "输入图片校验未通过，无法拼接。"
-        case .unsafeSeam(let seam):
-            let a = seam.topIndex + 1, b = seam.bottomIndex + 1
-            if seam.result.status == .ambiguous {
-                return "第\(a)张与第\(b)张存在多处相似内容，自动匹配不确定；可删除异常帧或调整裁剪后重试。"
-            }
-            return "第\(a)张与第\(b)张未找到可靠重叠区域；可能滚动跨度过大、顺序颠倒或混入无关画面。"
-        case .compositeFailed(let underlying):
-            return "合成图像失败：\(underlying.localizedDescription)"
-        }
-    }
 }

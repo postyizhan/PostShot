@@ -32,6 +32,20 @@ struct SourceFramesSheet: View {
             .navigationTitle("素材管理 (\(model.images.count) 张)")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        withAnimation(AppleMotion.snappy) {
+                            let count = model.images.count
+                            model.reverseOrder()
+                            if count > 0 {
+                                selectedIndex = max(0, count - 1 - selectedIndex)
+                            }
+                        }
+                    } label: {
+                        Label("全部倒序", systemImage: "arrow.up.arrow.down")
+                    }
+                    .disabled(model.images.count < 2 || model.isStitching)
+                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("完成") { dismiss() }.fontWeight(.semibold)
                 }
