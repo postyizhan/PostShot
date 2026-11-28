@@ -43,7 +43,7 @@ struct CaptureView: View {
                 .sheet(item: previewSheetBinding) { item in
                     SingleImagePreviewView(
                         initialIndex: item.index,
-                        images: server.previews.map { SelectedImage(cgImage: blankCGImage(), thumbnail: $0.thumbnail) }
+                        images: server.previews.map { SelectedImage(cgImage: Self.placeholderCGImage, thumbnail: $0.thumbnail) }
                     )
                 }
         }
@@ -226,7 +226,7 @@ struct CaptureView: View {
         }
     }
 
-    private func blankCGImage() -> CGImage {
+    private static let placeholderCGImage: CGImage = {
         let ctx = CGContext(
             data: nil,
             width: 1,
@@ -237,7 +237,7 @@ struct CaptureView: View {
             bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
         )!
         return ctx.makeImage()!
-    }
+    }()
 }
 
 private struct PreviewItem: Identifiable {
