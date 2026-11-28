@@ -4,9 +4,12 @@ import Foundation
 
 /// Keeps the host app alive in the background by playing continuous silent audio, and plays a
 /// subtle non-visual two-note readiness cue when ReplayKit finishes its 3-second countdown.
-@MainActor
-final class AudioKeepAlive: ObservableObject {
+final class AudioKeepAlive: ObservableObject, @unchecked Sendable {
 
+    private let audioQueue = DispatchQueue(
+        label: "com.postshot.audio-keep-alive",
+        qos: .userInitiated
+    )
     private let engine = AVAudioEngine()
     private let player = AVAudioPlayerNode()
     private var silentBuffer: AVAudioPCMBuffer?
@@ -15,6 +18,29 @@ final class AudioKeepAlive: ObservableObject {
 
     /// Begins silent playback and activates the audio session. Idempotent.
     func start() {
+        audioQueue.async { [weak self] in
+            self?.startOnQueue()
+        }
+    }
+
+    /// Plays a short, gentle readiness chime mixed into the active background audio session so the
+    /// user knows ReplayKit's hidden 3-second countdown has ended without showing any on-screen UI.
+    func playStartCue() {
+        audioQueue.async { [weak self] in
+            self?.playStartCueOnQueue()
+        }
+    }
+
+    /// Stops playback and deactivates the audio session. Idempotent.
+    func stop() {
+        audioQueue.async { [weak self] in
+            self?.stopOnQueue()
+        }
+    }
+
+    // MARK: - Serialized audioQueue operations
+
+    private func startOnQueue() {
         guard !isRunning else { return }
         do {
             try configureSession(active: true)
@@ -25,18 +51,15 @@ final class AudioKeepAlive: ObservableObject {
         }
     }
 
-    /// Plays a short, gentle readiness chime mixed into the active background audio session so the
-    /// user knows ReplayKit's hidden 3-second countdown has ended without showing any on-screen UI.
-    func playStartCue() {
-        if !isRunning { start() }
+    private func playStartCueOnQueue() {
+        if !isRunning { startOnQueue() }
         guard isRunning, let cue = cueBuffer, let silent = silentBuffer else { return }
         player.scheduleBuffer(cue, at: nil, options: .interrupts, completionHandler: nil)
         player.scheduleBuffer(silent, at: nil, options: .loops, completionHandler: nil)
         if !player.isPlaying { player.play() }
     }
 
-    /// Stops playback and deactivates the audio session. Idempotent.
-    func stop() {
+    private func stopOnQueue() {
         guard isRunning else { return }
         player.stop()
         engine.stop()

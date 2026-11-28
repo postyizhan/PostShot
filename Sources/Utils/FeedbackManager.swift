@@ -67,17 +67,24 @@ final class FeedbackManager {
             AudioServicesPlaySystemSound(sid)
             return
         }
-        Task.detached(priority: .utility) { [weak self] in
-            if let url = Self.cachedSoundURL(for: key) {
-                var sid: SystemSoundID = 0
-                AudioServicesCreateSystemSoundID(url as CFURL, &sid)
-                await MainActor.run { self?.soundIDs[key] = sid }
-                AudioServicesPlaySystemSound(sid)
-            }
+        Task { [weak self] in
+            let sid = await Task.detached(priority: .utility) {
+                Self.loadSystemSoundID(for: key)
+            }.value
+            guard sid != 0 else { return }
+            self?.soundIDs[key] = sid
+            AudioServicesPlaySystemSound(sid)
         }
     }
 
     // MARK: - WAV file helpers
+
+    nonisolated private static func loadSystemSoundID(for key: SoundKey) -> SystemSoundID {
+        guard let url = cachedSoundURL(for: key) else { return 0 }
+        var sid: SystemSoundID = 0
+        AudioServicesCreateSystemSoundID(url as CFURL, &sid)
+        return sid
+    }
 
     nonisolated private static func cachedSoundURL(for key: SoundKey) -> URL? {
         guard let caches = FileManager.default
