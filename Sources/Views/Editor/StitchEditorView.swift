@@ -3,7 +3,7 @@ import SwiftUI
 import UIKit
 
 /// iOS 26 Photos-style 2-layer editor: clean Preview state with neutral Liquid Glass controls,
-/// and Unified Edit Mode (`取消` / dirty-yellow `完成`, `裁剪 | 标注 | 美化`).
+/// and Unified Edit Mode (`取消` / monochrome `完成`, `裁剪 | 标注 | 美化`).
 struct StitchEditorView: View {
     private enum EditorMode: Equatable { case preview, edit }
 
@@ -276,6 +276,7 @@ private extension StitchEditorView {
 
     func exitEditMode(applyChanges: Bool) {
         if !applyChanges, let snap = editSnapshot {
+            if model.isStitching { model.cancelInFlightStitch() }
             model.topCropFraction = snap.cropParams.topCropFraction; model.bottomCropFraction = snap.cropParams.bottomCropFraction
             model.headerMode = snap.cropParams.headerMode; model.keepFooter = snap.cropParams.keepFooter
             markup = snap.markup

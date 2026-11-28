@@ -259,6 +259,11 @@ final class StitchViewModel: ObservableObject {
         }
     }
 
+    func cancelInFlightStitch() {
+        stitchGeneration &+= 1
+        isStitching = false
+    }
+
     private func handleStitchOutcome(_ outcome: Result<StitchReport, StitchEngine.StitchError>) {
         switch outcome {
         case .success(let report):
