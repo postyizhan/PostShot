@@ -94,11 +94,12 @@ final class StitchEngine: @unchecked Sendable {
     }
 
     typealias ProgressHandler = (Double) -> Void
+    typealias AsyncProgressHandler = @Sendable (Double) -> Void
     private let queue = DispatchQueue(label: "com.postshot.stitch", qos: .userInitiated)
 
     func stitch(
-        images: [CGImage], options: Options = Options(), progress: @escaping ProgressHandler,
-        completion: @escaping (Result<CGImage, StitchError>) -> Void
+        images: [CGImage], options: Options = Options(), progress: @escaping AsyncProgressHandler,
+        completion: @escaping @Sendable (Result<CGImage, StitchError>) -> Void
     ) {
         stitchWithReport(images: images, options: options, progress: progress) { result in
             completion(result.map(\.image))
@@ -106,8 +107,8 @@ final class StitchEngine: @unchecked Sendable {
     }
 
     func stitchWithReport(
-        images: [CGImage], options: Options = Options(), progress: @escaping ProgressHandler,
-        completion: @escaping (Result<StitchReport, StitchError>) -> Void
+        images: [CGImage], options: Options = Options(), progress: @escaping AsyncProgressHandler,
+        completion: @escaping @Sendable (Result<StitchReport, StitchError>) -> Void
     ) {
         queue.async {
             let outcome = autoreleasepool {
@@ -149,7 +150,7 @@ final class StitchEngine: @unchecked Sendable {
 
     func recomposite(
         chain: StitchGraphResolver.ResolvedChain, outputTopFraction: Float, outputBottomFraction: Float,
-        removeScrollIndicator: Bool = true, completion: @escaping (Result<StitchReport, StitchError>) -> Void
+        removeScrollIndicator: Bool = true, completion: @escaping @Sendable (Result<StitchReport, StitchError>) -> Void
     ) {
         queue.async {
             let outcome = autoreleasepool {

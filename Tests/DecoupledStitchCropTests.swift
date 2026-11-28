@@ -180,17 +180,20 @@ final class DecoupledStitchCropTests: XCTestCase {
         let baseReport = try engine.stitchWithReportSync(images: [single], options: opts).get()
         let chain = try XCTUnwrap(baseReport.resolvedChain)
 
+        final class ResultBox: @unchecked Sendable {
+            var value: Result<StitchReport, StitchEngine.StitchError>?
+        }
         let exp = expectation(description: "async recomposite")
-        var asyncResult: Result<StitchReport, StitchEngine.StitchError>?
+        let asyncResult = ResultBox()
         engine.recomposite(
             chain: chain, outputTopFraction: 0.45, outputBottomFraction: 0.45, removeScrollIndicator: false
         ) { result in
-            asyncResult = result
+            asyncResult.value = result
             exp.fulfill()
         }
         wait(for: [exp], timeout: 5)
 
-        let report = try XCTUnwrap(asyncResult).get()
+        let report = try XCTUnwrap(asyncResult.value).get()
         XCTAssertEqual(report.image.height, 40)
         assertContiguousSpans(report.segmentSpans, expectedCount: 1)
     }
