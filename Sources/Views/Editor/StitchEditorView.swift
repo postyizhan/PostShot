@@ -192,15 +192,27 @@ struct StitchEditorView: View {
     private func beautifiedResultImage(_ image: UIImage) -> some View {
         let shape = RoundedRectangle(cornerRadius: markup.beautifyCornerRadius, style: .continuous)
         let isMarkupInteractive = (mode == .edit && editTab == .markup)
-        let annotated = Image(uiImage: image).resizable().scaledToFit().overlay {
-            EditorMarkupOverlay(activeTool: isMarkupInteractive ? activeMarkupTool : nil,
-                                isInteractive: isMarkupInteractive, cancelToken: markupCancelToken, markup: $markup)
-        }
-        Group {
-            if markup.beautifyShadow { annotated.porcelainCardStyle(cornerRadius: markup.beautifyCornerRadius) }
-            else { annotated.clipShape(shape).overlay(shape.strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)) }
-        }
-        .overlay { if markup.beautifyFrame { shape.strokeBorder(Color.primary.opacity(0.18), lineWidth: 2) } }
+        Image(uiImage: image).resizable().scaledToFit()
+            .overlay {
+                EditorMarkupOverlay(activeTool: isMarkupInteractive ? activeMarkupTool : nil,
+                                    isInteractive: isMarkupInteractive, cancelToken: markupCancelToken, markup: $markup)
+            }
+            .clipShape(shape)
+            .overlay {
+                shape.strokeBorder(
+                    Color.primary.opacity(markup.beautifyFrame ? 0.18 : 0.06),
+                    lineWidth: markup.beautifyFrame ? 2 : 0.75
+                )
+            }
+            .shadow(color: Color.black.opacity(markup.beautifyShadow ? 0.08 : 0),
+                    radius: markup.beautifyShadow ? 16 : 0,
+                    y: markup.beautifyShadow ? 4 : 0)
+            .shadow(color: Color.black.opacity(markup.beautifyShadow ? 0.03 : 0),
+                    radius: markup.beautifyShadow ? 2 : 0,
+                    y: markup.beautifyShadow ? 1 : 0)
+            .appleAnimation(AppleMotion.snappy, value: markup.beautifyCornerRadius)
+            .appleAnimation(AppleMotion.snappy, value: markup.beautifyShadow)
+            .appleAnimation(AppleMotion.snappy, value: markup.beautifyFrame)
     }
 
     // MARK: - Bottom Floating Bar

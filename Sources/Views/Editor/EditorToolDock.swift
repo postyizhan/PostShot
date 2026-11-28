@@ -306,22 +306,24 @@ private struct DrawSubBar: View {
 
 private struct BeautifySubBar: View {
     @Binding var markup: EditorMarkupState
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         HStack(spacing: 8) {
-            DockFilterChip(
-                title: markup.beautifyCornerRadius > 0 ? "圆角 \(Int(markup.beautifyCornerRadius))" : "圆角",
-                isSelected: markup.beautifyCornerRadius > 0
-            ) { cycleCornerRadius() }
-            DockFilterChip(title: "阴影", isSelected: markup.beautifyShadow) { markup.beautifyShadow.toggle() }
-            DockFilterChip(title: "外框", isSelected: markup.beautifyFrame) { markup.beautifyFrame.toggle() }
+            DockFilterChip(title: "圆角", isSelected: markup.beautifyCornerRadius > 0) {
+                animateChange { markup.beautifyCornerRadius = markup.beautifyCornerRadius > 0 ? 0 : 20 }
+            }
+            DockFilterChip(title: "阴影", isSelected: markup.beautifyShadow) {
+                animateChange { markup.beautifyShadow.toggle() }
+            }
+            DockFilterChip(title: "外框", isSelected: markup.beautifyFrame) {
+                animateChange { markup.beautifyFrame.toggle() }
+            }
         }
     }
 
-    private func cycleCornerRadius() {
-        if markup.beautifyCornerRadius < 1 { markup.beautifyCornerRadius = 16 }
-        else if markup.beautifyCornerRadius < 22 { markup.beautifyCornerRadius = 24 }
-        else { markup.beautifyCornerRadius = 0 }
+    private func animateChange(_ updates: () -> Void) {
+        withAnimation(AppleMotion.animation(AppleMotion.snappy, reduceMotion: reduceMotion), updates)
     }
 }
 
