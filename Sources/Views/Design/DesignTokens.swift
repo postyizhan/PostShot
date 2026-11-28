@@ -21,14 +21,8 @@ enum DesignTokens {
     /// Subtle monochrome fill for secondary pills and resting surfaces.
     static let inkSubtle = Color(UIColor.secondarySystemFill)
 
-    /// Primary brand tint.
-    static let primary = ink
-
     /// Native iOS toggle switch green.
     static let toggleTint = Color(UIColor.systemGreen)
-
-    /// Accent color used sparingly for warnings, seams, and callouts.
-    static let accent = Color.orange
 
     /// Highlight color for stitch seam inspection indicators.
     static let seamWarning = Color.orange
@@ -36,14 +30,7 @@ enum DesignTokens {
     /// Semantic confirmation tint.
     static let success = Color(UIColor.systemGreen)
 
-    /// Deep charcoal canvas backdrop for preview & seam review modes.
-    static let editorBackground = Color(red: 0.04, green: 0.05, blue: 0.07)
-
-    /// Subtle neutral ambient radial glow behind stitched canvas previews.
-    static let editorGlow = Color.white.opacity(0.08)
-
     static let cardCornerRadius: CGFloat = 20
-    static let capsuleSpacing: CGFloat = 8
 }
 
 /// Standardized Apple-style spring and easing curves.

@@ -53,14 +53,12 @@ struct PreviewBottomBar: View {
     }
 }
 
-/// Top action bar in Unified Edit Mode matching iOS 26 Photos (`取消` + optional status + dirty-yellow `完成`).
+/// Top action bar in Unified Edit Mode (`取消` + optional status + monochrome `完成`).
 struct EditTopBar: View {
     var hasEdits: Bool
     var statusCaption: String?
     var onCancel: () -> Void
     var onDone: () -> Void
-
-    private let photosYellow = Color(red: 1.0, green: 0.80, blue: 0.0)
 
     var body: some View {
         HStack(spacing: 8) {
@@ -134,74 +132,80 @@ struct EditSubSelectorBar: View {
     var body: some View {
         switch editTab {
         case .crop:
-            HStack(spacing: 2) {
-                ForEach(CropAdjustTab.allCases) { tab in
-                    let isSelected = cropTab == tab
-                    Button {
-                        withAnimation(AppleMotion.snappy) { cropTab = tab }
-                    } label: {
-                        Text(tab.title)
-                            .font(.caption.weight(.semibold))
-                            .lineLimit(1)
-                            .fixedSize(horizontal: true, vertical: false)
+            cropSelectorBar
+        case .markup:
+            markupSelectorBar
+        case .beautify:
+            EmptyView()
+        }
+    }
+
+    private var cropSelectorBar: some View {
+        HStack(spacing: 2) {
+            ForEach(CropAdjustTab.allCases) { tab in
+                let isSelected = cropTab == tab
+                Button {
+                    withAnimation(AppleMotion.snappy) { cropTab = tab }
+                } label: {
+                    Text(tab.title)
+                        .font(.caption.weight(.semibold))
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
+                        .foregroundStyle(isSelected ? Color.primary : Color.secondary)
+                        .padding(.horizontal, 14)
+                        .frame(height: 30)
+                        .background(Capsule().fill(isSelected ? Color.primary.opacity(0.10) : Color.clear))
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(4)
+        .frame(height: 38)
+        .liquidGlass(in: Capsule(), interactive: true)
+    }
+
+    private var markupSelectorBar: some View {
+        LiquidGlassGroup(spacing: 8) {
+            HStack(spacing: 8) {
+                HStack(spacing: 4) {
+                    ForEach(EditorTool.allCases) { tool in
+                        let isSelected = activeMarkupTool == tool
+                        Button {
+                            withAnimation(AppleMotion.snappy) {
+                                activeMarkupTool = isSelected ? nil : tool
+                            }
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: tool.systemImage)
+                                    .font(.system(size: 13, weight: .semibold))
+                                Text(tool.title)
+                                    .font(.caption.weight(.semibold))
+                                    .lineLimit(1)
+                                    .fixedSize(horizontal: true, vertical: false)
+                            }
                             .foregroundStyle(isSelected ? Color.primary : Color.secondary)
-                            .padding(.horizontal, 14)
+                            .padding(.horizontal, 10)
                             .frame(height: 30)
                             .background(Capsule().fill(isSelected ? Color.primary.opacity(0.10) : Color.clear))
                             .contentShape(Capsule())
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(4)
-            .frame(height: 38)
-            .liquidGlass(in: Capsule(), interactive: true)
-
-        case .markup:
-            LiquidGlassGroup(spacing: 8) {
-                HStack(spacing: 8) {
-                    HStack(spacing: 4) {
-                        ForEach(EditorTool.allCases) { tool in
-                            let isSelected = activeMarkupTool == tool
-                            Button {
-                                withAnimation(AppleMotion.snappy) {
-                                    activeMarkupTool = isSelected ? nil : tool
-                                }
-                            } label: {
-                                HStack(spacing: 4) {
-                                    Image(systemName: tool.systemImage)
-                                        .font(.system(size: 13, weight: .semibold))
-                                    Text(tool.title)
-                                        .font(.caption.weight(.semibold))
-                                        .lineLimit(1)
-                                        .fixedSize(horizontal: true, vertical: false)
-                                }
-                                .foregroundStyle(isSelected ? Color.primary : Color.secondary)
-                                .padding(.horizontal, 10)
-                                .frame(height: 30)
-                                .background(Capsule().fill(isSelected ? Color.primary.opacity(0.10) : Color.clear))
-                                .contentShape(Capsule())
-                            }
-                            .buttonStyle(.plain)
                         }
-                    }
-                    .padding(4)
-                    .frame(height: 38)
-                    .liquidGlass(in: Capsule(), interactive: true)
-
-                    if hasAnnotations {
-                        AdaptiveGlassCircleButton(
-                            systemImage: "arrow.uturn.backward",
-                            accessibilityLabel: "撤销",
-                            size: 38,
-                            action: onUndo
-                        )
+                        .buttonStyle(.plain)
                     }
                 }
-            }
+                .padding(4)
+                .frame(height: 38)
+                .liquidGlass(in: Capsule(), interactive: true)
 
-        case .beautify:
-            EmptyView()
+                if hasAnnotations {
+                    AdaptiveGlassCircleButton(
+                        systemImage: "arrow.uturn.backward",
+                        accessibilityLabel: "撤销",
+                        size: 38,
+                        action: onUndo
+                    )
+                }
+            }
         }
     }
 }

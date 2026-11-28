@@ -150,6 +150,7 @@ struct SegmentInspectCanvasView: View {
                 selectedSegmentRow(sourceIndex: sourceIndex, canDelete: canDelete)
             }
         }
+        .clipShape(Capsule())
         .liquidGlass(in: Capsule(), interactive: true)
     }
 
@@ -165,24 +166,12 @@ struct SegmentInspectCanvasView: View {
                 .background(DesignTokens.ink, in: Capsule())
 
             Button { onPreviewSingle(sourceIndex) } label: {
-                Label("预览", systemImage: "magnifyingglass")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.primary)
-                    .lineLimit(1)
-                    .fixedSize(horizontal: true, vertical: false)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 6)
+                segmentActionLabel("预览", systemImage: "magnifyingglass")
             }
             .buttonStyle(.plain)
 
             PhotosPicker(selection: $replacePickerItem, matching: .images, photoLibrary: .shared()) {
-                Label("替换", systemImage: "arrow.triangle.2.circlepath")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.primary)
-                    .lineLimit(1)
-                    .fixedSize(horizontal: true, vertical: false)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 6)
+                segmentActionLabel("替换", systemImage: "arrow.triangle.2.circlepath")
             }
             .disabled(model.isStitching || isReplacing)
 
@@ -190,19 +179,23 @@ struct SegmentInspectCanvasView: View {
                 selectedSpanID = nil
                 model.removeFrameInEditor(at: sourceIndex)
             } label: {
-                Label("删除", systemImage: "trash")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(canDelete ? Color.red : Color.secondary.opacity(0.45))
-                    .lineLimit(1)
-                    .fixedSize(horizontal: true, vertical: false)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 6)
+                segmentActionLabel("删除", systemImage: "trash", tint: canDelete ? Color.red : Color.secondary.opacity(0.45))
             }
             .buttonStyle(.plain)
             .disabled(!canDelete)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
+    }
+
+    nonisolated private func segmentActionLabel(_ title: String, systemImage: String, tint: Color = .primary) -> some View {
+        Label(title, systemImage: systemImage)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(tint)
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 6)
     }
 
     private func hintPill(_ text: String) -> some View {

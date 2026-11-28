@@ -134,6 +134,7 @@ private struct DockAdaptiveGlassContainer<Content: View>: View {
             ScrollView(.horizontal, showsIndicators: false) { rowContent }
         }
         .frame(minHeight: 44)
+        .clipShape(Capsule())
         .liquidGlass(in: Capsule(), interactive: true)
     }
 

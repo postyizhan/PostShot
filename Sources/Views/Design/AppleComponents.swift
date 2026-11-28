@@ -149,38 +149,6 @@ struct AdaptiveGlassCircleButton: View {
     }
 }
 
-/// Compact 36x36 circular icon button for light/grouped toolbars.
-struct LightCircleButton: View {
-    private let systemImage: String
-    private let accessibilityLabel: String
-    private let tint: Color
-    private let action: () -> Void
-
-    init(
-        systemImage: String, accessibilityLabel: String,
-        tint: Color = .primary, action: @escaping () -> Void
-    ) {
-        self.systemImage = systemImage
-        self.accessibilityLabel = accessibilityLabel
-        self.tint = tint
-        self.action = action
-    }
-
-    var body: some View {
-        Button(action: action) {
-            Image(systemName: systemImage)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(tint)
-                .frame(width: 36, height: 36)
-                .background(Color(.secondarySystemGroupedBackground), in: Circle())
-                .overlay(Circle().strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
-                .contentShape(Circle())
-        }
-        .buttonStyle(CirclePressButtonStyle())
-        .accessibilityLabel(accessibilityLabel)
-    }
-}
-
 // MARK: - Capsule Button Styles
 
 /// Full-width primary capsule CTA styled with adaptive monochrome ink and spring press feedback.
@@ -355,11 +323,6 @@ extension View {
         modifier(LiquidGlassModifier(shape: shape, interactive: interactive, tint: tint))
     }
 
-    /// Applies a grouped rounded card surface.
-    func cardStyle(cornerRadius: CGFloat = DesignTokens.cardCornerRadius) -> some View {
-        modifier(CardBackground(cornerRadius: cornerRadius))
-    }
-
     /// Applies the Apple HIG grouped card surface with continuous corners.
     func appleCard(cornerRadius: CGFloat = DesignTokens.cardCornerRadius) -> some View {
         modifier(CardBackground(cornerRadius: cornerRadius))
@@ -371,7 +334,7 @@ extension View {
     }
 
     /// Styles a compact metadata badge as a tinted capsule.
-    func capsuleLabelStyle(tint: Color = DesignTokens.primary) -> some View {
+    func capsuleLabelStyle(tint: Color = .primary) -> some View {
         modifier(CapsuleLabelStyle(tint: tint))
     }
 }
