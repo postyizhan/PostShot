@@ -26,18 +26,6 @@ struct VisualCropCanvasView: View {
     @State private var isDraggingCrop = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    init(
-        model: StitchViewModel,
-        cropTab: Binding<CropAdjustTab>,
-        displayResultImage: UIImage? = nil,
-        onPreviewSingle: @escaping (Int) -> Void = { _ in }
-    ) {
-        self.model = model
-        self._cropTab = cropTab
-        self.displayResultImage = displayResultImage
-        self.onPreviewSingle = onPreviewSingle
-    }
-
     private var effectiveTopCrop: Float {
         switch model.headerMode {
         case .none: return model.topCropFraction
@@ -77,10 +65,8 @@ struct VisualCropCanvasView: View {
                 .padding(.top, 112).padding(.bottom, 146)
             if !model.images.isEmpty {
                 contextualModePill
-                    .id(cropTab)
-                    .transition(.opacity)
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 80)
+                    .id(cropTab).transition(.opacity)
+                    .padding(.horizontal, 20).padding(.bottom, 80)
                     .appleAnimation(AppleMotion.snappy, value: cropTab)
             }
         }

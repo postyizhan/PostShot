@@ -77,8 +77,7 @@ struct EditorPrimaryTabPill: View {
                             .lineLimit(1)
                     }
                     .foregroundStyle(isSelected ? Color.primary : Color.secondary)
-                    .frame(minWidth: 58, maxWidth: 72)
-                    .frame(height: 48)
+                    .frame(minWidth: 58, maxWidth: 72, minHeight: 48, maxHeight: 48)
                     .background(Capsule().fill(isSelected ? Color.primary.opacity(0.10) : Color.clear))
                     .contentShape(Capsule())
                 }
@@ -133,15 +132,13 @@ private struct DockAdaptiveGlassContainer<Content: View>: View {
             rowContent
             ScrollView(.horizontal, showsIndicators: false) { rowContent }
         }
-        .frame(minHeight: 44)
-        .clipShape(Capsule())
+        .frame(minHeight: 44).clipShape(Capsule())
         .liquidGlass(in: Capsule(), interactive: true)
     }
 
     private var rowContent: some View {
         HStack(spacing: 8) { content() }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 4)
+            .padding(.horizontal, 12).padding(.vertical, 4)
     }
 }
 
