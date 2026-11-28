@@ -45,9 +45,13 @@ struct ExportSheetView: View {
                     headerCard
                     optionsCard
                     if showDeleteBar && !sourceAssetIdentifiers.isEmpty { deleteOriginalsBar }
-                    actionButtons
                 }
                 .padding(.horizontal, 16).padding(.vertical, 12)
+            }
+            .safeAreaInset(edge: .bottom) {
+                actionButtons
+                    .padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 12)
+                    .background(Color(.systemGroupedBackground))
             }
             .background(Color(.systemGroupedBackground))
             .navigationTitle("导出长图")
@@ -63,7 +67,7 @@ struct ExportSheetView: View {
         .onChange(of: selectedFormat) { _ in isSaved = false; scheduleSizeEstimate() }
         .onChange(of: quality) { _ in isSaved = false; scheduleSizeEstimate() }
         .task { await prepareExportPreview() }
-        .presentationDetents([.medium, .large]).presentationDragIndicator(.visible)
+        .presentationDetents([.fraction(0.64), .large]).presentationDragIndicator(.visible)
     }
 
     // MARK: - Sections
