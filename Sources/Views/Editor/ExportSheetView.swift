@@ -206,27 +206,28 @@ struct ExportSheetView: View {
         }
     }
 
-    @ViewBuilder
     private var saveButton: some View {
-        if isSaved {
-            Button { Task { await saveToPhotos() } } label: {
-                Label("已保存", systemImage: "checkmark")
-                    .font(.system(size: 17, weight: .semibold)).foregroundStyle(.white)
-                    .frame(maxWidth: .infinity).padding(.vertical, 15).padding(.horizontal, 20)
-                    .background(DesignTokens.success, in: Capsule())
-            }
-            .buttonStyle(.plain).transition(.opacity)
-        } else {
-            Button { Task { await saveToPhotos() } } label: {
-                HStack(spacing: 8) {
-                    if isSaving { ProgressView().tint(DesignTokens.onInk).controlSize(.small) } else { Image(systemName: "square.and.arrow.down") }
-                    Text(isSaving ? "正在保存…" : "保存到相册")
+        Group {
+            if isSaved {
+                Button { Task { await saveToPhotos() } } label: {
+                    Label("已保存", systemImage: "checkmark")
+                        .font(.system(size: 17, weight: .semibold)).foregroundStyle(.white)
+                        .frame(maxWidth: .infinity).padding(.vertical, 15).padding(.horizontal, 20)
+                        .background(DesignTokens.success, in: Capsule())
                 }
+                .buttonStyle(.plain).transition(.opacity)
+            } else {
+                Button { Task { await saveToPhotos() } } label: {
+                    HStack(spacing: 8) {
+                        if isSaving { ProgressView().tint(DesignTokens.onInk).controlSize(.small) } else { Image(systemName: "square.and.arrow.down") }
+                        Text(isSaving ? "正在保存…" : "保存到相册")
+                    }
+                }
+                .buttonStyle(ApplePrimaryButtonStyle())
+                .transition(.opacity)
             }
-            .buttonStyle(ApplePrimaryButtonStyle())
-            .disabled(isSaving || isExporting)
-            .transition(.opacity)
         }
+        .disabled(isSaving || isExporting)
     }
 
     private var deleteOriginalsBar: some View {
