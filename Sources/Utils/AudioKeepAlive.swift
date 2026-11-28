@@ -75,9 +75,15 @@ final class AudioKeepAlive: ObservableObject, @unchecked Sendable {
         try session.setActive(active, options: .notifyOthersOnDeactivation)
     }
 
+    private enum KeepAliveError: Error {
+        case invalidAudioFormat
+    }
+
     private func startEngineLoop() throws {
         let format = engine.outputNode.inputFormat(forBus: 0)
-        guard let silent = makeSilentBuffer(format: format) else { return }
+        guard let silent = makeSilentBuffer(format: format) else {
+            throw KeepAliveError.invalidAudioFormat
+        }
         silentBuffer = silent
         cueBuffer = makeChimeBuffer(format: format)
         if player.engine == nil {
@@ -101,8 +107,8 @@ final class AudioKeepAlive: ObservableObject, @unchecked Sendable {
 
     /// Synthesizes a soft 90ms two-note chime (G5 → C6) with raised-cosine envelopes (no clicks).
     private func makeChimeBuffer(format: AVAudioFormat) -> AVAudioPCMBuffer? {
-        guard format.channelCount > 0, format.sampleRate > 0,
-              let channels = format.channelCount as AVAudioChannelCount? else { return nil }
+        let channels = format.channelCount
+        guard channels > 0, format.sampleRate > 0 else { return nil }
         let sr = format.sampleRate
         let totalFrames = max(1, Int(sr * 0.09))
         guard let buffer = AVAudioPCMBuffer(
