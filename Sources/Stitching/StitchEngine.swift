@@ -42,7 +42,7 @@ struct FrameBackfillSource: @unchecked Sendable {
     let loadFrame: @Sendable (Int) -> CGImage?
 }
 
-struct StitchReport {
+struct StitchReport: @unchecked Sendable {
     let image: CGImage
     /// 0-based indices into the resolved top-to-bottom sequence skipped as outliers or backtracks.
     let skippedIndices: [Int]
@@ -56,14 +56,18 @@ struct StitchReport {
     let resolvedOrder: [Int]
     /// Number of frames skipped specifically because of minor mid-scroll backtracks.
     let backtrackSkippedCount: Int
+    /// Decoupled alignment chain retained for zero-alignment-cost output head/tail recropping.
+    let resolvedChain: StitchGraphResolver.ResolvedChain?
 
     init(
         image: CGImage, skippedIndices: [Int], backfilledCount: Int, segmentSpans: [SegmentSpan],
-        orderAdjustment: OrderAdjustment = .none, resolvedOrder: [Int] = [], backtrackSkippedCount: Int = 0
+        orderAdjustment: OrderAdjustment = .none, resolvedOrder: [Int] = [], backtrackSkippedCount: Int = 0,
+        resolvedChain: StitchGraphResolver.ResolvedChain? = nil
     ) {
         self.image = image; self.skippedIndices = skippedIndices; self.backfilledCount = backfilledCount
         self.segmentSpans = segmentSpans; self.orderAdjustment = orderAdjustment
         self.resolvedOrder = resolvedOrder; self.backtrackSkippedCount = backtrackSkippedCount
+        self.resolvedChain = resolvedChain
     }
 }
 
@@ -143,21 +147,59 @@ final class StitchEngine: @unchecked Sendable {
         }
     }
 
+    func recomposite(
+        chain: StitchGraphResolver.ResolvedChain, outputTopFraction: Float, outputBottomFraction: Float,
+        removeScrollIndicator: Bool = true, completion: @escaping (Result<StitchReport, StitchError>) -> Void
+    ) {
+        queue.async {
+            let outcome = autoreleasepool {
+                self.recompositeSync(
+                    chain: chain, outputTopFraction: outputTopFraction,
+                    outputBottomFraction: outputBottomFraction, removeScrollIndicator: removeScrollIndicator
+                )
+            }
+            completion(outcome)
+        }
+    }
+
+    func recompositeSync(
+        chain: StitchGraphResolver.ResolvedChain, outputTopFraction: Float,
+        outputBottomFraction: Float, removeScrollIndicator: Bool = true
+    ) -> Result<StitchReport, StitchError> {
+        let cropped = chain.segmentsWithOutputCrop(topFraction: outputTopFraction, bottomFraction: outputBottomFraction)
+        let width = chain.canonicalWidth > 0 ? chain.canonicalWidth : (cropped.segments.first?.image.width ?? 0)
+        return buildReport(
+            segments: cropped.segments, width: width, removeScrollIndicator: removeScrollIndicator,
+            preservedTopRows: cropped.preservedTopRows, preservedBottomRows: cropped.preservedBottomRows, chain: chain
+        )
+    }
+
     private func compositeChain(
         _ chain: StitchGraphResolver.ResolvedChain, width: Int, options: Options, progress: ProgressHandler
     ) -> Result<StitchReport, StitchError> {
+        let result = buildReport(
+            segments: chain.segments, width: width, removeScrollIndicator: options.removeScrollIndicator,
+            preservedTopRows: chain.preservedTopRows, preservedBottomRows: chain.preservedBottomRows, chain: chain
+        )
+        if case .success = result { progress(1) }
+        return result
+    }
+
+    private func buildReport(
+        segments: [ImageCompositor.Segment], width: Int, removeScrollIndicator: Bool,
+        preservedTopRows: Int, preservedBottomRows: Int, chain: StitchGraphResolver.ResolvedChain
+    ) -> Result<StitchReport, StitchError> {
         do {
             let output = try ImageCompositor.composite(
-                segments: chain.segments, width: width,
-                removeScrollIndicator: options.removeScrollIndicator,
-                protectedTopRows: chain.preservedTopRows, protectedBottomRows: chain.preservedBottomRows
+                segments: segments, width: width, removeScrollIndicator: removeScrollIndicator,
+                protectedTopRows: preservedTopRows, protectedBottomRows: preservedBottomRows
             )
-            let spans = try ImageCompositor.computeSegmentSpans(segments: chain.segments, width: width)
-            progress(1)
+            let spans = try ImageCompositor.computeSegmentSpans(segments: segments, width: width)
             return .success(StitchReport(
                 image: output, skippedIndices: chain.skippedIndices, backfilledCount: chain.backfilledCount,
                 segmentSpans: spans, orderAdjustment: chain.orderAdjustment,
-                resolvedOrder: chain.resolvedOrder, backtrackSkippedCount: chain.backtrackSkippedCount
+                resolvedOrder: chain.resolvedOrder, backtrackSkippedCount: chain.backtrackSkippedCount,
+                resolvedChain: chain
             ))
         } catch {
             return .failure(.compositeFailed(error))
@@ -188,5 +230,95 @@ final class StitchEngine: @unchecked Sendable {
             )))
         }
         return .success(images)
+    }
+}
+
+extension StitchGraphResolver.ResolvedChain {
+    /// Applies user head/tail output trim fractions on top of the locked alignment chain without
+    /// altering any internal overlap seam, clamping edge trims so first/last segments keep `>= overlap + 4` rows.
+    func segmentsWithOutputCrop(
+        topFraction: Float,
+        bottomFraction: Float
+    ) -> (segments: [ImageCompositor.Segment], preservedTopRows: Int, preservedBottomRows: Int) {
+        guard !baseSegments.isEmpty else { return ([], 0, 0) }
+        let clampedTop = topFraction.isFinite ? max(0, min(topFraction, 0.45)) : 0
+        let clampedBottom = bottomFraction.isFinite ? max(0, min(bottomFraction, 0.45)) : 0
+        let width = canonicalWidth > 0 ? canonicalWidth : (baseSegments.first?.image.width ?? 0)
+        if baseSegments.count == 1 {
+            return singleSegmentOutputCrop(top: clampedTop, bottom: clampedBottom, width: width)
+        }
+        return multiSegmentOutputCrop(top: clampedTop, bottom: clampedBottom, width: width)
+    }
+
+    private func singleSegmentOutputCrop(
+        top: Float, bottom: Float, width: Int
+    ) -> (segments: [ImageCompositor.Segment], preservedTopRows: Int, preservedBottomRows: Int) {
+        let safeTop = top
+        let safeBottom = min(bottom, max(0, 0.90 - safeTop))
+        var seg = baseSegments[0]
+        if let raw = firstRawImage,
+           let cropped = try? ImageNormalizer.crop(raw, topFraction: safeTop, bottomFraction: safeBottom) {
+            seg = ImageCompositor.Segment(image: cropped, overlap: seg.overlap, sourceIndex: seg.sourceIndex)
+        }
+        let topRows = firstRawImage.map {
+            StitchGraphResolver.extraPreservedRows(rawImage: $0, baseCrop: alignmentTopCrop, keptCrop: safeTop, canonicalWidth: width)
+        } ?? 0
+        let bottomRows = (lastRawImage ?? firstRawImage).map {
+            StitchGraphResolver.extraPreservedRows(rawImage: $0, baseCrop: alignmentBottomCrop, keptCrop: safeBottom, canonicalWidth: width)
+        } ?? 0
+        return ([seg], topRows, bottomRows)
+    }
+
+    private func multiSegmentOutputCrop(
+        top: Float, bottom: Float, width: Int
+    ) -> (segments: [ImageCompositor.Segment], preservedTopRows: Int, preservedBottomRows: Int) {
+        var result = baseSegments
+        let lastIdx = baseSegments.count - 1
+        let alignTop = alignmentTopCrop.isFinite ? max(0, min(alignmentTopCrop, 0.49)) : 0
+        let alignBottom = alignmentBottomCrop.isFinite ? max(0, min(alignmentBottomCrop, 0.49)) : 0
+
+        let safeTop = clampedEdgeFraction(
+            requested: top, oppositeCrop: alignBottom, rawImage: firstRawImage,
+            minCanonicalHeight: max(1, baseSegments[1].overlap + 4), canonicalWidth: width
+        )
+        if let raw = firstRawImage, raw.height > 0,
+           let cropped = try? ImageNormalizer.crop(raw, topFraction: safeTop, bottomFraction: alignBottom) {
+            result[0] = ImageCompositor.Segment(image: cropped, overlap: baseSegments[0].overlap, sourceIndex: baseSegments[0].sourceIndex)
+        }
+
+        let safeBottom = clampedEdgeFraction(
+            requested: bottom, oppositeCrop: alignTop, rawImage: lastRawImage,
+            minCanonicalHeight: max(1, baseSegments[lastIdx].overlap + 4), canonicalWidth: width
+        )
+        if let raw = lastRawImage, raw.height > 0,
+           let cropped = try? ImageNormalizer.crop(raw, topFraction: alignTop, bottomFraction: safeBottom) {
+            result[lastIdx] = ImageCompositor.Segment(
+                image: cropped, overlap: baseSegments[lastIdx].overlap, sourceIndex: baseSegments[lastIdx].sourceIndex
+            )
+        }
+
+        let topRows = firstRawImage.map {
+            StitchGraphResolver.extraPreservedRows(rawImage: $0, baseCrop: alignmentTopCrop, keptCrop: safeTop, canonicalWidth: width)
+        } ?? 0
+        let bottomRows = lastRawImage.map {
+            StitchGraphResolver.extraPreservedRows(rawImage: $0, baseCrop: alignmentBottomCrop, keptCrop: safeBottom, canonicalWidth: width)
+        } ?? 0
+        return (result, topRows, bottomRows)
+    }
+
+    private func clampedEdgeFraction(
+        requested: Float, oppositeCrop: Float, rawImage: CGImage?, minCanonicalHeight: Int, canonicalWidth: Int
+    ) -> Float {
+        guard let raw = rawImage, raw.height > 0 else { return requested }
+        let minRawHeight: Int
+        if raw.width > 0, canonicalWidth > 0, raw.width != canonicalWidth {
+            minRawHeight = Int((Float(minCanonicalHeight) * Float(raw.width) / Float(canonicalWidth)).rounded(.up))
+        } else {
+            minRawHeight = minCanonicalHeight
+        }
+        let oppositePixels = Int((Float(raw.height) * oppositeCrop).rounded(.down))
+        let maxEdgePixels = max(0, raw.height - oppositePixels - minRawHeight)
+        let maxFraction = Float(maxEdgePixels) / Float(raw.height)
+        return min(requested, max(0, maxFraction))
     }
 }

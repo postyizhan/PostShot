@@ -7,38 +7,51 @@ import Foundation
 enum StitchGraphResolver {
     private static let maxReversalEvents = 2
 
-    struct ResolvedChain {
-        let segments: [ImageCompositor.Segment]
-        let skippedIndices: [Int]
-        let backfilledCount: Int
-        let preservedTopRows: Int
-        let preservedBottomRows: Int
-        let orderAdjustment: OrderAdjustment
-        let resolvedOrder: [Int]
-        let backtrackSkippedCount: Int
+    struct ResolvedChain: @unchecked Sendable {
+        let segments: [ImageCompositor.Segment], baseSegments: [ImageCompositor.Segment]
+        let skippedIndices: [Int], backfilledCount: Int
+        let preservedTopRows: Int, preservedBottomRows: Int
+        let orderAdjustment: OrderAdjustment, resolvedOrder: [Int], backtrackSkippedCount: Int
+        let firstRawImage: CGImage?, lastRawImage: CGImage?
+        let alignmentTopCrop: Float, alignmentBottomCrop: Float, canonicalWidth: Int
+
+        init(
+            segments: [ImageCompositor.Segment], skippedIndices: [Int], backfilledCount: Int,
+            preservedTopRows: Int, preservedBottomRows: Int, orderAdjustment: OrderAdjustment,
+            resolvedOrder: [Int], backtrackSkippedCount: Int, baseSegments: [ImageCompositor.Segment]? = nil,
+            firstRawImage: CGImage? = nil, lastRawImage: CGImage? = nil,
+            alignmentTopCrop: Float = 0, alignmentBottomCrop: Float = 0, canonicalWidth: Int = 0
+        ) {
+            self.segments = segments; self.baseSegments = baseSegments ?? segments
+            self.skippedIndices = skippedIndices; self.backfilledCount = backfilledCount
+            self.preservedTopRows = preservedTopRows; self.preservedBottomRows = preservedBottomRows
+            self.orderAdjustment = orderAdjustment; self.resolvedOrder = resolvedOrder
+            self.backtrackSkippedCount = backtrackSkippedCount
+            self.firstRawImage = firstRawImage; self.lastRawImage = lastRawImage
+            self.alignmentTopCrop = alignmentTopCrop; self.alignmentBottomCrop = alignmentBottomCrop
+            self.canonicalWidth = canonicalWidth
+        }
+
+        func withOrder(_ adjustment: OrderAdjustment, resolvedOrder: [Int]) -> ResolvedChain {
+            ResolvedChain(
+                segments: segments, skippedIndices: skippedIndices, backfilledCount: backfilledCount,
+                preservedTopRows: preservedTopRows, preservedBottomRows: preservedBottomRows,
+                orderAdjustment: adjustment, resolvedOrder: resolvedOrder, backtrackSkippedCount: backtrackSkippedCount,
+                baseSegments: baseSegments, firstRawImage: firstRawImage, lastRawImage: lastRawImage,
+                alignmentTopCrop: alignmentTopCrop, alignmentBottomCrop: alignmentBottomCrop, canonicalWidth: canonicalWidth
+            )
+        }
     }
 
-    private struct Node {
-        let rawImage: CGImage, image: CGImage, buffer: PixelBuffer?, poolIndex: Int?, sourceIndex: Int?
-    }
-
+    private struct Node { let rawImage: CGImage, image: CGImage, buffer: PixelBuffer?, poolIndex: Int?, sourceIndex: Int? }
     private struct KeptNode { let node: Node; let overlap: Int }
     private struct Context { let options: StitchEngine.Options; let canonicalSize: PixelSize }
-
-    private enum LinkOutcome {
-        case connected(items: [KeptNode], backfilled: Int)
-        case failed(OverlapResult)
-    }
-
+    private enum LinkOutcome { case connected(items: [KeptNode], backfilled: Int), failed(OverlapResult) }
     private struct WalkState {
         var items: [KeptNode], skipped: [Int], backfilled: Int
-        var backtrackSkippedCount = 0, reversalEvents = 0
-        var anchor: Int, index: Int
+        var backtrackSkippedCount = 0, reversalEvents = 0, anchor: Int, index: Int
     }
-
-    private struct InitialStep {
-        let anchor: Int, next: Int, items: [KeptNode], skipped: [Int], backfilled: Int
-    }
+    private struct InitialStep { let anchor: Int, next: Int, items: [KeptNode], skipped: [Int], backfilled: Int }
 
     static func resolve(
         images: [CGImage], rawImages: [CGImage]? = nil, options: StitchEngine.Options,
@@ -49,16 +62,11 @@ enum StitchGraphResolver {
         if images.count == 1 {
             let raw = (rawImages?.count == 1) ? rawImages![0] : images[0]
             let node = Node(rawImage: raw, image: images[0], buffer: PixelBuffer.from(images[0]), poolIndex: poolIndices?[0], sourceIndex: 0)
-            return .success(finalizeChain(
-                kept: [KeptNode(node: node, overlap: 0)], skipped: [], backfilled: 0,
-                ctx: ctx, orderAdjustment: .none, resolvedOrder: [0], backtrackSkippedCount: 0
-            ))
+            return .success(finalizeChain(kept: [KeptNode(node: node, overlap: 0)], skipped: [], backfilled: 0, ctx: ctx, orderAdjustment: .none, resolvedOrder: [0], backtrackSkippedCount: 0))
         }
         switch orientInputs(images: images, rawImages: rawImages, poolIndices: poolIndices, ctx: ctx) {
         case .failure(let error):
-            return tryScrambledReorder(
-                originalImages: images, originalRawImages: rawImages, originalPoolIndices: poolIndices, ctx: ctx, progress: progress
-            ).map { .success($0) } ?? .failure(error)
+            return tryScrambledReorder(originalImages: images, originalRawImages: rawImages, originalPoolIndices: poolIndices, ctx: ctx, progress: progress).map { .success($0) } ?? .failure(error)
         case .success(let oriented):
             return resolveOriented(oriented, images: images, rawImages: rawImages, poolIndices: poolIndices, ctx: ctx, progress: progress)
         }
@@ -97,32 +105,21 @@ enum StitchGraphResolver {
     private static func orientInputs(
         images: [CGImage], rawImages: [CGImage]?, poolIndices: [Int]?, ctx: Context
     ) -> Result<(nodes: [Node], orderAdjustment: OrderAdjustment, resolvedOrder: [Int]), StitchEngine.StitchError> {
-        let identity = Array(0..<images.count)
-        let rawBuffers = images.map { PixelBuffer.from($0) }
-        var order = identity
-        var adjustment: OrderAdjustment = .none
-
+        let identity = Array(0..<images.count), rawBuffers = images.map { PixelBuffer.from($0) }
+        var order = identity, adjustment: OrderAdjustment = .none
         if ctx.options.autoDetectScrollDirection {
-            let analysis = ScrollDirectionResolver.analyze(
-                buffers: rawBuffers, poolIndices: poolIndices, options: ctx.options, canonicalSize: ctx.canonicalSize
-            )
+            let analysis = ScrollDirectionResolver.analyze(buffers: rawBuffers, poolIndices: poolIndices, options: ctx.options, canonicalSize: ctx.canonicalSize)
             if analysis.isHeavyZigZag {
                 let pair = analysis.firstConflictPair ?? (0, 1)
-                let result = analysis.firstConflictResult ?? OverlapDetector.detect(
-                    top: images[pair.top], bottom: images[pair.bottom], config: ctx.options.detectorConfig
-                )
+                let result = analysis.firstConflictResult ?? OverlapDetector.detect(top: images[pair.top], bottom: images[pair.bottom], config: ctx.options.detectorConfig)
                 return .failure(.unsafeSeam(seam: StitchSeam(topIndex: pair.top, bottomIndex: pair.bottom, result: result, isReverseConflict: true)))
             }
-            if analysis.direction == .bottomToTop {
-                order = Array(identity.reversed())
-                adjustment = .reversed
-            }
+            if analysis.direction == .bottomToTop { order = Array(identity.reversed()); adjustment = .reversed }
         }
         let hasMatchingRaws = rawImages?.count == images.count
         let nodes = order.enumerated().map { resolvedIdx, origIdx in
             let img = images[origIdx]
-            let raw = hasMatchingRaws ? rawImages![origIdx] : img
-            return Node(rawImage: raw, image: img, buffer: rawBuffers[origIdx], poolIndex: poolIndices?[origIdx], sourceIndex: resolvedIdx)
+            return Node(rawImage: hasMatchingRaws ? rawImages![origIdx] : img, image: img, buffer: rawBuffers[origIdx], poolIndex: poolIndices?[origIdx], sourceIndex: resolvedIdx)
         }
         return .success((nodes, adjustment, order))
     }
@@ -150,11 +147,7 @@ enum StitchGraphResolver {
             images: reorderedImages, rawImages: reorderedRaws, options: optionsCopy,
             canonicalSize: ctx.canonicalSize, progress: progress
         ) else { return nil }
-        return ResolvedChain(
-            segments: chain.segments, skippedIndices: chain.skippedIndices, backfilledCount: chain.backfilledCount,
-            preservedTopRows: chain.preservedTopRows, preservedBottomRows: chain.preservedBottomRows,
-            orderAdjustment: .reordered, resolvedOrder: fullOrder, backtrackSkippedCount: chain.backtrackSkippedCount
-        )
+        return chain.withOrder(.reordered, resolvedOrder: fullOrder)
     }
 
     private static func findInitialConnection(
@@ -278,13 +271,17 @@ enum StitchGraphResolver {
             ctx.options.headerMode == .navBarOnly ? min(ctx.options.topCropFraction, FixedBarDetector.recordingStatusBandFloor) : ctx.options.topCropFraction
         )
         let lastBottom: Float = ctx.options.keepFooter ? 0 : ctx.options.bottomCropFraction
-        var segments = kept.map { ImageCompositor.Segment(image: $0.node.image, overlap: $0.overlap, sourceIndex: $0.node.sourceIndex) }
+        let baseSegments = kept.map { ImageCompositor.Segment(image: $0.node.image, overlap: $0.overlap, sourceIndex: $0.node.sourceIndex) }
+        var segments = baseSegments
         guard !kept.isEmpty else {
-            return ResolvedChain(segments: segments, skippedIndices: skipped, backfilledCount: backfilled, preservedTopRows: 0, preservedBottomRows: 0,
-                                 orderAdjustment: orderAdjustment, resolvedOrder: resolvedOrder, backtrackSkippedCount: backtrackSkippedCount)
+            return ResolvedChain(
+                segments: segments, skippedIndices: skipped, backfilledCount: backfilled, preservedTopRows: 0, preservedBottomRows: 0,
+                orderAdjustment: orderAdjustment, resolvedOrder: resolvedOrder, backtrackSkippedCount: backtrackSkippedCount,
+                baseSegments: baseSegments, alignmentTopCrop: ctx.options.topCropFraction,
+                alignmentBottomCrop: ctx.options.bottomCropFraction, canonicalWidth: ctx.canonicalSize.width
+            )
         }
-        let single = kept.count == 1
-        let firstBottom = single ? lastBottom : ctx.options.bottomCropFraction
+        let single = kept.count == 1, firstBottom = single ? lastBottom : ctx.options.bottomCropFraction
         if firstTop != ctx.options.topCropFraction || firstBottom != ctx.options.bottomCropFraction,
            let recropped = try? ImageNormalizer.crop(kept[0].node.rawImage, topFraction: firstTop, bottomFraction: firstBottom) {
             segments[0] = ImageCompositor.Segment(image: recropped, overlap: 0, sourceIndex: kept[0].node.sourceIndex)
@@ -296,11 +293,15 @@ enum StitchGraphResolver {
         }
         let topRows = extraPreservedRows(rawImage: kept[0].node.rawImage, baseCrop: ctx.options.topCropFraction, keptCrop: firstTop, canonicalWidth: ctx.canonicalSize.width)
         let bottomRows = extraPreservedRows(rawImage: kept[kept.count - 1].node.rawImage, baseCrop: ctx.options.bottomCropFraction, keptCrop: lastBottom, canonicalWidth: ctx.canonicalSize.width)
-        return ResolvedChain(segments: segments, skippedIndices: skipped, backfilledCount: backfilled, preservedTopRows: topRows, preservedBottomRows: bottomRows,
-                             orderAdjustment: orderAdjustment, resolvedOrder: resolvedOrder, backtrackSkippedCount: backtrackSkippedCount)
+        return ResolvedChain(
+            segments: segments, skippedIndices: skipped, backfilledCount: backfilled, preservedTopRows: topRows, preservedBottomRows: bottomRows,
+            orderAdjustment: orderAdjustment, resolvedOrder: resolvedOrder, backtrackSkippedCount: backtrackSkippedCount,
+            baseSegments: baseSegments, firstRawImage: kept.first?.node.rawImage, lastRawImage: kept.last?.node.rawImage,
+            alignmentTopCrop: ctx.options.topCropFraction, alignmentBottomCrop: ctx.options.bottomCropFraction, canonicalWidth: ctx.canonicalSize.width
+        )
     }
 
-    private static func extraPreservedRows(rawImage: CGImage, baseCrop: Float, keptCrop: Float, canonicalWidth: Int) -> Int {
+    static func extraPreservedRows(rawImage: CGImage, baseCrop: Float, keptCrop: Float, canonicalWidth: Int) -> Int {
         let clampedBase = baseCrop.isFinite ? max(0, min(baseCrop, 0.49)) : 0
         let clampedKept = keptCrop.isFinite ? max(0, min(keptCrop, 0.49)) : 0
         let delta = max(0, Int((Float(rawImage.height) * clampedBase).rounded(.down)) - Int((Float(rawImage.height) * clampedKept).rounded(.down)))
@@ -335,21 +336,16 @@ enum StitchGraphResolver {
         }
     }
 
-    private static func bridgePool(
-        from top: Node, to bottom: Node, span: PoolSpan?, depth: Int, ctx: Context
-    ) -> (items: [KeptNode], backfilled: Int)? {
-        guard depth < 3, let span, span.count > 0 else { return nil }
-        let midIdx = span.poolIndex(at: span.midOffset)
-        guard let midNode = loadPoolNode(at: midIdx, ctx: ctx),
+    private static func bridgePool(from top: Node, to bottom: Node, span: PoolSpan?, depth: Int, ctx: Context) -> (items: [KeptNode], backfilled: Int)? {
+        guard depth < 3, let span, span.count > 0,
+              let midNode = loadPoolNode(at: span.poolIndex(at: span.midOffset), ctx: ctx),
               let left = connectOrBridge(from: top, to: midNode, span: span.leftHalf, depth: depth + 1, ctx: ctx),
               let right = connectOrBridge(from: midNode, to: bottom, span: span.rightHalf, depth: depth + 1, ctx: ctx)
         else { return nil }
         return (left.items + right.items, left.backfilled + 1 + right.backfilled)
     }
 
-    private static func connectOrBridge(
-        from top: Node, to bottom: Node, span: PoolSpan?, depth: Int, ctx: Context
-    ) -> (items: [KeptNode], backfilled: Int)? {
+    private static func connectOrBridge(from top: Node, to bottom: Node, span: PoolSpan?, depth: Int, ctx: Context) -> (items: [KeptNode], backfilled: Int)? {
         let direct = matchPair(top, bottom, ctx.options.detectorConfig)
         if direct.status == .matched { return ([KeptNode(node: bottom, overlap: direct.overlap)], 0) }
         if direct.status == .duplicate { return ([], 0) }
@@ -359,11 +355,9 @@ enum StitchGraphResolver {
     private static func rescueLeadingPool(before firstValid: Node, afterPool: Int?, ctx: Context) -> (items: [KeptNode], backfilled: Int)? {
         guard let pL = afterPool, let pR = firstValid.poolIndex, let span = PoolSpan.between(pL, pR) else { return nil }
         for offset in span.offsets {
-            guard let node = loadPoolNode(at: span.poolIndex(at: offset), ctx: ctx) else { continue }
-            if let linked = connectOrBridge(from: node, to: firstValid, span: span.suffix(after: offset), depth: 0, ctx: ctx) {
-                let extra = linked.items.isEmpty ? 0 : (linked.backfilled + 1)
-                return ([KeptNode(node: node, overlap: 0)] + linked.items, extra)
-            }
+            guard let node = loadPoolNode(at: span.poolIndex(at: offset), ctx: ctx),
+                  let linked = connectOrBridge(from: node, to: firstValid, span: span.suffix(after: offset), depth: 0, ctx: ctx) else { continue }
+            return ([KeptNode(node: node, overlap: 0)] + linked.items, linked.items.isEmpty ? 0 : (linked.backfilled + 1))
         }
         return nil
     }
@@ -371,11 +365,9 @@ enum StitchGraphResolver {
     private static func rescueTrailingPool(after anchor: Node, beforePool: Int?, ctx: Context) -> (items: [KeptNode], backfilled: Int) {
         guard let pL = anchor.poolIndex, let pR = beforePool, let span = PoolSpan.between(pL, pR) else { return ([], 0) }
         for offset in span.offsets.reversed() {
-            guard let node = loadPoolNode(at: span.poolIndex(at: offset), ctx: ctx) else { continue }
-            if let linked = connectOrBridge(from: anchor, to: node, span: span.prefix(upTo: offset), depth: 0, ctx: ctx) {
-                let extra = linked.items.isEmpty ? 0 : (linked.backfilled + 1)
-                return (linked.items, extra)
-            }
+            guard let node = loadPoolNode(at: span.poolIndex(at: offset), ctx: ctx),
+                  let linked = connectOrBridge(from: anchor, to: node, span: span.prefix(upTo: offset), depth: 0, ctx: ctx) else { continue }
+            return (linked.items, linked.items.isEmpty ? 0 : (linked.backfilled + 1))
         }
         return ([], 0)
     }
