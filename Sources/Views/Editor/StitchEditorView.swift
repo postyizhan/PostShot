@@ -60,7 +60,7 @@ struct StitchEditorView: View {
             .sheet(item: previewItemBinding) { SingleImagePreviewView(initialIndex: $0.index, images: model.images, onDelete: handleDeleteImage(at:)) }
             .sheet(isPresented: $showExportSheet) {
                 if let r = model.result {
-                    ExportSheetView(image: r.image, sourceAssetIdentifiers: r.sourceAssetIdentifiers, hasUnsavedMarkup: markup.hasActiveAnnotations).environmentObject(settings)
+                    ExportSheetView(image: r.image, sourceAssetIdentifiers: r.sourceAssetIdentifiers, markup: markup).environmentObject(settings)
                 }
             }
             .alert("拼接失败", isPresented: $model.isShowingError, presenting: model.errorMessage) { _ in Button("好", role: .cancel) {} } message: { Text($0) }

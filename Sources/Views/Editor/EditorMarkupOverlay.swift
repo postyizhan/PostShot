@@ -82,9 +82,9 @@ struct EditorMarkupState {
     var brushWidth: CGFloat = 5
     var textColor: Color = .white
     var textHasBackground: Bool = true
-    var beautifyCornerRadius: CGFloat = 20
+    var beautifyCornerRadius: CGFloat = 0
     var beautifyPadding: CGFloat = 0
-    var beautifyShadow: Bool = true
+    var beautifyShadow: Bool = false
     var beautifyFrame: Bool = false
 
     private var history: [AnnotationKind] = []

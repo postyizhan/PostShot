@@ -7,7 +7,7 @@ import UIKit
 struct ExportSheetView: View {
     let image: CGImage
     var sourceAssetIdentifiers: [String] = []
-    var hasUnsavedMarkup: Bool = false
+    var markup: EditorMarkupState = EditorMarkupState()
 
     @EnvironmentObject private var settings: AppSettings
     @Environment(\.dismiss) private var dismiss
@@ -15,10 +15,15 @@ struct ExportSheetView: View {
     @State private var selectedFormat: ExportFormat = .png
     @State private var quality: Double = 0.85
     @State private var didInitialize = false
+    @State private var renderedImage: CGImage?
+    @State private var isPreparingRender = false
+    @State private var renderTask: Task<CGImage, Never>?
     @State private var previewThumb: UIImage?
     @State private var estimatedByteCount: Int?
     @State private var isEstimatingSize = false
     @State private var estimateTask: Task<Void, Never>?
+
+    private var exportImage: CGImage { renderedImage ?? image }
 
     @State private var isSaving = false
     @State private var isSaved = false
@@ -38,72 +43,53 @@ struct ExportSheetView: View {
                 VStack(spacing: 16) {
                     headerCard
                     optionsCard
-                    if showDeleteBar && !sourceAssetIdentifiers.isEmpty {
-                        deleteOriginalsBar
-                    }
+                    if showDeleteBar && !sourceAssetIdentifiers.isEmpty { deleteOriginalsBar }
                     actionButtons
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+                .padding(.horizontal, 16).padding(.vertical, 12)
             }
             .background(Color(.systemGroupedBackground))
             .navigationTitle("导出长图")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("关闭") { dismiss() }
-                }
-            }
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("关闭") { dismiss() } } }
         }
         .tint(DesignTokens.ink)
         .overlay(alignment: .top) { toastOverlay }
-        .sheet(isPresented: $showAlbumPicker) {
-            AlbumPickerSheet(selectedAlbumName: $settings.targetAlbumName)
-        }
-        .sheet(isPresented: $isShowingShare, onDismiss: handleShareDismiss) {
-            if let shareURL { ShareSheet(items: [shareURL]) }
-        }
-        .onAppear { loadInitialSettings(); scheduleSizeEstimate() }
-        .onDisappear { estimateTask?.cancel(); cleanupShareFile() }
+        .sheet(isPresented: $showAlbumPicker) { AlbumPickerSheet(selectedAlbumName: $settings.targetAlbumName) }
+        .sheet(isPresented: $isShowingShare, onDismiss: handleShareDismiss) { if let shareURL { ShareSheet(items: [shareURL]) } }
+        .onAppear { loadInitialSettings(); if !MarkupExportRenderer.needsRendering(for: markup) { scheduleSizeEstimate() } }
+        .onDisappear { estimateTask?.cancel(); renderTask?.cancel(); cleanupShareFile() }
         .onChange(of: selectedFormat) { _ in isSaved = false; scheduleSizeEstimate() }
         .onChange(of: quality) { _ in isSaved = false; scheduleSizeEstimate() }
-        .task { previewThumb = await makePreviewThumb(for: image) }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
+        .task { await prepareExportPreview() }
+        .presentationDetents([.medium, .large]).presentationDragIndicator(.visible)
     }
 
     // MARK: - Sections
 
     private var headerCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 14) {
-                thumbnailView
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("\(image.width) × \(image.height) px")
-                        .font(.headline).monospacedDigit()
-                    HStack(spacing: 8) {
-                        Text(selectedFormat.shortName).capsuleLabelStyle()
-                        if selectedFormat.supportsQuality {
-                            Text("\(Int((quality * 100).rounded()))%")
-                                .font(.caption.weight(.medium)).foregroundStyle(.secondary)
-                        }
-                        if isEstimatingSize && estimatedByteCount == nil {
-                            ProgressView().controlSize(.mini)
-                        } else if let bytes = estimatedByteCount {
-                            Text(ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file))
-                                .font(.caption.weight(.semibold).monospacedDigit())
-                                .foregroundStyle(.primary)
-                                .opacity(isEstimatingSize ? 0.55 : 1)
-                        }
+        HStack(spacing: 14) {
+            thumbnailView
+            VStack(alignment: .leading, spacing: 6) {
+                Text("\(exportImage.width) × \(exportImage.height) px")
+                    .font(.headline).monospacedDigit()
+                HStack(spacing: 8) {
+                    Text(selectedFormat.shortName).capsuleLabelStyle()
+                    if selectedFormat.supportsQuality {
+                        Text("\(Int((quality * 100).rounded()))%")
+                            .font(.caption.weight(.medium)).foregroundStyle(.secondary)
+                    }
+                    if isEstimatingSize && estimatedByteCount == nil {
+                        ProgressView().controlSize(.mini)
+                    } else if let bytes = estimatedByteCount {
+                        Text(ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file))
+                            .font(.caption.weight(.semibold).monospacedDigit())
+                            .foregroundStyle(.primary)
+                            .opacity(isEstimatingSize ? 0.55 : 1)
                     }
                 }
-                Spacer(minLength: 0)
             }
-            if hasUnsavedMarkup {
-                Label("标注与美化合成将于后续版本支持，本次导出原拼接图", systemImage: "exclamationmark.triangle")
-                    .font(.caption.weight(.medium)).foregroundStyle(.orange)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            Spacer(minLength: 0)
         }
         .padding(14).appleCard()
     }
@@ -124,10 +110,7 @@ struct ExportSheetView: View {
     private var optionsCard: some View {
         VStack(spacing: 0) {
             formatRow
-            if selectedFormat.supportsQuality {
-                Divider().padding(.leading, 14)
-                qualityRow
-            }
+            if selectedFormat.supportsQuality { Divider().padding(.leading, 14); qualityRow }
             Divider().padding(.leading, 14)
             dpiRow
             Divider().padding(.leading, 14)
@@ -202,7 +185,7 @@ struct ExportSheetView: View {
                 }
             }
             .buttonStyle(AppleSecondaryButtonStyle())
-            .disabled(isSaving || isExporting)
+            .disabled(isSaving || isExporting || isPreparingRender)
         }
     }
 
@@ -227,7 +210,7 @@ struct ExportSheetView: View {
                 .transition(.opacity)
             }
         }
-        .disabled(isSaving || isExporting)
+        .disabled(isSaving || isExporting || isPreparingRender)
     }
 
     private var deleteOriginalsBar: some View {
@@ -249,13 +232,10 @@ struct ExportSheetView: View {
     @ViewBuilder
     private var toastOverlay: some View {
         if let toastMessage {
-            AppleToastBanner(
-                message: toastMessage,
-                systemImage: toastIsError ? "exclamationmark.circle.fill" : "checkmark.circle.fill",
-                tint: toastIsError ? .orange : DesignTokens.success
-            )
-            .padding(.top, 12)
-            .transition(.move(edge: .top).combined(with: .opacity))
+            AppleToastBanner(message: toastMessage,
+                             systemImage: toastIsError ? "exclamationmark.circle.fill" : "checkmark.circle.fill",
+                             tint: toastIsError ? .orange : DesignTokens.success)
+                .padding(.top, 12).transition(.move(edge: .top).combined(with: .opacity))
         }
     }
 
@@ -271,13 +251,11 @@ struct ExportSheetView: View {
     private func saveToPhotos() async {
         isSaving = true
         defer { isSaving = false }
-        let feedback = FeedbackManager(
-            soundEnabled: settings.soundEnabled,
-            hapticsEnabled: settings.hapticsEnabled
-        )
+        await ensureRenderedImage()
+        let feedback = FeedbackManager(soundEnabled: settings.soundEnabled, hapticsEnabled: settings.hapticsEnabled)
         let format = selectedFormat.imageFormat(quality: quality)
         do {
-            try await PhotoSaver.save(image, format: format)
+            try await PhotoSaver.save(exportImage, format: format)
             feedback.success()
             withAnimation(AppleMotion.snappy) { isSaved = true }
             showToast("已保存到相册")
@@ -295,7 +273,8 @@ struct ExportSheetView: View {
         isExporting = true
         defer { isExporting = false }
         cleanupShareFile()
-        let cgImage = image
+        await ensureRenderedImage()
+        let cgImage = exportImage
         let fmt = selectedFormat.imageFormat(quality: quality)
         let ext = selectedFormat.fileExtension
         do {
@@ -305,22 +284,16 @@ struct ExportSheetView: View {
             }.value
             shareURL = url
             isShowingShare = true
-            if settings.saveStitchedOnShare {
-                Task { try? await PhotoSaver.save(cgImage, format: fmt) }
-            }
+            if settings.saveStitchedOnShare { Task { try? await PhotoSaver.save(cgImage, format: fmt) } }
         } catch {
             showToast("导出失败：\(error.localizedDescription)", isError: true)
         }
     }
 
-    private func handleShareDismiss() {
-        cleanupShareFile()
-        maybeShowDeleteBar()
-    }
+    private func handleShareDismiss() { cleanupShareFile(); maybeShowDeleteBar() }
 
     private func maybeShowDeleteBar() {
-        guard settings.deleteOriginalsAfterExport,
-              !sourceAssetIdentifiers.isEmpty else { return }
+        guard settings.deleteOriginalsAfterExport, !sourceAssetIdentifiers.isEmpty else { return }
         withAnimation(AppleMotion.snappy) { showDeleteBar = true }
     }
 
@@ -342,7 +315,8 @@ struct ExportSheetView: View {
 
     private func scheduleSizeEstimate() {
         estimateTask?.cancel(); isEstimatingSize = true
-        let cgImage = image, fmt = selectedFormat.imageFormat(quality: quality)
+        if MarkupExportRenderer.needsRendering(for: markup), renderedImage == nil { return }
+        let cgImage = exportImage, fmt = selectedFormat.imageFormat(quality: quality)
         estimateTask = Task {
             try? await Task.sleep(nanoseconds: 160_000_000)
             guard !Task.isCancelled else { return }
@@ -352,10 +326,32 @@ struct ExportSheetView: View {
         }
     }
 
+    private func prepareExportPreview() async {
+        guard MarkupExportRenderer.needsRendering(for: markup) else {
+            previewThumb = await makePreviewThumb(for: image)
+            return
+        }
+        await ensureRenderedImage()
+        guard !Task.isCancelled else { return }
+        previewThumb = await makePreviewThumb(for: exportImage)
+        scheduleSizeEstimate()
+    }
+
+    private func ensureRenderedImage() async {
+        guard renderedImage == nil, MarkupExportRenderer.needsRendering(for: markup) else { return }
+        isPreparingRender = true
+        defer { isPreparingRender = false }
+        let task = renderTask ?? Task.detached(priority: .userInitiated) { [image, markup] in
+            MarkupExportRenderer.render(baseImage: image, markup: markup)
+        }
+        renderTask = task
+        let rendered = await task.value
+        guard !Task.isCancelled else { return }
+        renderedImage = rendered; renderTask = nil
+    }
+
     private func cleanupShareFile() {
-        guard let url = shareURL else { return }
-        try? FileManager.default.removeItem(at: url)
-        shareURL = nil
+        if let url = shareURL { try? FileManager.default.removeItem(at: url); shareURL = nil }
     }
 
     private func showToast(_ message: String, isError: Bool = false) {
