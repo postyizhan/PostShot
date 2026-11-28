@@ -39,10 +39,10 @@ struct PreviewBottomBar: View {
                             .lineLimit(1)
                             .fixedSize(horizontal: true, vertical: false)
                     }
-                    .foregroundStyle(DesignTokens.onInk)
+                    .foregroundStyle(.primary)
                     .padding(.horizontal, 22)
                     .frame(height: 50)
-                    .background(DesignTokens.ink, in: Capsule())
+                    .liquidGlass(in: Capsule(), interactive: true)
                     .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)

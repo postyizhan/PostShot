@@ -182,13 +182,13 @@ private struct CropModeGlassPill<Value: Hashable>: View {
                 } label: {
                     Text(segment.title)
                         .font(.subheadline.weight(isSelected ? .semibold : .medium))
-                        .foregroundStyle(isSelected ? DesignTokens.onInk : Color.primary)
+                        .foregroundStyle(isSelected ? Color.primary : Color.secondary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.85)
                         .padding(.horizontal, 12).padding(.vertical, 8)
                         .background {
                             if isSelected {
-                                Capsule().fill(DesignTokens.ink)
+                                Capsule().fill(Color.primary.opacity(0.10))
                                     .matchedGeometryEffect(id: "cropModeActivePill", in: pillNamespace)
                             }
                         }

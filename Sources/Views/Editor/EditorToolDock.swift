@@ -224,9 +224,9 @@ private struct RedactModeToggle: View {
         let isSelected = selection == mode
         return Button { selection = mode } label: {
             Text(title).font(.caption.weight(.semibold)).lineLimit(1)
-                .foregroundStyle(isSelected ? DesignTokens.onInk : Color.primary)
+                .foregroundStyle(isSelected ? Color.primary : Color.secondary)
                 .padding(.horizontal, 10).padding(.vertical, 5)
-                .background(isSelected ? DesignTokens.ink : Color.clear, in: Capsule())
+                .background(isSelected ? Color.primary.opacity(0.12) : Color.clear, in: Capsule())
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)
@@ -242,9 +242,9 @@ private struct TextSubBar: View {
         HStack(spacing: 6) {
             Button(action: onAddTextSticker) {
                 Text("+ 文字")
-                    .font(.caption.weight(.semibold)).foregroundStyle(DesignTokens.onInk)
+                    .font(.caption.weight(.semibold)).foregroundStyle(.primary)
                     .padding(.horizontal, 11).padding(.vertical, 6)
-                    .background(DesignTokens.ink, in: Capsule()).lineLimit(1)
+                    .background(Color.primary.opacity(0.10), in: Capsule()).lineLimit(1)
             }
             .buttonStyle(.plain)
             HStack(spacing: 2) {
@@ -255,9 +255,9 @@ private struct TextSubBar: View {
             Button { markup.textHasBackground.toggle() } label: {
                 Image(systemName: markup.textHasBackground ? "text.bubble.fill" : "text.bubble")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(markup.textHasBackground ? DesignTokens.onInk : Color.primary)
+                    .foregroundStyle(markup.textHasBackground ? Color.primary : Color.secondary)
                     .frame(width: 32, height: 32)
-                    .background(markup.textHasBackground ? DesignTokens.ink : Color.primary.opacity(0.08), in: Circle())
+                    .background(markup.textHasBackground ? Color.primary.opacity(0.14) : Color.primary.opacity(0.06), in: Circle())
                     .contentShape(Circle())
             }
             .buttonStyle(.plain).accessibilityLabel("文字底色气泡")
@@ -335,9 +335,9 @@ private struct DockFilterChip: View {
     var body: some View {
         Button(action: action) {
             Text(title).font(.caption.weight(.semibold))
-                .foregroundStyle(isSelected ? DesignTokens.onInk : Color.primary)
+                .foregroundStyle(isSelected ? Color.primary : Color.secondary)
                 .padding(.horizontal, 12).padding(.vertical, 7)
-                .background(isSelected ? DesignTokens.ink : Color.primary.opacity(0.08), in: Capsule())
+                .background(isSelected ? Color.primary.opacity(0.14) : Color.primary.opacity(0.06), in: Capsule())
                 .contentShape(Capsule()).lineLimit(1)
         }
         .buttonStyle(.plain)
@@ -353,7 +353,7 @@ private struct ColorSwatchDot: View {
         Button(action: action) {
             Circle().fill(color).frame(width: 20, height: 20)
                 .overlay(Circle().strokeBorder(Color.primary.opacity(0.18), lineWidth: 1))
-                .overlay(Circle().strokeBorder(isSelected ? DesignTokens.ink : .clear, lineWidth: 2.5).padding(-3))
+                .overlay(Circle().strokeBorder(isSelected ? Color.primary.opacity(0.85) : .clear, lineWidth: 2).padding(-3))
                 .frame(width: 30, height: 36).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -383,9 +383,9 @@ private struct BrushWidthChips: View {
                 let isSelected = activeTier.id == tier.id
                 Button { brushWidth = tier.value } label: {
                     Text(tier.title).font(.caption.weight(.semibold)).lineLimit(1)
-                        .foregroundStyle(isSelected ? DesignTokens.onInk : Color.primary)
+                        .foregroundStyle(isSelected ? Color.primary : Color.secondary)
                         .padding(.horizontal, 8).padding(.vertical, 5)
-                        .background(isSelected ? DesignTokens.ink : Color.clear, in: Capsule())
+                        .background(isSelected ? Color.primary.opacity(0.14) : Color.clear, in: Capsule())
                         .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
