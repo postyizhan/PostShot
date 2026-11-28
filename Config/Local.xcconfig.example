@@ -1,0 +1,8 @@
+// Copy this file to Config/Local.xcconfig (gitignored) for local physical device debugging.
+// Find your 10-character Team ID (OU=...) via:
+//   security find-certificate -c "Apple Development" -p | openssl x509 -noout -subject
+DEVELOPMENT_TEAM =
+
+// Optional: uncomment and customize if com.postshot.app conflicts with another Apple team.
+// PostShotBroadcast automatically uses $(APP_BUNDLE_ID).broadcast.
+// APP_BUNDLE_ID = com.yourname.postshot

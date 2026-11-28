@@ -30,6 +30,7 @@ Payload/
 *.dSYM
 
 # Fastlane / signing (never used here, but guard anyway)
+Config/Local.xcconfig
 *.mobileprovision
 *.p12
 *.cer

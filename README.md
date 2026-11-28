@@ -43,10 +43,10 @@
 
 ### 💡 修改 Bundle ID（避免冲突）
 
-若需自定义包名，请编辑 `project.yml`，同步修改主应用与录屏扩展两个 target 的 `PRODUCT_BUNDLE_IDENTIFIER`（扩展包名需保持 `<主应用包名>.broadcast` 格式）：
+所有 Target 的包名均由 `APP_BUNDLE_ID` 变量统一派生（主应用 `$(APP_BUNDLE_ID)`、录屏扩展 `$(APP_BUNDLE_ID).broadcast`、单测 `$(APP_BUNDLE_ID).tests`）：
 
-- `PostShot`: `com.yourname.postshot`
-- `PostShotBroadcast`: `com.yourname.postshot.broadcast`
+- **Fork 后走云端 CI + SideStore 安装**：在 [Config/Base.xcconfig](Config/Base.xcconfig) 中修改 `APP_BUNDLE_ID` 为你自己的唯一包名（例如 `com.yourname.postshot`），重新触发 Actions 即可。
+- **仅在本地真机编译调试**：请在被 `.gitignore` 忽略的 `Config/Local.xcconfig` 中取消注释并修改 `APP_BUNDLE_ID`（见下方「本地构建并安装到真机」），这样不会污染 Git 仓库。
 
 `CaptureView` 会自动根据主包名匹配 `.broadcast` 扩展，无需修改源码。
 
@@ -73,6 +73,77 @@ xcodebuild -project PostShot.xcodeproj -scheme PostShot \
   -destination 'generic/platform=iOS' \
   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
 ```
+
+### 📱 本地构建并安装到真机
+
+公开仓库默认在 [Config/Base.xcconfig](Config/Base.xcconfig) 中将 `DEVELOPMENT_TEAM` 留空，以确保云端 CI 与任意贡献者都能无证书编译；同时通过 `#include? "Local.xcconfig"` 支持本地私有配置覆盖，**不会将你的 Team ID 提交到 Git**。
+
+真机运行前请先满足以下准备条件：
+
+1. **登录 Apple 账号**：在 Xcode → **Settings → Accounts** 中登录你的 Apple ID（免费个人账号即可，需曾在该账号下触发过一次真机调试以生成本地开发证书）。
+2. **开启开发者模式**：在 iPhone 上开启 **设置 → 隐私与安全性 → 开发者模式**，并通过数据线连接 Mac 且在手机端点击「信任此电脑」。
+3. **如遇包名冲突请覆盖 `APP_BUNDLE_ID`**：若签名提示 `com.postshot.app` 已被其他团队占用，可在下方 `Config/Local.xcconfig` 中取消注释并设置 `APP_BUNDLE_ID = com.yourname.postshot`。
+
+#### 方式一：通过 `Config/Local.xcconfig` 一次配置，永久生效（推荐）
+
+1. 查询个人 10 位 Team ID（输出中 `OU=` 后的字符）：
+
+```bash
+security find-certificate -c "Apple Development" -p | openssl x509 -noout -subject
+```
+
+2. 复制模板文件并填入你的 Team ID（`Config/Local.xcconfig` 已加入 `.gitignore`，不会被提交）：
+
+```bash
+cp Config/Local.xcconfig.example Config/Local.xcconfig
+```
+
+编辑 `Config/Local.xcconfig`：
+
+```xcconfig
+DEVELOPMENT_TEAM = <YOUR_TEAM_ID>
+// 若 com.postshot.app 冲突，取消下行注释并改成你的包名：
+// APP_BUNDLE_ID = com.yourname.postshot
+```
+
+3. 生成工程并运行：
+
+```bash
+xcodegen generate
+```
+
+打开 `PostShot.xcodeproj`，顶部设备栏选择已连接的 iPhone，直接按下 **`⌘R`** 即可编译签名并安装到真机。此后即使重新执行 `xcodegen generate`，你的本地签名配置依然会自动保留。
+
+> 如习惯使用命令行直接编译安装到真机（先用 `xcrun devicectl list devices` 查询 `<YOUR_DEVICE_UDID>`）：
+>
+> ```bash
+> DERIVED_DIR="/tmp/PostShot-DeviceBuild"
+> xcodebuild -project PostShot.xcodeproj -scheme PostShot \
+>   -configuration Debug -sdk iphoneos \
+>   -destination "platform=iOS,id=<YOUR_DEVICE_UDID>" \
+>   -derivedDataPath "$DERIVED_DIR" \
+>   -allowProvisioningUpdates build
+>
+> xcrun devicectl device install app \
+>   --device "<YOUR_DEVICE_UDID>" \
+>   "$DERIVED_DIR/Build/Products/Debug-iphoneos/PostShot.app"
+>
+> xcrun devicectl device process launch \
+>   --device "<YOUR_DEVICE_UDID>" \
+>   com.postshot.app
+> ```
+
+#### 方式二：临时在 Xcode 图形界面选择 Team
+
+如果不想创建 `Config/Local.xcconfig`，也可以：
+
+1. 执行 `xcodegen generate` 后打开 `PostShot.xcodeproj`。
+2. 分别选中 **`PostShot`** 与 **`PostShotBroadcast`** 两个 Target，在 **Signing & Capabilities** 中选择你的 **Team**（请勿提交修改后的工程文件）。
+3. 顶部设备栏选择已连接的 iPhone，按下 **`⌘R`** 编译运行。
+
+> 注意：每次重新运行 `xcodegen generate` 会重置图形界面中手动选择的 Team；如经常重新生成工程，建议使用方式一的 `Config/Local.xcconfig`。
+
+> **首次安装提示**：若手机弹出「未受信任的开发者」或启动被拦截，请前往 iPhone 的 **设置 → 通用 → VPN 与设备管理**，找到你的开发者证书并点击 **信任** 后即可打开（免费个人账号签名有效期同样为 7 天）。
 
 ---
 

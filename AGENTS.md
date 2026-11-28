@@ -14,7 +14,8 @@
 ## 硬性开发约束
 
 - **禁止手改 `.xcodeproj`**：`project.yml` 是工程配置与文件组织的唯一事实来源。修改配置或增删源码目录后，必须运行 `xcodegen generate` 重新生成工程。
-- **严禁在 `project.yml` 中开启代码签名**：必须保持 `CODE_SIGNING_REQUIRED: "NO"`、`CODE_SIGNING_ALLOWED: "NO"`、`CODE_SIGN_IDENTITY: ""`、`DEVELOPMENT_TEAM: ""`。GitHub Actions（`.github/workflows/build.yml`，`macos-26`）负责编译并产出未签名 `.ipa`（artifact `PostShot-ipa`）供设备端 SideStore 自签，CI 绝不接触苹果证书、私钥或描述文件；本地真机调试仅能通过 `xcodebuild` 命令行参数临时覆盖签名。
+- **严禁将个人签名信息提交到仓库**：`project.yml` 与 `Config/Base.xcconfig` 中 `DEVELOPMENT_TEAM` 必须保持为空，绝不提交任何人的 Team ID、证书、私钥或描述文件；本地真机调试的个人 Team ID / 自定义 Bundle ID 必须写入被 `.gitignore` 忽略的 `Config/Local.xcconfig`（参考 `Config/Local.xcconfig.example`）。
+- **CI 保持无签名产出**：GitHub Actions（`.github/workflows/build.yml`，`macos-26`）通过 `xcodebuild` 命令行参数（`CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""`）显式关闭签名，产出未签名 `.ipa`（artifact `PostShot-ipa`）供设备端 SideStore 自签，CI 绝不接触苹果证书、私钥或描述文件。
 - **系统与方向约束**：部署目标保持 **iOS 16.0+**（避免使用 iOS 17+ 专属 API，如 `ContentUnavailableView`），仅支持竖屏（`UIInterfaceOrientationPortrait`）。
 - **代码规范**：
   - 小文件优于大文件：单文件控制 `< 400` 行，单函数控制 `< 50` 行。

@@ -1,0 +1,7 @@
+// Shared default signing and bundle configuration for open-source / CI builds.
+// Keep personal Team ID or custom Bundle ID in Config/Local.xcconfig (gitignored).
+APP_BUNDLE_ID = com.postshot.app
+CODE_SIGN_STYLE = Automatic
+DEVELOPMENT_TEAM =
+
+#include? "Local.xcconfig"
