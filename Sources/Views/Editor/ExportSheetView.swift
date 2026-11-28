@@ -17,7 +17,8 @@ struct ExportSheetView: View {
     @State private var didInitialize = false
     @State private var renderedImage: CGImage?
     @State private var isPreparingRender = false
-    @State private var renderTask: Task<CGImage, Never>?
+    @State private var renderErrorMessage: String?
+    @State private var renderTask: Task<CGImage, Error>?
     @State private var previewThumb: UIImage?
     @State private var estimatedByteCount: Int?
     @State private var isEstimatingSize = false
@@ -71,8 +72,13 @@ struct ExportSheetView: View {
         HStack(spacing: 14) {
             thumbnailView
             VStack(alignment: .leading, spacing: 6) {
-                Text("\(exportImage.width) × \(exportImage.height) px")
-                    .font(.headline).monospacedDigit()
+                if let renderErrorMessage {
+                    Text(renderErrorMessage).font(.caption.weight(.medium)).foregroundStyle(.red).fixedSize(horizontal: false, vertical: true)
+                } else if isPreparingRender {
+                    Text("正在合成渲染…").font(.headline).foregroundStyle(.secondary)
+                } else {
+                    Text("\(exportImage.width) × \(exportImage.height) px").font(.headline).monospacedDigit()
+                }
                 HStack(spacing: 8) {
                     Text(selectedFormat.shortName).capsuleLabelStyle()
                     if selectedFormat.supportsQuality {
@@ -135,13 +141,11 @@ struct ExportSheetView: View {
             HStack {
                 Text("清晰度").font(.subheadline.weight(.medium))
                 Spacer()
-                Text(selectedFormat.supportsQuality ? "\(Int((quality * 100).rounded()))%" : "无损 100%")
+                Text("\(Int((quality * 100).rounded()))%")
                     .font(.subheadline.monospacedDigit()).foregroundStyle(.secondary)
             }
             Slider(value: $quality, in: 0.1...1.0, step: 0.05)
                 .tint(DesignTokens.ink)
-                .disabled(!selectedFormat.supportsQuality)
-                .opacity(selectedFormat.supportsQuality ? 1 : 0.45)
         }
         .padding(14)
     }
@@ -185,7 +189,7 @@ struct ExportSheetView: View {
                 }
             }
             .buttonStyle(AppleSecondaryButtonStyle())
-            .disabled(isSaving || isExporting || isPreparingRender)
+            .disabled(isSaving || isExporting || isPreparingRender || renderErrorMessage != nil)
         }
     }
 
@@ -210,7 +214,7 @@ struct ExportSheetView: View {
                 .transition(.opacity)
             }
         }
-        .disabled(isSaving || isExporting || isPreparingRender)
+        .disabled(isSaving || isExporting || isPreparingRender || renderErrorMessage != nil)
     }
 
     private var deleteOriginalsBar: some View {
@@ -252,6 +256,7 @@ struct ExportSheetView: View {
         isSaving = true
         defer { isSaving = false }
         await ensureRenderedImage()
+        if let renderErrorMessage { showToast(renderErrorMessage, isError: true); return }
         let feedback = FeedbackManager(soundEnabled: settings.soundEnabled, hapticsEnabled: settings.hapticsEnabled)
         let format = selectedFormat.imageFormat(quality: quality)
         do {
@@ -274,6 +279,7 @@ struct ExportSheetView: View {
         defer { isExporting = false }
         cleanupShareFile()
         await ensureRenderedImage()
+        if let renderErrorMessage { showToast(renderErrorMessage, isError: true); return }
         let cgImage = exportImage
         let fmt = selectedFormat.imageFormat(quality: quality)
         let ext = selectedFormat.fileExtension
@@ -332,22 +338,28 @@ struct ExportSheetView: View {
             return
         }
         await ensureRenderedImage()
-        guard !Task.isCancelled else { return }
+        guard !Task.isCancelled, renderErrorMessage == nil else { return }
         previewThumb = await makePreviewThumb(for: exportImage)
         scheduleSizeEstimate()
     }
 
     private func ensureRenderedImage() async {
         guard renderedImage == nil, MarkupExportRenderer.needsRendering(for: markup) else { return }
-        isPreparingRender = true
+        isPreparingRender = true; renderErrorMessage = nil
         defer { isPreparingRender = false }
         let task = renderTask ?? Task.detached(priority: .userInitiated) { [image, markup] in
-            MarkupExportRenderer.render(baseImage: image, markup: markup)
+            try MarkupExportRenderer.renderOrThrow(baseImage: image, markup: markup)
         }
         renderTask = task
-        let rendered = await task.value
-        guard !Task.isCancelled else { return }
-        renderedImage = rendered; renderTask = nil
+        do {
+            let rendered = try await task.value; renderTask = nil
+            guard !Task.isCancelled else { return }
+            renderedImage = rendered
+        } catch is CancellationError { renderTask = nil } catch {
+            renderTask = nil
+            guard !Task.isCancelled else { return }
+            renderErrorMessage = error.localizedDescription
+        }
     }
 
     private func cleanupShareFile() {
@@ -367,19 +379,16 @@ struct ExportSheetView: View {
 
     private func makePreviewThumb(for cgImage: CGImage) async -> UIImage {
         await Task.detached(priority: .utility) {
-            let maxEdge = max(cgImage.width, cgImage.height)
-            let targetMax = 240
+            let maxEdge = max(cgImage.width, cgImage.height), targetMax = 240
             guard maxEdge > targetMax else { return UIImage(cgImage: cgImage) }
             let ratio = CGFloat(targetMax) / CGFloat(maxEdge)
             let w = max(1, Int((CGFloat(cgImage.width) * ratio).rounded()))
             let h = max(1, Int((CGFloat(cgImage.height) * ratio).rounded()))
             let space = CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
-            guard let ctx = CGContext(
-                data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: 0,
-                space: space, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-            ) else { return UIImage(cgImage: cgImage) }
-            ctx.interpolationQuality = .medium
-            ctx.draw(cgImage, in: CGRect(x: 0, y: 0, width: w, height: h))
+            guard let ctx = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: 0, space: space, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else {
+                return UIImage(cgImage: cgImage)
+            }
+            ctx.interpolationQuality = .medium; ctx.draw(cgImage, in: CGRect(x: 0, y: 0, width: w, height: h))
             return ctx.makeImage().map(UIImage.init(cgImage:)) ?? UIImage(cgImage: cgImage)
         }.value
     }

@@ -7,6 +7,20 @@ import UIKit
 /// Renders non-destructive markup strokes, text stickers, and beautify styling onto a `CGImage`.
 enum MarkupExportRenderer {
 
+    enum RenderError: LocalizedError {
+        case canvasTooLarge
+        case contextCreationFailed
+
+        var errorDescription: String? {
+            switch self {
+            case .canvasTooLarge:
+                return "导出图像尺寸过大，超出渲染内存上限。"
+            case .contextCreationFailed:
+                return "无法创建图像渲染上下文，请重试。"
+            }
+        }
+    }
+
     private static let maxBitmapBytes: Int64 = 256 * 1024 * 1024
 
     /// Returns `true` when any annotation or beautify option would alter the base image.
@@ -17,55 +31,49 @@ enum MarkupExportRenderer {
             || markup.beautifyFrame
     }
 
-    /// Renders `markup` onto `baseImage`, returning `baseImage` unchanged on fast-path or context failure.
+    /// Renders `markup` onto `baseImage`, returning `baseImage` unchanged on fast-path or render failure.
     static func render(baseImage: CGImage, markup: EditorMarkupState) -> CGImage {
+        (try? renderOrThrow(baseImage: baseImage, markup: markup)) ?? baseImage
+    }
+
+    /// Renders `markup` onto `baseImage`, throwing `RenderError` if canvas allocation or context creation fails.
+    static func renderOrThrow(baseImage: CGImage, markup: EditorMarkupState) throws -> CGImage {
         guard needsRendering(for: markup) else { return baseImage }
 
-        let baseW = baseImage.width
-        let baseH = baseImage.height
-        guard baseW > 0, baseH > 0 else { return baseImage }
+        let baseW = baseImage.width, baseH = baseImage.height
+        guard baseW > 0, baseH > 0 else { throw RenderError.contextCreationFailed }
 
         let scale = CGFloat(baseW) / EditorMarkupState.referenceWidth
         let pad = markup.beautifyShadow ? max(24, Int((CGFloat(baseW) * 0.04).rounded())) : 0
-        let canvasW = baseW + pad * 2
-        let canvasH = baseH + pad * 2
-        let byteCount = Int64(canvasW) * Int64(canvasH) * 4
-        guard canvasW > 0, canvasH > 0, byteCount > 0, byteCount <= maxBitmapBytes else {
-            return baseImage
+        let canvasW = baseW + pad * 2, canvasH = baseH + pad * 2
+        let (byteCount, overflow) = Int64(canvasW).multipliedReportingOverflow(by: Int64(canvasH) * 4)
+        guard canvasW > 0, canvasH > 0, !overflow, byteCount > 0, byteCount <= maxBitmapBytes else {
+            throw RenderError.canvasTooLarge
         }
-        guard let ctx = makeContext(width: canvasW, height: canvasH) else { return baseImage }
+        guard let ctx = makeContext(width: canvasW, height: canvasH) else { throw RenderError.contextCreationFailed }
 
         if markup.beautifyShadow {
             ctx.setFillColor(UIColor.white.cgColor)
             ctx.fill(CGRect(x: 0, y: 0, width: canvasW, height: canvasH))
         }
-
-        ctx.translateBy(x: 0, y: CGFloat(canvasH))
-        ctx.scaleBy(x: 1, y: -1)
+        ctx.translateBy(x: 0, y: CGFloat(canvasH)); ctx.scaleBy(x: 1, y: -1)
         UIGraphicsPushContext(ctx)
         defer { UIGraphicsPopContext() }
 
         let imageRect = CGRect(x: CGFloat(pad), y: CGFloat(pad), width: CGFloat(baseW), height: CGFloat(baseH))
-        let scaledCornerRadius = min(min(imageRect.width, imageRect.height) * 0.45, markup.beautifyCornerRadius * scale)
-        let roundedPath = UIBezierPath(roundedRect: imageRect, cornerRadius: scaledCornerRadius).cgPath
+        let radius = min(min(imageRect.width, imageRect.height) * 0.45, markup.beautifyCornerRadius * scale)
+        let roundedPath = UIBezierPath(roundedRect: imageRect, cornerRadius: radius).cgPath
 
         drawShadowIfNeeded(markup, roundedPath: roundedPath, scale: scale, in: ctx)
-
-        ctx.saveGState()
-        ctx.addPath(roundedPath)
-        ctx.clip()
-
+        ctx.saveGState(); ctx.addPath(roundedPath); ctx.clip()
         UIImage(cgImage: baseImage).draw(in: imageRect)
-        for stroke in markup.strokes {
-            drawStroke(stroke, in: imageRect, scale: scale, ctx: ctx)
-        }
-        for sticker in markup.stickers {
-            drawSticker(sticker, in: imageRect, scale: scale)
-        }
+        for stroke in markup.strokes { drawStroke(stroke, in: imageRect, scale: scale, ctx: ctx) }
+        for sticker in markup.stickers { drawSticker(sticker, in: imageRect, scale: scale) }
         ctx.restoreGState()
 
         drawFrameIfNeeded(markup, roundedPath: roundedPath, scale: scale, in: ctx)
-        return ctx.makeImage() ?? baseImage
+        guard let output = ctx.makeImage() else { throw RenderError.contextCreationFailed }
+        return output
     }
 }
 
@@ -95,7 +103,7 @@ private extension MarkupExportRenderer {
         guard markup.beautifyShadow else { return }
         ctx.saveGState()
         ctx.setShadow(
-            offset: CGSize(width: 0, height: 6 * scale),
+            offset: CGSize(width: 0, height: -6 * scale),
             blur: 18 * scale,
             color: UIColor.black.withAlphaComponent(0.14).cgColor
         )

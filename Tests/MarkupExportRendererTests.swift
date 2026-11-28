@@ -249,4 +249,20 @@ final class MarkupExportRendererTests: XCTestCase {
         XCTAssertEqual(center.b, 220)
         XCTAssertEqual(center.a, 255)
     }
+
+    func testBeautifyShadowCastsBelowCardAndRenderOrThrowSucceeds() throws {
+        let base = makeSolidImage(width: 360, height: 360, r: 30, g: 100, b: 220)
+        var markup = plainMarkupState()
+        markup.beautifyCornerRadius = 12
+        markup.beautifyShadow = true
+
+        let expectedPad = max(24, Int((CGFloat(base.width) * 0.04).rounded()))
+        let output = try MarkupExportRenderer.renderOrThrow(baseImage: base, markup: markup)
+
+        let topPadPixel = pixelRGBA(output, x: output.width / 2, y: expectedPad - 4)
+        let bottomPadPixel = pixelRGBA(output, x: output.width / 2, y: output.height - expectedPad + 4)
+        let topLuma = Int(topPadPixel.r) + Int(topPadPixel.g) + Int(topPadPixel.b)
+        let bottomLuma = Int(bottomPadPixel.r) + Int(bottomPadPixel.g) + Int(bottomPadPixel.b)
+        XCTAssertLessThan(bottomLuma, topLuma, "Shadow should fall below the card, making bottom padding darker than top padding")
+    }
 }

@@ -83,7 +83,6 @@ struct EditorMarkupState {
     var textColor: Color = .white
     var textHasBackground: Bool = true
     var beautifyCornerRadius: CGFloat = 0
-    var beautifyPadding: CGFloat = 0
     var beautifyShadow: Bool = false
     var beautifyFrame: Bool = false
 
@@ -97,7 +96,6 @@ struct EditorMarkupState {
 
     func hasBeautifyChanges(comparedTo other: EditorMarkupState) -> Bool {
         beautifyCornerRadius != other.beautifyCornerRadius
-            || beautifyPadding != other.beautifyPadding
             || beautifyShadow != other.beautifyShadow
             || beautifyFrame != other.beautifyFrame
     }
