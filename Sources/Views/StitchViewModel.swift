@@ -13,28 +13,30 @@ struct StitchResult: Identifiable {
     let segmentSpans: [SegmentSpan]
 
     init(image: CGImage, sourceAssetIdentifiers: [String], segmentSpans: [SegmentSpan] = []) {
-        self.image = image
-        self.sourceAssetIdentifiers = sourceAssetIdentifiers
-        self.segmentSpans = segmentSpans
+        self.image = image; self.sourceAssetIdentifiers = sourceAssetIdentifiers; self.segmentSpans = segmentSpans
     }
 }
 
 /// Owns selection, loading, auto-crop detection, backfill source, and stitching state.
 @MainActor
 final class StitchViewModel: ObservableObject {
-    @Published var pickerItems: [PhotosPickerItem] = [] {
-        didSet { loadPickedItems() }
+    struct EditRestoreSnapshot {
+        let images: [SelectedImage]; let result: StitchResult?; let cachedChain: StitchGraphResolver.ResolvedChain?
+        let alignmentTopCrop: Float, alignmentBottomCrop: Float
+        let topCropFraction: Float, bottomCropFraction: Float
+        let headerMode: HeaderKeepMode, keepFooter: Bool; let stitchNotice: String?
     }
+
+    @Published var pickerItems: [PhotosPickerItem] = [] { didSet { loadPickedItems() } }
     @Published var images: [SelectedImage] = [] {
-        didSet {
-            stitchGeneration &+= 1
-            failedSeam = nil
-        }
+        didSet { stitchGeneration &+= 1; cachedChain = nil; failedSeam = nil }
     }
     @Published var isStitching = false
     @Published var progress: Double = 0
     @Published var result: StitchResult?
 
+    private(set) var alignmentTopCrop: Float = 0
+    private(set) var alignmentBottomCrop: Float = 0
     @Published var topCropFraction: Float = 0
     @Published var bottomCropFraction: Float = 0
     @Published var headerMode: HeaderKeepMode = .none
@@ -45,6 +47,17 @@ final class StitchViewModel: ObservableObject {
     @Published private(set) var errorMessage: String?
     @Published private(set) var failedSeam: StitchSeam?
     @Published private(set) var stitchNotice: String?
+    private(set) var cachedChain: StitchGraphResolver.ResolvedChain?
+
+    var effectiveOutputTopCrop: Float {
+        switch headerMode {
+        case .none: return topCropFraction
+        case .navBarOnly: return min(alignmentTopCrop, FixedBarDetector.recordingStatusBandFloor)
+        case .full: return 0
+        }
+    }
+
+    var effectiveOutputBottomCrop: Float { keepFooter ? 0 : bottomCropFraction }
 
     private let engine = StitchEngine()
     private let autoSuggestCrop: Bool
@@ -62,30 +75,20 @@ final class StitchViewModel: ObservableObject {
     // MARK: - Selection
 
     func clear() {
-        loadTask?.cancel()
-        cropTask?.cancel()
-        stitchGeneration &+= 1
-        isStitching = false
-        pickerItems = []
-        images = []
-        result = nil
-        failedSeam = nil
-        errorMessage = nil
-        stitchNotice = nil
-        isShowingError = false
-        lastSuggestedCrop = nil
-        recordingStore = nil
+        loadTask?.cancel(); cropTask?.cancel()
+        stitchGeneration &+= 1; isStitching = false
+        pickerItems = []; images = []; result = nil; cachedChain = nil
+        alignmentTopCrop = 0; alignmentBottomCrop = 0
+        topCropFraction = 0; bottomCropFraction = 0
+        headerMode = .none; keepFooter = false
+        failedSeam = nil; errorMessage = nil; stitchNotice = nil; isShowingError = false
+        lastSuggestedCrop = nil; recordingStore = nil
     }
 
     /// Seeds already-decoded canonical images, preserving their validated order.
     func load(decodedImages: [SelectedImage]) {
-        isRecordingSource = false
-        recordingStore = nil
-        stitchNotice = nil
-        images = decodedImages
-        result = nil
-        errorMessage = nil
-        isShowingError = false
+        isRecordingSource = false; recordingStore = nil; stitchNotice = nil
+        images = decodedImages; result = nil; errorMessage = nil; isShowingError = false
     }
 
     func notePreExcluded(indices: [Int]) {
@@ -103,8 +106,7 @@ final class StitchViewModel: ObservableObject {
             for (pos, poolIdx) in indices.enumerated() {
                 do {
                     var item = try store.loadSelectedImage(at: poolIdx)
-                    item.poolIndex = poolIdx
-                    loaded.append(item)
+                    item.poolIndex = poolIdx; loaded.append(item)
                 } catch { failedIndices.append(pos) }
             }
             return (loaded, failedIndices)
@@ -158,8 +160,14 @@ final class StitchViewModel: ObservableObject {
 
     private var minimumTopCrop: Float { isRecordingSource ? FixedBarDetector.recordingStatusBandFloor : 0 }
 
+    func applyDetectedFixedBarCrop(top: Float, bottom: Float) {
+        applySuggestedCrop((top: top, bottom: bottom))
+    }
+
     private func applySuggestedCrop(_ suggestion: (top: Float, bottom: Float)) {
-        topCropFraction = suggestion.top; bottomCropFraction = suggestion.bottom; lastSuggestedCrop = suggestion
+        alignmentTopCrop = suggestion.top; alignmentBottomCrop = suggestion.bottom
+        topCropFraction = suggestion.top; bottomCropFraction = suggestion.bottom
+        lastSuggestedCrop = suggestion
     }
 
     private func refreshAutoCropAndStitchIfReady() {
@@ -178,42 +186,30 @@ final class StitchViewModel: ObservableObject {
     private func loadPickedItems() {
         loadTask?.cancel()
         let items = pickerItems
-        guard !items.isEmpty else {
-            images = []
-            stitchNotice = nil
-            return
-        }
+        guard !items.isEmpty else { images = []; stitchNotice = nil; return }
 
         loadTask = Task {
-            var loaded: [SelectedImage] = []
-            var failedIndices: [Int] = []
+            var loaded: [SelectedImage] = [], failedIndices: [Int] = []
             for (index, item) in items.enumerated() {
                 guard !Task.isCancelled else { return }
                 do {
-                    guard let data = try await item.loadTransferable(type: Data.self) else {
-                        failedIndices.append(index)
-                        continue
-                    }
-                    let assetID = item.itemIdentifier
-                    let decoded = try await Task.detached(priority: .userInitiated) {
-                        try ImageDecoder.decode(data, assetIdentifier: assetID)
-                    }.value
-                    loaded.append(decoded)
-                } catch is CancellationError {
-                    return
-                } catch {
-                    failedIndices.append(index)
-                }
+                    if let decoded = try await decodePickerItem(item) { loaded.append(decoded) }
+                    else { failedIndices.append(index) }
+                } catch is CancellationError { return } catch { failedIndices.append(index) }
             }
             guard !Task.isCancelled, items == self.pickerItems else { return }
-            self.isRecordingSource = false
-            self.recordingStore = nil
-            self.stitchNotice = nil
-            self.applyLoadedFrames(loaded, failedIndices: failedIndices, prefix: "所选图片")
-            if self.autoSuggestCrop, failedIndices.isEmpty, loaded.count >= 2 {
-                await self.suggestFixedBarCropAsync()
-            }
+            isRecordingSource = false; recordingStore = nil; stitchNotice = nil
+            applyLoadedFrames(loaded, failedIndices: failedIndices, prefix: "所选图片")
+            if autoSuggestCrop, failedIndices.isEmpty, loaded.count >= 2 { await suggestFixedBarCropAsync() }
         }
+    }
+
+    private func decodePickerItem(_ item: PhotosPickerItem) async throws -> SelectedImage? {
+        guard let data = try await item.loadTransferable(type: Data.self) else { return nil }
+        let assetID = item.itemIdentifier
+        return try await Task.detached(priority: .userInitiated) {
+            try ImageDecoder.decode(data, assetIdentifier: assetID)
+        }.value
     }
 
     // MARK: - Stitching
@@ -222,21 +218,14 @@ final class StitchViewModel: ObservableObject {
         guard images.count >= 2, !isStitching else { return }
         stitchGeneration &+= 1
         let expectedGen = stitchGeneration
-        result = nil
-        failedSeam = nil
-        errorMessage = nil
-        isShowingError = false
-        isStitching = true
-        progress = 0
+        result = nil; failedSeam = nil; errorMessage = nil; isShowingError = false
+        isStitching = true; progress = 0
 
         var options = StitchEngine.Options()
-        options.topCropFraction = topCropFraction
-        options.bottomCropFraction = bottomCropFraction
-        options.headerMode = headerMode
-        options.keepFooter = keepFooter
+        options.topCropFraction = alignmentTopCrop; options.bottomCropFraction = alignmentBottomCrop
+        options.headerMode = headerMode; options.keepFooter = keepFooter
         options.removeScrollIndicator = removeScrollIndicator
-        options.autoDetectScrollDirection = true
-        options.allowAutoReorder = !isRecordingSource
+        options.autoDetectScrollDirection = true; options.allowAutoReorder = !isRecordingSource
         if let store = recordingStore {
             let indices = images.compactMap(\.poolIndex)
             if indices.count == images.count {
@@ -253,10 +242,64 @@ final class StitchViewModel: ObservableObject {
         } completion: { [weak self] outcome in
             Task { @MainActor in
                 guard let self, self.stitchGeneration == expectedGen else { return }
-                self.isStitching = false
-                self.handleStitchOutcome(outcome)
+                self.isStitching = false; self.handleStitchOutcome(outcome)
             }
         }
+    }
+
+    func recompositeOutput() {
+        guard images.count >= 2, !isStitching else { return }
+        guard let chain = cachedChain else { stitch(); return }
+        stitchGeneration &+= 1
+        let expectedGen = stitchGeneration
+        errorMessage = nil; isShowingError = false; isStitching = true
+        engine.recomposite(
+            chain: chain, outputTopFraction: effectiveOutputTopCrop,
+            outputBottomFraction: effectiveOutputBottomCrop, removeScrollIndicator: removeScrollIndicator
+        ) { [weak self] outcome in
+            Task { @MainActor in
+                guard let self, self.stitchGeneration == expectedGen else { return }
+                self.isStitching = false
+                switch outcome {
+                case .success(let report):
+                    self.cachedChain = report.resolvedChain ?? chain
+                    let ids = Array(Set(self.images.compactMap(\.assetIdentifier)))
+                    self.result = StitchResult(image: report.image, sourceAssetIdentifiers: ids, segmentSpans: report.segmentSpans)
+                case .failure(let error): self.present(error: self.describe(error))
+                }
+            }
+        }
+    }
+
+    func resetOutputCropToAutoDetected() async {
+        guard images.count >= 2, !isStitching else { return }
+        if cachedChain != nil {
+            topCropFraction = alignmentTopCrop; bottomCropFraction = alignmentBottomCrop
+            headerMode = .none; keepFooter = false; recompositeOutput()
+        } else {
+            await suggestFixedBarCropAsync()
+            guard !Task.isCancelled, images.count >= 2, !isStitching else { return }
+            headerMode = .none; keepFooter = false; stitch()
+        }
+    }
+
+    func makeEditSnapshot() -> EditRestoreSnapshot {
+        EditRestoreSnapshot(
+            images: images, result: result, cachedChain: cachedChain,
+            alignmentTopCrop: alignmentTopCrop, alignmentBottomCrop: alignmentBottomCrop,
+            topCropFraction: topCropFraction, bottomCropFraction: bottomCropFraction,
+            headerMode: headerMode, keepFooter: keepFooter, stitchNotice: stitchNotice
+        )
+    }
+
+    func restoreEditSnapshot(_ snapshot: EditRestoreSnapshot) {
+        cancelInFlightStitch()
+        if images.map(\.id) != snapshot.images.map(\.id) { images = snapshot.images }
+        alignmentTopCrop = snapshot.alignmentTopCrop; alignmentBottomCrop = snapshot.alignmentBottomCrop
+        topCropFraction = snapshot.topCropFraction; bottomCropFraction = snapshot.bottomCropFraction
+        headerMode = snapshot.headerMode; keepFooter = snapshot.keepFooter
+        result = snapshot.result; cachedChain = snapshot.cachedChain; stitchNotice = snapshot.stitchNotice
+        failedSeam = nil; errorMessage = nil; isShowingError = false
     }
 
     func cancelInFlightStitch() {
@@ -267,20 +310,34 @@ final class StitchViewModel: ObservableObject {
     private func handleStitchOutcome(_ outcome: Result<StitchReport, StitchEngine.StitchError>) {
         switch outcome {
         case .success(let report):
-            stitchNotice = formatNotice(report: report)
+            var finalReport = report
+            if let chain = report.resolvedChain {
+                let initialTop: Float = headerMode == .full ? 0 : (
+                    headerMode == .navBarOnly ? min(alignmentTopCrop, FixedBarDetector.recordingStatusBandFloor) : alignmentTopCrop
+                )
+                let initialBot: Float = keepFooter ? 0 : alignmentBottomCrop
+                if abs(effectiveOutputTopCrop - initialTop) > 1e-4 || abs(effectiveOutputBottomCrop - initialBot) > 1e-4,
+                   case .success(let recomposited) = engine.recompositeSync(
+                       chain: chain, outputTopFraction: effectiveOutputTopCrop,
+                       outputBottomFraction: effectiveOutputBottomCrop, removeScrollIndicator: removeScrollIndicator
+                   ) {
+                    finalReport = recomposited
+                }
+            }
+            stitchNotice = formatNotice(report: finalReport)
             let ids = Array(Set(images.compactMap(\.assetIdentifier)))
             // Set result before mutating images so StitchEditorView.handleImagesChanged doesn't trigger a redundant re-stitch.
-            result = StitchResult(image: report.image, sourceAssetIdentifiers: ids, segmentSpans: report.segmentSpans)
-            if report.orderAdjustment != .none,
-               report.resolvedOrder.count == images.count,
-               Set(report.resolvedOrder).count == images.count {
-                images = report.resolvedOrder.map { images[$0] }
+            result = StitchResult(image: finalReport.image, sourceAssetIdentifiers: ids, segmentSpans: finalReport.segmentSpans)
+            if finalReport.orderAdjustment != .none,
+               finalReport.resolvedOrder.count == images.count,
+               Set(finalReport.resolvedOrder).count == images.count {
+                images = finalReport.resolvedOrder.map { images[$0] }
             }
+            cachedChain = finalReport.resolvedChain ?? report.resolvedChain
         case .failure(let error):
-            result = nil
+            cachedChain = nil; result = nil
             if case .unsafeSeam(let seam) = error {
-                failedSeam = seam
-                errorMessage = describe(error)
+                failedSeam = seam; errorMessage = describe(error)
             } else {
                 present(error: describe(error))
             }
@@ -294,22 +351,15 @@ final class StitchViewModel: ObservableObject {
     func replaceFrame(at index: Int, with item: PhotosPickerItem) async -> Bool {
         guard images.indices.contains(index), !isStitching else { return false }
         do {
-            guard let data = try await item.loadTransferable(type: Data.self) else {
-                present(error: "无法读取所选图片。")
-                return false
+            guard let decoded = try await decodePickerItem(item) else {
+                present(error: "无法读取所选图片。"); return false
             }
-            let assetID = item.itemIdentifier
-            let decoded = try await Task.detached(priority: .userInitiated) {
-                try ImageDecoder.decode(data, assetIdentifier: assetID)
-            }.value
             guard images.indices.contains(index) else { return false }
-            images[index] = decoded
-            stitchNotice = nil
+            images[index] = decoded; stitchNotice = nil
             if images.count >= 2 { stitch() }
             return true
         } catch {
-            present(error: "替换图片失败：\(error.localizedDescription)")
-            return false
+            present(error: "替换图片失败：\(error.localizedDescription)"); return false
         }
     }
 
@@ -317,9 +367,7 @@ final class StitchViewModel: ObservableObject {
     @discardableResult
     func removeFrameInEditor(at index: Int) -> Bool {
         guard images.count > 2, images.indices.contains(index), !isStitching else { return false }
-        images.remove(at: index)
-        stitchNotice = nil
-        stitch()
+        images.remove(at: index); stitchNotice = nil; stitch()
         return true
     }
 
@@ -338,20 +386,9 @@ final class StitchViewModel: ObservableObject {
         images = Array(images[0...endIndex]); refreshAutoCropAndStitchIfReady()
     }
 
-    func swapPairAndRetry() {
-        guard images.count == 2, !isStitching else { return }
-        images.swapAt(0, 1); refreshAutoCropAndStitchIfReady()
-    }
-
-    func reverseOrder() {
-        guard images.count >= 2, !isStitching else { return }
-        images.reverse()
-    }
-
-    func reverseAllAndRetry() {
-        guard images.count >= 2, !isStitching else { return }
-        images.reverse(); refreshAutoCropAndStitchIfReady()
-    }
+    func swapPairAndRetry() { guard images.count == 2, !isStitching else { return }; images.swapAt(0, 1); refreshAutoCropAndStitchIfReady() }
+    func reverseOrder() { guard images.count >= 2, !isStitching else { return }; images.reverse() }
+    func reverseAllAndRetry() { guard images.count >= 2, !isStitching else { return }; images.reverse(); refreshAutoCropAndStitchIfReady() }
 
     // MARK: - Errors
 

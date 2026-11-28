@@ -21,22 +21,14 @@ struct VisualCropCanvasView: View {
     @Binding var cropTab: CropAdjustTab
     var displayResultImage: UIImage? = nil
     var onPreviewSingle: (Int) -> Void = { _ in }
+    var onOpenFrames: () -> Void = {}
 
     @State private var displayThumbs: [UUID: UIImage] = [:]
     @State private var isDraggingCrop = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private var effectiveTopCrop: Float {
-        switch model.headerMode {
-        case .none: return model.topCropFraction
-        case .navBarOnly: return min(model.topCropFraction, FixedBarDetector.recordingStatusBandFloor)
-        case .full: return 0
-        }
-    }
-
-    private var effectiveBottomCrop: Float {
-        model.keepFooter ? 0 : model.bottomCropFraction
-    }
+    private var effectiveTopCrop: Float { model.effectiveOutputTopCrop }
+    private var effectiveBottomCrop: Float { model.effectiveOutputBottomCrop }
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -45,7 +37,8 @@ struct VisualCropCanvasView: View {
                 SegmentInspectCanvasView(
                     model: model,
                     displayResultImage: displayResultImage,
-                    onPreviewSingle: onPreviewSingle
+                    onPreviewSingle: onPreviewSingle,
+                    onOpenFrames: onOpenFrames
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .transition(reduceMotion ? .opacity : .scale(scale: 0.90).combined(with: .opacity))

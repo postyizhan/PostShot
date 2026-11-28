@@ -33,7 +33,7 @@ struct StitchEditorView: View {
     @State private var displayTask: Task<Void, Never>?
     @State private var didRunInitialStitch = false
     @State private var editSnapshot: EditSessionSnapshot?
-    @State private var lastStitchedCropParams: CropParams?
+    @State private var lastComposedOutputCrop: OutputCropParams?
     @State private var framesSnapshot: [UUID]?
 
     private var isDrawingToolActive: Bool {
@@ -49,8 +49,8 @@ struct StitchEditorView: View {
             .toolbar(.hidden, for: .tabBar)
             .task { await runInitialSetup() }
             .onChange(of: mode) { if $0 != .preview { isChromeHidden = false } }
-            .onChange(of: editTab) { if $0 != .crop { stitchIfCropParamsDirty() } }
-            .onChange(of: cropTab) { if $0 == .segments { stitchIfCropParamsDirty() } }
+            .onChange(of: editTab) { if $0 != .crop { recompositeIfOutputCropDirty() } }
+            .onChange(of: cropTab) { if $0 == .segments { recompositeIfOutputCropDirty() } }
             .onChange(of: model.result?.id) { handleResultChange($0) }
             .onChange(of: model.images.map(\.id)) { _ in handleImagesChanged() }
             .onDisappear { displayTask?.cancel() }
@@ -121,7 +121,7 @@ struct StitchEditorView: View {
 
     private var previewMoreMenu: some View {
         Menu {
-            Button { Task { await model.suggestFixedBarCropAsync(); model.stitch() } } label: {
+            Button { Task { await model.resetOutputCropToAutoDetected() } } label: {
                 Label("恢复自动裁剪", systemImage: "crop.rotate")
             }.disabled(model.images.count < 2 || model.isStitching)
             Button { framesSnapshot = model.images.map(\.id); showFramesSheet = true } label: {
@@ -145,7 +145,13 @@ struct StitchEditorView: View {
     private var centerStage: some View {
         Group {
             if mode == .edit && editTab == .crop {
-                VisualCropCanvasView(model: model, cropTab: $cropTab, displayResultImage: displayResultImage) { previewSingleIndex = $0 }
+                VisualCropCanvasView(
+                    model: model,
+                    cropTab: $cropTab,
+                    displayResultImage: displayResultImage,
+                    onPreviewSingle: { previewSingleIndex = $0 },
+                    onOpenFrames: { framesSnapshot = model.images.map(\.id); showFramesSheet = true }
+                )
             } else if let seam = model.failedSeam {
                 SeamFailureRecoveryView(seam: seam, model: model) { framesSnapshot = model.images.map(\.id); showFramesSheet = true }
             } else if model.isStitching || (model.result != nil && displayResultImage == nil) {
@@ -223,7 +229,7 @@ struct StitchEditorView: View {
             if mode == .preview {
                 PreviewBottomBar(
                     canExport: model.result != nil && !model.isStitching,
-                    canEdit: model.images.count >= 2 && !model.isStitching,
+                    canEdit: model.result != nil && !model.isStitching,
                     onShare: { showExportSheet = true },
                     onEnterEdit: enterEditMode
                 )
@@ -251,6 +257,9 @@ private extension StitchEditorView {
         CropParams(topCropFraction: model.topCropFraction, bottomCropFraction: model.bottomCropFraction,
                    headerMode: model.headerMode, keepFooter: model.keepFooter)
     }
+    var currentOutputCrop: OutputCropParams {
+        OutputCropParams(top: model.effectiveOutputTopCrop, bottom: model.effectiveOutputBottomCrop)
+    }
     var hasCropEditsInSession: Bool {
         guard let snap = editSnapshot else { return false }
         return currentCropParams != snap.cropParams || model.images.map(\.id) != snap.imageIDs
@@ -274,43 +283,45 @@ private extension StitchEditorView {
         didRunInitialStitch = true
         if let existing = model.result, displayResultImage == nil { handleResultChange(existing.id) }
         else if model.images.count >= 2 && model.result == nil && model.failedSeam == nil && !model.isStitching {
-            if model.topCropFraction == 0 && model.bottomCropFraction == 0 { await model.suggestFixedBarCropAsync() }
+            if model.alignmentTopCrop == 0 && model.alignmentBottomCrop == 0
+                && model.topCropFraction == 0 && model.bottomCropFraction == 0 {
+                await model.suggestFixedBarCropAsync()
+            }
             model.stitch()
         }
     }
 
     func enterEditMode() {
-        let params = currentCropParams
-        editSnapshot = EditSessionSnapshot(cropParams: params, imageIDs: model.images.map(\.id), images: model.images, result: model.result, markup: markup)
-        lastStitchedCropParams = params
+        editSnapshot = EditSessionSnapshot(
+            restore: model.makeEditSnapshot(), cropParams: currentCropParams,
+            imageIDs: model.images.map(\.id), markup: markup
+        )
+        lastComposedOutputCrop = currentOutputCrop
         editTab = .crop; cropTab = .top; isChromeHidden = false
         withAnimation(AppleMotion.snappy) { mode = .edit }
     }
 
     func exitEditMode(applyChanges: Bool) {
         if !applyChanges, let snap = editSnapshot {
-            if model.isStitching { model.cancelInFlightStitch() }
-            model.topCropFraction = snap.cropParams.topCropFraction; model.bottomCropFraction = snap.cropParams.bottomCropFraction
-            model.headerMode = snap.cropParams.headerMode; model.keepFooter = snap.cropParams.keepFooter
+            model.restoreEditSnapshot(snap.restore)
             markup = snap.markup
-            if snap.imageIDs != model.images.map(\.id) || snap.result?.id != model.result?.id {
-                model.images = snap.images; model.result = snap.result
-            }
         }
-        let hadChanges = applyChanges && hasEditsInSession
+        let needsRecomposite = applyChanges && model.failedSeam == nil && (
+            lastComposedOutputCrop != currentOutputCrop || model.result == nil
+        )
         editSnapshot = nil
+        lastComposedOutputCrop = nil
         withAnimation(AppleMotion.snappy) { mode = .preview }
-        guard hadChanges else { lastStitchedCropParams = nil; return }
-        let needsStitch = (lastStitchedCropParams != currentCropParams) || (model.result == nil && model.failedSeam == nil)
-        lastStitchedCropParams = nil
-        if needsStitch, model.images.count >= 2, !model.isStitching { model.stitch() }
+        if needsRecomposite, model.images.count >= 2, !model.isStitching {
+            model.recompositeOutput()
+        }
     }
 
-    func stitchIfCropParamsDirty() {
-        guard let last = lastStitchedCropParams, last != currentCropParams,
+    func recompositeIfOutputCropDirty() {
+        guard let last = lastComposedOutputCrop, last != currentOutputCrop,
               model.images.count >= 2, !model.isStitching else { return }
-        lastStitchedCropParams = currentCropParams
-        model.stitch()
+        lastComposedOutputCrop = currentOutputCrop
+        model.recompositeOutput()
     }
 
     func handleFramesSheetDismiss() {
@@ -362,12 +373,15 @@ private extension StitchEditorView {
     }
 }
 
+private struct OutputCropParams: Equatable {
+    let top: Float; let bottom: Float
+}
 private struct CropParams: Equatable {
     let topCropFraction: Float; let bottomCropFraction: Float
     let headerMode: HeaderKeepMode; let keepFooter: Bool
 }
 private struct EditSessionSnapshot {
-    let cropParams: CropParams; let imageIDs: [UUID]
-    let images: [SelectedImage]; let result: StitchResult?; let markup: EditorMarkupState
+    let restore: StitchViewModel.EditRestoreSnapshot
+    let cropParams: CropParams; let imageIDs: [UUID]; let markup: EditorMarkupState
 }
 private struct PreviewIndexBox: Identifiable { let index: Int; var id: Int { index } }

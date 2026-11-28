@@ -50,8 +50,7 @@ final class AutoStitchViewModel: ObservableObject {
             }.value
             let model = StitchViewModel(autoSuggestCrop: true)
             model.load(decodedImages: prepared.0)
-            model.topCropFraction = prepared.1.top
-            model.bottomCropFraction = prepared.1.bottom
+            model.applyDetectedFixedBarCrop(top: prepared.1.top, bottom: prepared.1.bottom)
             model.notePreExcluded(indices: prepared.2)
             return model
         } catch {

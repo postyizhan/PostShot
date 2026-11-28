@@ -8,6 +8,7 @@ struct SegmentInspectCanvasView: View {
     @ObservedObject var model: StitchViewModel
     let displayResultImage: UIImage?
     let onPreviewSingle: (Int) -> Void
+    var onOpenFrames: () -> Void = {}
 
     @State private var selectedSpanID: Int?
     @State private var replacePickerItem: PhotosPickerItem?
@@ -66,6 +67,9 @@ struct SegmentInspectCanvasView: View {
                     .padding(.bottom, 144)
             }
             .ignoresSafeArea()
+        } else if let seam = model.failedSeam {
+            SeamFailureRecoveryView(seam: seam, model: model, onOpenFrames: onOpenFrames)
+                .padding(.horizontal, 16)
         } else {
             AppleEmptyStateView(
                 systemImage: "square.stack",
