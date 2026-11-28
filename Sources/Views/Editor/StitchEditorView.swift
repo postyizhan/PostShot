@@ -176,6 +176,7 @@ struct StitchEditorView: View {
                 .padding(.horizontal, max(16, markup.beautifyPadding))
                 .padding(.top, topPad).padding(.bottom, bottomPad)
         }
+        .ignoresSafeArea()
         .overlay(alignment: .top) {
             if mode == .preview, let notice = model.stitchNotice, !isChromeHidden {
                 HStack(spacing: 6) {

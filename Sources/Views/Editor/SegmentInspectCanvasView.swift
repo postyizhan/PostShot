@@ -63,6 +63,7 @@ struct SegmentInspectCanvasView: View {
                     .padding(.top, 112)
                     .padding(.bottom, 144)
             }
+            .ignoresSafeArea()
         } else {
             AppleEmptyStateView(
                 systemImage: "square.stack",
