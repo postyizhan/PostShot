@@ -160,4 +160,58 @@ final class EditorMarkupAndSpanTests: XCTestCase {
         state.undoLast()
         XCTAssertFalse(state.hasActiveAnnotations)
     }
+
+    // MARK: - Canvas Corner Scaling & Shape Geometry
+
+    func testScaledCornerRadiusScalesProportionallyAndClamps() {
+        XCTAssertEqual(EditorMarkupState.scaledCornerRadius(0, for: CGSize(width: 360, height: 800)), 0)
+        XCTAssertEqual(EditorMarkupState.scaledCornerRadius(-4, for: CGSize(width: 360, height: 800)), 0)
+        XCTAssertEqual(EditorMarkupState.scaledCornerRadius(20, for: CGSize(width: 0, height: 800)), 0)
+        XCTAssertEqual(EditorMarkupState.scaledCornerRadius(20, for: CGSize(width: 360, height: 0)), 0)
+
+        XCTAssertEqual(EditorMarkupState.scaledCornerRadius(20, for: CGSize(width: 360, height: 800)), 20, accuracy: 1e-6)
+        XCTAssertEqual(EditorMarkupState.scaledCornerRadius(20, for: CGSize(width: 180, height: 400)), 10, accuracy: 1e-6)
+        XCTAssertEqual(EditorMarkupState.scaledCornerRadius(20, for: CGSize(width: 1080, height: 2400)), 60, accuracy: 1e-6)
+
+        // Clamped to 45% of shorter edge on very short or small canvases.
+        XCTAssertEqual(EditorMarkupState.scaledCornerRadius(20, for: CGSize(width: 360, height: 24)), 24 * 0.45, accuracy: 1e-6)
+    }
+
+    func testScaledCanvasRoundedRectMatchesSharpAndSelectiveCorners() {
+        let rect = CGRect(x: 0, y: 0, width: 360, height: 200)
+        let sharpPath = ScaledCanvasRoundedRect(baseCornerRadius: 0).path(in: rect)
+        XCTAssertTrue(sharpPath.contains(CGPoint(x: 1, y: 1)))
+        XCTAssertTrue(sharpPath.contains(CGPoint(x: 1, y: rect.height - 1)))
+
+        let noCornersPath = ScaledCanvasRoundedRect(
+            baseCornerRadius: 20,
+            topCorners: false,
+            bottomCorners: false
+        ).path(in: rect)
+        XCTAssertTrue(noCornersPath.contains(CGPoint(x: 1, y: 1)))
+        XCTAssertTrue(noCornersPath.contains(CGPoint(x: 1, y: rect.height - 1)))
+
+        let topOnlyPath = ScaledCanvasRoundedRect(
+            baseCornerRadius: 20,
+            topCorners: true,
+            bottomCorners: false,
+            referenceCanvasSize: CGSize(width: 360, height: 600)
+        ).path(in: rect)
+        XCTAssertFalse(topOnlyPath.contains(CGPoint(x: 1, y: 1)))
+        XCTAssertTrue(topOnlyPath.contains(CGPoint(x: 1, y: rect.height - 1)))
+
+        let bottomOnlyPath = ScaledCanvasRoundedRect(
+            baseCornerRadius: 20,
+            topCorners: false,
+            bottomCorners: true,
+            referenceCanvasSize: CGSize(width: 360, height: 600)
+        ).path(in: rect)
+        XCTAssertTrue(bottomOnlyPath.contains(CGPoint(x: 1, y: 1)))
+        XCTAssertFalse(bottomOnlyPath.contains(CGPoint(x: 1, y: rect.height - 1)))
+
+        let insetShape = ScaledCanvasRoundedRect(baseCornerRadius: 20).inset(by: 1)
+        let insetPath = insetShape.path(in: rect)
+        XCTAssertFalse(insetPath.contains(CGPoint(x: 2, y: 2)))
+        XCTAssertTrue(insetPath.contains(CGPoint(x: 180, y: 100)))
+    }
 }

@@ -90,6 +90,14 @@ struct EditorMarkupState {
 
     var hasActiveAnnotations: Bool { !strokes.isEmpty || !stickers.isEmpty }
 
+    /// Computes the corner radius scaled to `canvasSize` relative to `referenceWidth` (360pt),
+    /// clamped to 45% of the shorter edge to match `MarkupExportRenderer`.
+    static func scaledCornerRadius(_ baseRadius: CGFloat, for canvasSize: CGSize) -> CGFloat {
+        guard baseRadius > 0, canvasSize.width > 0, canvasSize.height > 0 else { return 0 }
+        let scale = canvasSize.width / referenceWidth
+        return min(min(canvasSize.width, canvasSize.height) * 0.45, baseRadius * scale)
+    }
+
     func hasMarkupChanges(comparedTo other: EditorMarkupState) -> Bool {
         strokes != other.strokes || stickers != other.stickers
     }

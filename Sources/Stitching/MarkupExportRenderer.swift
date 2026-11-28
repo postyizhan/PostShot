@@ -61,7 +61,7 @@ enum MarkupExportRenderer {
         defer { UIGraphicsPopContext() }
 
         let imageRect = CGRect(x: CGFloat(pad), y: CGFloat(pad), width: CGFloat(baseW), height: CGFloat(baseH))
-        let radius = min(min(imageRect.width, imageRect.height) * 0.45, markup.beautifyCornerRadius * scale)
+        let radius = EditorMarkupState.scaledCornerRadius(markup.beautifyCornerRadius, for: imageRect.size)
         let roundedPath = UIBezierPath(roundedRect: imageRect, cornerRadius: radius).cgPath
 
         drawShadowIfNeeded(markup, roundedPath: roundedPath, scale: scale, in: ctx)

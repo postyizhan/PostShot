@@ -149,6 +149,7 @@ struct StitchEditorView: View {
                     model: model,
                     cropTab: $cropTab,
                     displayResultImage: displayResultImage,
+                    markup: markup,
                     onPreviewSingle: { previewSingleIndex = $0 },
                     onOpenFrames: { framesSnapshot = model.images.map(\.id); showFramesSheet = true }
                 )
@@ -196,29 +197,13 @@ struct StitchEditorView: View {
 
     @ViewBuilder
     private func beautifiedResultImage(_ image: UIImage) -> some View {
-        let shape = RoundedRectangle(cornerRadius: markup.beautifyCornerRadius, style: .continuous)
         let isMarkupInteractive = (mode == .edit && editTab == .markup)
         Image(uiImage: image).resizable().scaledToFit()
             .overlay {
                 EditorMarkupOverlay(activeTool: isMarkupInteractive ? activeMarkupTool : nil,
                                     isInteractive: isMarkupInteractive, cancelToken: markupCancelToken, markup: $markup)
             }
-            .clipShape(shape)
-            .overlay {
-                shape.strokeBorder(
-                    Color.primary.opacity(markup.beautifyFrame ? 0.18 : 0.06),
-                    lineWidth: markup.beautifyFrame ? 2 : 0.75
-                )
-            }
-            .shadow(color: Color.black.opacity(markup.beautifyShadow ? 0.08 : 0),
-                    radius: markup.beautifyShadow ? 16 : 0,
-                    y: markup.beautifyShadow ? 4 : 0)
-            .shadow(color: Color.black.opacity(markup.beautifyShadow ? 0.03 : 0),
-                    radius: markup.beautifyShadow ? 2 : 0,
-                    y: markup.beautifyShadow ? 1 : 0)
-            .appleAnimation(AppleMotion.snappy, value: markup.beautifyCornerRadius)
-            .appleAnimation(AppleMotion.snappy, value: markup.beautifyShadow)
-            .appleAnimation(AppleMotion.snappy, value: markup.beautifyFrame)
+            .editorCanvasBeautify(markup)
     }
 
     // MARK: - Bottom Floating Bar

@@ -109,7 +109,7 @@ struct ExportSheetView: View {
             RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color(.tertiarySystemGroupedBackground))
             if let previewThumb {
                 Image(uiImage: previewThumb).resizable().scaledToFit()
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous)).padding(4)
+                    .padding(4)
             } else {
                 ProgressView().controlSize(.small)
             }

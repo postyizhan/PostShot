@@ -7,6 +7,7 @@ import UIKit
 struct SegmentInspectCanvasView: View {
     @ObservedObject var model: StitchViewModel
     let displayResultImage: UIImage?
+    var markup: EditorMarkupState = EditorMarkupState()
     let onPreviewSingle: (Int) -> Void
     var onOpenFrames: () -> Void = {}
 
@@ -60,9 +61,8 @@ struct SegmentInspectCanvasView: View {
                     .resizable()
                     .scaledToFit()
                     .overlay { segmentBandsOverlay(spans: spans) }
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .porcelainCardStyle(cornerRadius: 16)
-                    .padding(.horizontal, 20)
+                    .editorCanvasBeautify(markup)
+                    .padding(.horizontal, 16)
                     .padding(.top, 112)
                     .padding(.bottom, 144)
             }
@@ -87,14 +87,28 @@ struct SegmentInspectCanvasView: View {
                 ForEach(spans) { span in
                     let top = span.topFraction * h
                     let bandH = max(1, (span.bottomFraction - span.topFraction) * h)
-                    segmentBand(span: span, width: w, height: bandH)
-                        .offset(y: top)
+                    segmentBand(
+                        span: span,
+                        width: w,
+                        height: bandH,
+                        canvasSize: geo.size,
+                        isFirst: span.id == spans.first?.id,
+                        isLast: span.id == spans.last?.id
+                    )
+                    .offset(y: top)
                 }
             }
         }
     }
 
-    private func segmentBand(span: SegmentSpan, width: CGFloat, height: CGFloat) -> some View {
+    private func segmentBand(
+        span: SegmentSpan,
+        width: CGFloat,
+        height: CGFloat,
+        canvasSize: CGSize,
+        isFirst: Bool,
+        isLast: Bool
+    ) -> some View {
         let isSelected = selectedSpanID == span.id
         let badgeText = span.sourceIndex.map { "#\($0 + 1)" } ?? "补齐"
         return ZStack(alignment: .topLeading) {
@@ -104,9 +118,14 @@ struct SegmentInspectCanvasView: View {
                 seamHairline(width: width, highlighted: isSelected)
             }
             if isSelected {
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .strokeBorder(DesignTokens.ink, lineWidth: 2)
-                    .transition(.opacity)
+                ScaledCanvasRoundedRect(
+                    baseCornerRadius: markup.beautifyCornerRadius,
+                    topCorners: isFirst,
+                    bottomCorners: isLast,
+                    referenceCanvasSize: canvasSize
+                )
+                .strokeBorder(DesignTokens.ink, lineWidth: 2)
+                .transition(.opacity)
                 Text(badgeText)
                     .font(.caption2.weight(.bold).monospacedDigit())
                     .foregroundStyle(DesignTokens.onInk)

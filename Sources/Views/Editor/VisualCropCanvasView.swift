@@ -20,6 +20,7 @@ struct VisualCropCanvasView: View {
     @ObservedObject var model: StitchViewModel
     @Binding var cropTab: CropAdjustTab
     var displayResultImage: UIImage? = nil
+    var markup: EditorMarkupState = EditorMarkupState()
     var onPreviewSingle: (Int) -> Void = { _ in }
     var onOpenFrames: () -> Void = {}
 
@@ -37,6 +38,7 @@ struct VisualCropCanvasView: View {
                 SegmentInspectCanvasView(
                     model: model,
                     displayResultImage: displayResultImage,
+                    markup: markup,
                     onPreviewSingle: onPreviewSingle,
                     onOpenFrames: onOpenFrames
                 )
@@ -130,11 +132,10 @@ struct VisualCropCanvasView: View {
         item: SelectedImage, edge: SingleEdgeCropOverlay.Edge, effectiveFraction: Float,
         onBeginDrag: @escaping () -> Void, onUpdateFraction: @escaping (Float) -> Void
     ) -> some View {
-        let shape = RoundedRectangle(cornerRadius: 4, style: .continuous)
-        return Image(uiImage: displayThumbs[item.id] ?? UIImage(cgImage: item.cgImage))
+        Image(uiImage: displayThumbs[item.id] ?? UIImage(cgImage: item.cgImage))
             .resizable().aspectRatio(contentMode: .fit)
             .overlay { CropMaskLayer(edge: edge, effectiveFraction: effectiveFraction, isDragging: isDraggingCrop) }
-            .clipShape(shape).porcelainCardStyle(cornerRadius: 4)
+            .editorCanvasBeautify(markup)
             .overlay {
                 SingleEdgeCropOverlay(edge: edge, effectiveFraction: effectiveFraction, isDragging: $isDraggingCrop,
                                       onBeginDrag: onBeginDrag, onUpdateFraction: onUpdateFraction)
